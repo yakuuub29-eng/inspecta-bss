@@ -1,0 +1,12 @@
+# INSPECTA — PT Bina Sarana Sukses
+# Aplikasi internal SHE — tidak untuk diindeks mesin pencari
+
+User-agent: *
+Disallow: /dashboard-admin.html
+Disallow: /
+
+# Izinkan akses ke app-user hanya jika berbagi link internal
+Allow: /app-user.html
+Allow: /manifest.json
+Allow: /icon-192.png
+Allow: /icon-512.png

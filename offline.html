@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#F5C400">
+<title>INSPECTA — Offline</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#1A1A1A;color:#fff;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+.logo{width:80px;height:80px;background:#F5C400;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;box-shadow:0 8px 32px rgba(245,196,0,.3)}
+h1{font-size:24px;font-weight:800;color:#F5C400;margin-bottom:8px;letter-spacing:-.5px}
+p{font-size:14px;color:#999;line-height:1.6;max-width:300px;margin:0 auto 24px}
+.status{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 20px;margin-bottom:24px;max-width:320px;width:100%}
+.status-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}
+.status-row:last-child{border-bottom:none}
+.status-label{color:#888}
+.status-val{font-weight:600;color:#F5C400}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;background:#F5C400;color:#1A1A1A;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;text-decoration:none;margin:6px;transition:opacity .13s}
+.btn:hover{opacity:.85}
+.btn.secondary{background:rgba(255,255,255,.1);color:#fff}
+.note{font-size:11px;color:#555;margin-top:20px;max-width:280px}
+</style>
+</head>
+<body>
+<div class="logo">⛏️</div>
+<h1>INSPECTA</h1>
+<p>Anda sedang offline. Laporan yang sudah dibuat tetap tersimpan dan akan terkirim otomatis saat koneksi kembali.</p>
+
+<div class="status">
+  <div class="status-row"><span class="status-label">Koneksi Internet</span><span class="status-val" id="net-status">Memeriksa...</span></div>
+  <div class="status-row"><span class="status-label">Data Tersimpan Lokal</span><span class="status-val" id="local-count">—</span></div>
+  <div class="status-row"><span class="status-label">Menunggu Sync</span><span class="status-val" id="pending-count">—</span></div>
+</div>
+
+<a href="./app-user.html" class="btn">🏠 Buka Aplikasi</a>
+<button class="btn secondary" onclick="location.reload()">↻ Coba Lagi</button>
+
+<p class="note">Aplikasi INSPECTA bekerja penuh secara offline. Tutup dan buka kembali untuk menyegarkan status koneksi.</p>
+
+<script>
+function updStatus(){
+  document.getElementById('net-status').textContent = navigator.onLine ? '✅ Terhubung' : '📵 Offline';
+  try {
+    var reports = JSON.parse(localStorage.getItem('k3_reports_local')||'[]');
+    var pending = JSON.parse(localStorage.getItem('k3_pending_ids')||'[]');
+    document.getElementById('local-count').textContent = reports.length + ' laporan';
+    document.getElementById('pending-count').textContent = pending.length + ' laporan';
+  } catch(e) {}
+}
+updStatus();
+window.addEventListener('online', function(){ updStatus(); setTimeout(function(){ window.location.href='./app-user.html'; }, 1500); });
+window.addEventListener('offline', updStatus);
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "name": "INSPECTA — K3 Mining Safety",
+  "short_name": "INSPECTA",
+  "description": "Sistem Inspeksi K3 Pertambangan PT Bina Sarana Sukses",
+  "start_url": "./app-user.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1A1A1A",
+  "theme_color": "#F5C400",
+  "orientation": "portrait-primary",
+  "lang": "id",
+  "categories": [
+    "productivity",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Inspeksi Baru",
+      "short_name": "Inspeksi",
+      "url": "./app-user.html",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard Admin",
+      "short_name": "Dashboard",
+      "url": "./dashboard-admin.html",
+      "icons": [
+        {
+          "src": "./icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}
