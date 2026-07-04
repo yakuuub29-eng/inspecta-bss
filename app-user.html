@@ -529,6 +529,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
     <div class="mhnd"></div>
     <div class="mhdr"><div><div class="mt" id="m-t">Detail</div><div class="ms" id="m-s"></div></div><button class="mclose" onclick="closeMod()">✕</button></div>
     <div class="mbody" id="m-b"></div>
+    <div id="m-pdf-btn" style="padding:10px 20px 18px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--G2)"></div>
   </div>
 </div>
 
@@ -555,7 +556,7 @@ var FB_CFG = {
 // ═══════════════════════════════════════════
 
 var FB_OK=false, fbdb=null;
-var SK='k3_reports_local', PK='k3_pending_ids', UK='k3_user_v3', CK='k3_checklists', CAP_KEY='k3_capa';
+var SK='k3_reports_local', PK='k3_pending_ids', UK='k3_user_v3', CK='k3_checklists', CAP_KEY='k3_capa', AUDIT_KEY='k3_audit_log';
 var CU=null, CFT=null, FU=[], CS={}, NG_DATA={}, PHOTOS=[], GPS_DATA=null;
 var IS_ONLINE=navigator.onLine;
 var pinBuffer='';
@@ -827,13 +828,7 @@ function showDetTL(id){
   el('m-b').innerHTML=h;
   // Tombol PDF di modal
   var pdfBtn=el('m-pdf-btn');
-  if(pdfBtn){
-    if(['fatigue','speedgun'].includes(r.type)){
-      pdfBtn.innerHTML='<button class="pdf-btn green" onclick="'+(r.type==='fatigue'?'downloadFatiguePDF':'downloadSpeedgunPDF')+'()">📄 PDF Shift</button>';
-    } else {
-      pdfBtn.innerHTML='<button class="pdf-btn blue" onclick="downloadInspeksiPDF(\''+r.id+'\')" >📄 PDF</button>';
-    }
-  }
+  if(pdfBtn)pdfBtn.innerHTML=pdfBtnHtmlFor(r);
   el('mov').classList.add('on');
 }
 
@@ -960,31 +955,74 @@ function resizeImage(file, callback){
 }
 
 
+// Label singkat untuk audit trail (OK/NC → Conform/Non-Conform)
+function statusLabelUser(s){return {OK:'Conform',NC:'Non-Conform'}[s]||s||'—';}
+
+// ════ AUDIT TRAIL (App User → shared localStorage → dilihat di Dashboard Admin) ════
+function getAuditLog(){try{return JSON.parse(localStorage.getItem(AUDIT_KEY)||'[]');}catch(e){return[];}}
+function saveAuditLog(list){try{localStorage.setItem(AUDIT_KEY,JSON.stringify(list.slice(0,1000)));}catch(e){}}
+function getDeviceLabel(){
+  var ua=navigator.userAgent||'';
+  var os=/Android/.test(ua)?'Android':/iPhone|iPad|iPod/.test(ua)?'iOS':/Windows/.test(ua)?'Windows':/Mac/.test(ua)?'Mac':'Unknown';
+  var br=/Edg/.test(ua)?'Edge':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':'Browser';
+  return os+' · '+br;
+}
+function logAudit(entry){
+  var list=getAuditLog();
+  var item={
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+    timestamp:new Date().toISOString(),
+    user:entry.user||(CU?CU.name:'—'),
+    userId:entry.userId||(CU?CU.empId:''),
+    action:entry.action||'',
+    module:entry.module||'',
+    oldValue:entry.oldValue!=null&&entry.oldValue!==''?String(entry.oldValue):'—',
+    newValue:entry.newValue!=null&&entry.newValue!==''?String(entry.newValue):'—',
+    device:getDeviceLabel(),
+    refId:entry.refId||''
+  };
+  list.unshift(item);
+  saveAuditLog(list);
+  try{if(FB_OK&&fbdb&&IS_ONLINE)fbdb.ref('audit/'+item.id).set(item).catch(function(){});}catch(e){}
+}
+
 // ════ CAPA SYNC (app-user → shared localStorage → dashboard) ════
 function getCAPAsLocal(){
   try{return JSON.parse(localStorage.getItem(CAP_KEY)||'{}');}catch(e){return {};}
 }
 function saveCAPAFromReport(rep){
-  if(!rep.capa||!rep.capa.pic)return;
+  // Kapan CAPA harus otomatis dibuat:
+  // - Inspeksi checklist dengan status NC (temuan Non-Conform)
+  // - Quick Report jenis Hazard, Near Miss, atau Stop Work Authority (butuh tindak lanjut)
+  // "Positive Observation" sengaja TIDAK dibuatkan CAPA karena bukan temuan yang perlu ditindaklanjuti.
+  // Sebelumnya CAPA HANYA dibuat kalau inspektur sempat mengisi field PIC (opsional) — jadi banyak
+  // temuan NC/Hazard/NearMiss/StopWork yang tidak pernah muncul di CAPA Tracking admin sama sekali.
+  var needsCAPA=rep.status==='NC'||['hazard','nearmiss','stopwork'].indexOf(rep.type)>=0;
+  if(!needsCAPA)return;
+
   var caps=getCAPAsLocal();
   var capaId='CAPA-'+rep.id;
+  var existing=caps[capaId]||{};
+
   caps[capaId]={
     id:capaId,
-    title:(rep.noTemuan||rep.typeName||'Temuan')+(rep.location?' — '+rep.location:''),
-    area:AREA_LABEL_MAP[rep.type]||rep.typeName||'—',
-    severity:rep.severity||'—',
-    likelihood:rep.extra&&rep.extra.CAPA_SEV_L||0,
-    consequence:rep.extra&&rep.extra.CAPA_SEV_C||0,
-    description:rep.notes||'',
-    action:rep.action||'',
-    pic:rep.capa.pic||'—',
-    dueDate:rep.capa.dueDate||'',
-    status:rep.capa.status||'open',
-    evBefore:rep.capa.evBefore||'',
-    evAfter:rep.capa.evAfter||'',
+    title:existing.title||(rep.noTemuan||rep.typeName||'Temuan')+(rep.location?' — '+rep.location:''),
+    area:existing.area||AREA_LABEL_MAP[rep.type]||rep.typeName||'—',
+    severity:rep.severity||existing.severity||'—',
+    likelihood:(rep.extra&&rep.extra.CAPA_SEV_L)||existing.likelihood||0,
+    consequence:(rep.extra&&rep.extra.CAPA_SEV_C)||existing.consequence||0,
+    description:rep.notes||existing.description||'',
+    action:rep.action||existing.action||'',
+    // PIC/due date/status pakai punya inspektur kalau memang sudah diisi di form, kalau belum biarkan
+    // kosong (status default 'Open') supaya admin bisa lengkapi PIC & due date di CAPA Tracking.
+    pic:(rep.capa&&rep.capa.pic)||existing.pic||'',
+    dueDate:(rep.capa&&rep.capa.dueDate)||existing.dueDate||'',
+    status:existing.status||mapCapaStatusForAdmin(rep.capa&&rep.capa.status),
+    evBefore:(rep.capa&&rep.capa.evBefore)||existing.evBefore||'',
+    evAfter:(rep.capa&&rep.capa.evAfter)||existing.evAfter||'',
     reportId:rep.id,
     noTemuan:rep.noTemuan||'',
-    createdAt:rep.timestamp,
+    createdAt:existing.createdAt||rep.timestamp,
     updatedAt:new Date().toISOString()
   };
   localStorage.setItem(CAP_KEY,JSON.stringify(caps));
@@ -992,6 +1030,12 @@ function saveCAPAFromReport(rep){
   if(FB_OK&&fbdb&&IS_ONLINE){
     fbdb.ref('capa/'+capaId).set(caps[capaId]).catch(function(){});
   }
+}
+// Dashboard admin memakai 3 status: 'Open'/'In Progress'/'Closed' (+ 'Overdue' dihitung otomatis).
+// App User sendiri memakai status yang lebih detail: 'open'/'in-progress'/'pending-verification'/'closed'
+// untuk tab Tindak Lanjutnya sendiri. Fungsi ini memetakan ke kosakata dashboard admin.
+function mapCapaStatusForAdmin(s){
+  return {open:'Open','in-progress':'In Progress','pending-verification':'In Progress',closed:'Closed'}[s]||'Open';
 }
 
 var AREA_LABEL_MAP={port:'Port',pit:'Pit',hauling:'Hauling',workshop:'Workshop',
@@ -1916,7 +1960,9 @@ function submitQuick(type){
     userId:CU.empId,userName:CU.name,userDept:CU.dept,userShift:CU.shift,
     extra:{},synced:false
   };
-  setTimeout(function(){addReport(rep);saveCAPAFromReport(rep);hideLoad();btn.disabled=false;
+  setTimeout(function(){addReport(rep);saveCAPAFromReport(rep);
+    logAudit({action:'Membuat Quick Report',module:cfg.title,newValue:rep.noTemuan+' — '+rep.location,refId:rep.id});
+    hideLoad();btn.disabled=false;
     if(IS_ONLINE&&FB_OK)showToast('✅ Laporan terkirim!','success');
     else showToast('💾 Tersimpan offline','warning');
     setTimeout(function(){goHome(null);},700);
@@ -1928,8 +1974,19 @@ function submitForm(){
   var btn=el('subbtn');btn.disabled=true;
   showLoad(IS_ONLINE?'☁️ Mengirim laporan...':'💾 Menyimpan secara offline...');
   var cfg=FCFG[CFT];
-  var reporter=gv('fi0')||(CU?CU.name:'—');
-  var location=gv('fi3')||gv('fi2')||'-';
+  // Catatan: form ini TIDAK punya input nama pelapor terpisah (nama diambil otomatis dari profil/CU).
+  // Field fi0, fi1, fi2... dibuat dinamis sesuai cfg.info, dan fi0 SELALU merupakan field lokasi utama.
+  // Sebelumnya reporter salah diambil dari gv('fi0') (yang sebenarnya nilai lokasi) dan location dari
+  // gv('fi3')/gv('fi2') yang belum tentu ada — menyebabkan nama & lokasi tertukar saat review/ekspor.
+  var reporter=(CU?CU.name:'—');
+  var location=gv('fi0')||'-';
+  // Simpan field info tambahan (mis. "Nama Kapal/Tongkang", "ID/No. Kotak", "Area/Dept") agar tidak hilang
+  var infoExtra=[];
+  if(cfg.info&&cfg.info.length>1){
+    for(var _ii=1;_ii<cfg.info.length;_ii++){
+      infoExtra.push({label:cfg.info[_ii],value:gv('fi'+_ii)||'-'});
+    }
+  }
   // Status dihitung otomatis: jika ada NG → NC, semua OK/NA → OK
   var status='Pending';
 
@@ -1951,7 +2008,7 @@ function submitForm(){
     CR['s'+si]={title:sec.t,ok:ok,ng:ng,na:na,empty:em,total:sec.items.length};
   });
 
-  var extra={CR:CR,ngDetails:NG_DETAILS};
+  var extra={CR:CR,ngDetails:NG_DETAILS,infoExtra:infoExtra};
   // Auto status: ada NG → NC, tidak ada NG → OK
   status=NG_DETAILS.length>0?'NC':'OK';
   if(CFT==='speedgun'){
@@ -1998,6 +2055,7 @@ function submitForm(){
   setTimeout(function(){
     addReport(rep);
     saveCAPAFromReport(rep);
+    logAudit({action:'Membuat Inspeksi ('+statusLabelUser(rep.status)+')',module:cfg.title,newValue:rep.noTemuan+' — '+rep.location,refId:rep.id});
     hideLoad();btn.disabled=false;
     if(IS_ONLINE&&FB_OK)showToast('✅ Laporan terkirim ke Firebase!','success');
     else showToast('💾 Tersimpan offline — dikirim saat ada jaringan','warning');
@@ -2052,6 +2110,15 @@ function renderHist(){
 }
 
 // ════ DETAIL MODAL ════
+function pdfBtnHtmlFor(r){
+  var fn=r.type==='fatigue'?'downloadFatiguePDF':r.type==='speedgun'?'downloadSpeedgunPDF':'downloadInspeksiPDF';
+  var lbl=(r.type==='fatigue'||r.type==='speedgun')?'Download PDF (Shift Ini)':'Download PDF Laporan';
+  var html='<button class="pdf-btn blue" onclick="'+fn+'(\''+r.id+'\')">📄 '+lbl+'</button>';
+  if(canShareFiles()){
+    html+='<button class="pdf-btn green" onclick="'+fn+'(\''+r.id+'\',true)">📤 Bagikan (WA, dll)</button>';
+  }
+  return html;
+}
 function showDet(id){
   var r=getLocal().find(function(x){return x.id===id;});if(!r)return;
   el('m-t').textContent=r.typeName;
@@ -2065,6 +2132,9 @@ function showDet(id){
   ];
   if(r.gps) info.push(['Koordinat GPS','📍 '+r.gps.lat+', '+r.gps.lng+' (±'+r.gps.acc+'m)']);
   info.forEach(function(row){h+='<div class="dr"><span class="dk">'+row[0]+'</span><span class="dv">'+row[1]+'</span></div>';});
+  if(r.extra&&r.extra.infoExtra&&r.extra.infoExtra.length){
+    r.extra.infoExtra.forEach(function(fx){h+='<div class="dr"><span class="dk">'+esc(fx.label)+'</span><span class="dv">'+esc(fx.value)+'</span></div>';});
+  }
 
   // Photos
   if(r.photos&&r.photos.length&&typeof r.photos[0]==='string'&&r.photos[0].startsWith('data:')){
@@ -2104,6 +2174,7 @@ function showDet(id){
     r.extra.units.forEach(function(u,i){h+='<div class="dr"><span class="dk">Unit #'+(i+1)+' '+u.plate+'</span><span class="dv">'+u.type+' · '+u.load+' · '+u.time+'<br><span style="color:'+(u.response==='Baik (Good)'?'var(--GR)':'var(--R)')+'">'+u.response+'</span></span></div>';});
   }
   el('m-b').innerHTML=h;
+  var pdfBtn0=el('m-pdf-btn');if(pdfBtn0)pdfBtn0.innerHTML=pdfBtnHtmlFor(r);
   el('mov').classList.add('on');
 }
 function closeMod(){el('mov').classList.remove('on');}
@@ -2120,6 +2191,25 @@ function getPDF(){
 }
 
 // ── Helper download PDF — fix untuk mobile Chrome (Blob approach) ──
+function canShareFiles(){
+  try{
+    return !!(navigator.canShare&&navigator.canShare({files:[new File([new Blob(['x'])],'a.pdf',{type:'application/pdf'})]}));
+  }catch(e){return false;}
+}
+function pdfFinish(doc,filename,share,okMsg){
+  if(share&&navigator.share){
+    try{
+      var blob=doc.output('blob');
+      var file=new File([blob],filename,{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        navigator.share({files:[file],title:filename}).catch(function(){});
+        return;
+      }
+    }catch(e){/* fallback ke download di bawah */}
+  }
+  pdfDownload(doc,filename);
+  showToast(okMsg||'📄 PDF terunduh!','success');
+}
 function pdfDownload(doc, filename){
   try{
     var blob = doc.output('blob');
@@ -2242,21 +2332,37 @@ function pdfAddSignature(doc, r, y){
 // ═══════════════════════════════════════════
 // FATIGUE CALL — PDF per Shift
 // ═══════════════════════════════════════════
-function downloadFatiguePDF(){
+function shiftKeyOf(ts){
+  var d=new Date(ts);
+  var dateStr=d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  var h=d.getHours();
+  var shift=h>=6&&h<18?'Shift Siang (DS 06:00–18:00)':'Shift Malam (NS 18:00–06:00)';
+  return{dateStr:dateStr,shift:shift,key:dateStr+'__'+shift};
+}
+function downloadFatiguePDF(reportId,share){
   var jsPDF=getPDF();
   if(!jsPDF){showToast('⚠️ Library PDF sedang dimuat, coba lagi...','warning');return;}
   var reports=getMine().filter(function(r){return r.type==='fatigue';});
   if(!reports.length){showToast('Belum ada laporan Fatigue Call');return;}
 
+  // Jika dipanggil dari detail satu laporan (reportId ada), hanya export shift laporan tsb —
+  // sebelumnya fungsi ini selalu mengekspor SEMUA shift/tanggal, bukan hanya shift yang diminta.
+  var onlyThisShift=false;
+  if(reportId){
+    var target=reports.find(function(r){return r.id===reportId;});
+    if(target){
+      onlyThisShift=true;
+      var tk=shiftKeyOf(target.timestamp).key;
+      reports=reports.filter(function(r){return shiftKeyOf(r.timestamp).key===tk;});
+    }
+  }
+  if(!reports.length){showToast('Laporan tidak ditemukan');return;}
+
   var groups={};
   reports.forEach(function(r){
-    var d=new Date(r.timestamp);
-    var dateStr=d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-    var h=d.getHours();
-    var shift=h>=6&&h<18?'Shift Siang (DS 06:00–18:00)':'Shift Malam (NS 18:00–06:00)';
-    var key=dateStr+'__'+shift;
-    if(!groups[key])groups[key]={date:dateStr,shift:shift,reports:[]};
-    groups[key].reports.push(r);
+    var sk=shiftKeyOf(r.timestamp);
+    if(!groups[sk.key])groups[sk.key]={date:sk.dateStr,shift:sk.shift,reports:[]};
+    groups[sk.key].reports.push(r);
   });
 
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -2372,28 +2478,39 @@ function downloadFatiguePDF(){
   });
 
   var now=new Date();
-  pdfDownload(doc,'Fatigue_Call_'+now.getFullYear()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2)+'.pdf');
-  showToast('📄 PDF Fatigue Call terunduh!','success');
+  var fname=onlyThisShift
+    ?'Fatigue_Call_'+Object.keys(groups)[0].replace(/[^0-9A-Za-z]/g,'')+'.pdf'
+    :'Fatigue_Call_'+now.getFullYear()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2)+'.pdf';
+  pdfFinish(doc,fname,share,onlyThisShift?'📄 PDF shift ini terunduh!':'📄 PDF Fatigue Call terunduh!');
 }
 
 // ═══════════════════════════════════════════
 // SPEEDGUN — PDF per Shift
 // ═══════════════════════════════════════════
-function downloadSpeedgunPDF(){
+function downloadSpeedgunPDF(reportId,share){
   var jsPDF=getPDF();
   if(!jsPDF){showToast('⚠️ Library PDF sedang dimuat, coba lagi...','warning');return;}
   var reports=getMine().filter(function(r){return r.type==='speedgun';});
   if(!reports.length){showToast('Belum ada laporan Speedgun');return;}
 
+  // Jika dipanggil dari detail satu laporan (reportId ada), hanya export shift laporan tsb —
+  // sebelumnya fungsi ini selalu mengekspor SEMUA shift/tanggal, bukan hanya shift yang diminta.
+  var onlyThisShift=false;
+  if(reportId){
+    var target=reports.find(function(r){return r.id===reportId;});
+    if(target){
+      onlyThisShift=true;
+      var tk=shiftKeyOf(target.timestamp).key;
+      reports=reports.filter(function(r){return shiftKeyOf(r.timestamp).key===tk;});
+    }
+  }
+  if(!reports.length){showToast('Laporan tidak ditemukan');return;}
+
   var groups={};
   reports.forEach(function(r){
-    var d=new Date(r.timestamp);
-    var dateStr=d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
-    var h=d.getHours();
-    var shift=h>=6&&h<18?'Shift Siang (DS 06:00–18:00)':'Shift Malam (NS 18:00–06:00)';
-    var key=dateStr+'__'+shift;
-    if(!groups[key])groups[key]={date:dateStr,shift:shift,reports:[]};
-    groups[key].reports.push(r);
+    var sk=shiftKeyOf(r.timestamp);
+    if(!groups[sk.key])groups[sk.key]={date:sk.dateStr,shift:sk.shift,reports:[]};
+    groups[sk.key].reports.push(r);
   });
 
   var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
@@ -2491,15 +2608,17 @@ function downloadSpeedgunPDF(){
   });
 
   var now=new Date();
-  pdfDownload(doc,'Speedgun_'+now.getFullYear()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2)+'.pdf');
-  showToast('📄 PDF Speedgun terunduh!','success');
+  var fname=onlyThisShift
+    ?'Speedgun_'+Object.keys(groups)[0].replace(/[^0-9A-Za-z]/g,'')+'.pdf'
+    :'Speedgun_'+now.getFullYear()+('0'+(now.getMonth()+1)).slice(-2)+('0'+now.getDate()).slice(-2)+'.pdf';
+  pdfFinish(doc,fname,share,onlyThisShift?'📄 PDF shift ini terunduh!':'📄 PDF Speedgun terunduh!');
 }
 
 // ═══════════════════════════════════════════
 // INSPEKSI UMUM — PDF per laporan
 // (checklist + temuan NG + foto + tanda tangan + geotag)
 // ═══════════════════════════════════════════
-function downloadInspeksiPDF(reportId){
+function downloadInspeksiPDF(reportId,share){
   var jsPDF=getPDF();
   if(!jsPDF){showToast('⚠️ Library PDF sedang dimuat...','warning');return;}
   var r=getLocal().find(function(x){return x.id===reportId;});
@@ -2547,7 +2666,27 @@ function downloadInspeksiPDF(reportId){
   });
   y=doc.lastAutoTable.finalY+5;
 
-  // Hasil checklist ringkasan
+  // Info tambahan (field spesifik per jenis form, mis. Nama Kapal, ID Kotak, Area/Dept)
+  if(r.extra&&r.extra.infoExtra&&r.extra.infoExtra.length){
+    var ieRows=[];
+    for(var _k=0;_k<r.extra.infoExtra.length;_k+=2){
+      var a=r.extra.infoExtra[_k],b=r.extra.infoExtra[_k+1];
+      ieRows.push([a.label,a.value,b?b.label:'',b?b.value:'']);
+    }
+    doc.autoTable({
+      startY:y,margin:{left:10,right:10},
+      body:ieRows,
+      styles:{fontSize:8.5,cellPadding:2.2,font:'helvetica'},
+      columnStyles:{
+        0:{fontStyle:'bold',fillColor:[245,245,245],cellWidth:28},
+        1:{cellWidth:'auto'},
+        2:{fontStyle:'bold',fillColor:[245,245,245],cellWidth:22},
+        3:{cellWidth:'auto'},
+      },
+      theme:'grid',
+    });
+    y=doc.lastAutoTable.finalY+5;
+  }
   if(r.extra&&r.extra.CR&&Object.keys(r.extra.CR).length){
     if(y>220){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
     doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);
@@ -2719,8 +2858,7 @@ function downloadInspeksiPDF(reportId){
   pdfAddSignature(doc, r, y);
 
   var dateStr=new Date(r.timestamp).toISOString().split('T')[0].replace(/-/g,'');
-  pdfDownload(doc,(r.noTemuan||r.typeName.replace(/\s+/g,'_'))+'_'+dateStr+'.pdf');
-  showToast('📄 PDF laporan terunduh!','success');
+  pdfFinish(doc,(r.noTemuan||r.typeName.replace(/\s+/g,'_'))+'_'+dateStr+'.pdf',share,'📄 PDF laporan terunduh!');
 }
 
 // ── Download semua laporan satu tipe ──

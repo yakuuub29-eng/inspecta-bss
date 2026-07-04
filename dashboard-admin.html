@@ -107,7 +107,7 @@ body{font-family:var(--f);background:var(--G1);color:var(--G9);min-height:100vh;
 .panel-sub{font-size:13px;color:var(--G5)}
 
 /* KPI */
-.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
 .kpi{background:var(--W);border-radius:var(--ra);padding:16px;box-shadow:var(--sh);border-top:3px solid var(--G2);transition:transform .15s,box-shadow .15s;cursor:default}
 .kpi:hover{transform:translateY(-2px);box-shadow:var(--shm)}
 .kpi.y{border-top-color:var(--Y)}.kpi.g{border-top-color:var(--GR)}
@@ -188,7 +188,7 @@ tr{cursor:pointer;transition:background .1s}
 .empty-row td{text-align:center;padding:48px;color:var(--G4);font-size:13px}
 
 /* CAPA MODULE */
-.capa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.capa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px}
 .capa-kpi{background:var(--W);border-radius:var(--ra);padding:16px;box-shadow:var(--sh);text-align:center}
 .capa-n{font-size:28px;font-family:var(--fd);font-weight:800}
 .capa-l{font-size:10px;color:var(--G5);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
@@ -602,6 +602,12 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
       <button class="sbi on" onclick="showP('exec',this)"><span class="sbi-i">🏢</span>Executive View</button>
       <button class="sbi" onclick="showP('overview',this)"><span class="sbi-i">📊</span>Overview<span class="sbi-cnt" id="sb-tot">0</span></button>
 
+      <div class="sb-sec">Quick Report</div>
+      <button class="sbi" onclick="showP('hazard',this)"><span class="sbi-i">🚨</span>Hazard<span class="sbi-cnt" id="sb-hazard">0</span></button>
+      <button class="sbi" onclick="showP('nearmiss',this)"><span class="sbi-i">⚠️</span>Near Miss<span class="sbi-cnt" id="sb-nearmiss">0</span></button>
+      <button class="sbi" onclick="showP('stopwork',this)"><span class="sbi-i">🛑</span>Stop Kerja (SWA)<span class="sbi-cnt" id="sb-stopwork">0</span></button>
+      <button class="sbi" onclick="showP('positive',this)"><span class="sbi-i">👍</span>Observasi Positif<span class="sbi-cnt" id="sb-positive">0</span></button>
+
       <div class="sb-sec">Laporan Inspeksi</div>
       <button class="sbi" onclick="showP('all',this)"><span class="sbi-i">📋</span>Semua<span class="sbi-cnt" id="sb-all">0</span></button>
       <button class="sbi" onclick="showP('port',this)"><span class="sbi-i">🏗️</span>Port<span class="sbi-cnt" id="sb-port">0</span></button>
@@ -631,6 +637,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
       <div class="sb-sec">Manajemen</div>
       <button class="sbi" onclick="showP('edit',this)"><span class="sbi-i">✏️</span>Edit Checklist</button>
       <button class="sbi" onclick="showP('users',this)"><span class="sbi-i">👷</span>User Management</button>
+      <button class="sbi" onclick="showP('audit',this)"><span class="sbi-i">🕵️</span>Audit Trail</button>
       <button class="sbi" onclick="showP('settings',this)"><span class="sbi-i">⚙️</span>Pengaturan</button>
     </nav>
 
@@ -663,6 +670,8 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
         </div>
         <!-- KPI Utama -->
         <div class="kpi-grid" id="exec-kpi"></div>
+        <!-- AI Insight (sederhana) -->
+        <div id="ai-insight-card"></div>
         <div id="exec-score-strip" style="margin-bottom:8px"></div>
         <!-- Charts row -->
         <div class="chart-row">
@@ -706,6 +715,10 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
           </div>
         </div>
         <div class="ccard">
+          <div class="ccard-t">📢 Quick Report Bulan Ini (Hazard / Near Miss / SWA / Positif)</div>
+          <div id="quick-report-strip"></div>
+        </div>
+        <div class="ccard">
           <div class="ccard-t">🕐 10 Laporan Terbaru</div>
           <div id="recent-tbl"></div>
         </div>
@@ -713,6 +726,10 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
 
       <!-- REPORT PANELS -->
       <div class="panel" id="p-all"></div>
+      <div class="panel" id="p-hazard"></div>
+      <div class="panel" id="p-nearmiss"></div>
+      <div class="panel" id="p-stopwork"></div>
+      <div class="panel" id="p-positive"></div>
       <div class="panel" id="p-port"></div>
       <div class="panel" id="p-pit"></div>
       <div class="panel" id="p-hauling"></div>
@@ -798,6 +815,22 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
           <div class="panel-sub">Daftar inspektor & petugas yang terdaftar</div>
         </div>
         <div id="users-body"></div>
+      </div>
+
+      <!-- AUDIT TRAIL -->
+      <div class="panel" id="p-audit">
+        <div class="panel-hdr">
+          <div class="panel-title">🕵️ Audit Trail</div>
+          <div class="panel-sub">Jejak aktivitas otomatis — siapa mengubah apa, kapan, dan dari mana</div>
+        </div>
+        <div class="tw">
+          <div class="ttbar">
+            <input class="sinp" id="audit-srch" placeholder="🔍 Cari user, aksi, modul..." oninput="renderAuditTrail()" />
+            <input type="month" class="fsel" id="audit-filt-date" title="Filter bulan" onchange="renderAuditTrail()" />
+            <button class="exp-btn" onclick="exportAuditCSV()">⬇ CSV</button>
+          </div>
+          <div id="audit-body"></div>
+        </div>
       </div>
 
       <!-- SETTINGS -->
@@ -1039,14 +1072,22 @@ var FB_CFG = {
 
 // ════ CONSTANTS ════
 var FB_OK=false, fbdb=null;
-var SK='k3_reports_local', CK='k3_checklists', ADM_KEY='k3_admin_v3', PW_KEY='k3_admin_pw3', CAP_KEY='k3_capa', NOTIF_KEY='k3_notifs';
+var SK='k3_reports_local', CK='k3_checklists', ADM_KEY='k3_admin_v3', PW_KEY='k3_admin_pw3', CAP_KEY='k3_capa', NOTIF_KEY='k3_notifs', AUDIT_KEY='k3_audit_log';
 var curP='exec', curPage=1, PAGE=15, srch='', filtSt='all', filtSev='all', filtDate='';
 var curEF=null, editData={}, curCAPAId=null;
 
 var TYPES={port:'Inspeksi Port',pit:'Inspeksi Front Loading',hauling:'Inspeksi Jalan Hauling',workshop:'Inspeksi Workshop',workshoptyre:'Inspeksi Workshop Tyre',tpslb3:'Inspeksi TPS LB3',p3k:'Inspeksi Kotak P3K',eyewash:'Inspeksi Eyewash',speedgun:'Laporan Speedgun',fatigue:'Laporan Fatigue Call'};
-var ICONS={port:'🏗️',pit:'⛏️',hauling:'🚛',workshop:'🔧',workshoptyre:'🔩',tpslb3:'🗑️',p3k:'🚑',eyewash:'👁️',speedgun:'🚦',fatigue:'😴'};
-var COLORS={port:'#F5C400',pit:'#E53E3E',hauling:'#DD6B20',workshop:'#2B6CB0',tpslb3:'#6B46C1',p3k:'#2F855A',eyewash:'#319795',speedgun:'#C53030',fatigue:'#D69E2E'};
+// Quick Report (dari App User: Hazard/Near Miss/Positive Observation/Stop Work Authority) —
+// disimpan terpisah dari TYPES supaya TIDAK ikut dihitung di Safety Score/Compliance/Heatmap NC
+// (metrik-metrik itu berbasis status OK/NC checklist, sementara Quick Report memakai status Open/Closed).
+var QUICK_TYPES={hazard:'Laporan Bahaya (Hazard)',nearmiss:'Hampir Celaka (Near Miss)',positive:'Observasi Positif',stopwork:'Stop Kerja (SWA)'};
+var ICONS={port:'🏗️',pit:'⛏️',hauling:'🚛',workshop:'🔧',workshoptyre:'🔩',tpslb3:'🗑️',p3k:'🚑',eyewash:'👁️',speedgun:'🚦',fatigue:'😴',hazard:'🚨',nearmiss:'⚠️',positive:'👍',stopwork:'🛑'};
+var COLORS={port:'#F5C400',pit:'#E53E3E',hauling:'#DD6B20',workshop:'#2B6CB0',tpslb3:'#6B46C1',p3k:'#2F855A',eyewash:'#319795',speedgun:'#C53030',fatigue:'#D69E2E',hazard:'#C53030',nearmiss:'#DD6B20',positive:'#2F855A',stopwork:'#1A1A1A'};
 var AREA_LABELS={port:'Port',pit:'Front Loading',hauling:'Hauling',workshop:'Workshop',workshoptyre:'Workshop Tyre',tpslb3:'TPS LB3',p3k:'P3K',eyewash:'Eyewash',speedgun:'Speedgun',fatigue:'Fatigue'};
+// Label status yang lebih jelas untuk admin: OK/NC/Open (kode internal) → Conform/Non-Conform/Perlu Tindak Lanjut
+function statusLabel(s){
+  return {OK:'✅ Conform',NC:'⚠️ Non-Conform (CAPA)',Open:'🔄 Perlu Tindak Lanjut',Pending:'⏳ Pending'}[s]||s||'Pending';
+}
 var EDITABLE=['port','pit','hauling','workshop','workshoptyre','tpslb3','p3k','eyewash'];
 var SEV_LEVEL={Low:1,Medium:2,High:3,Critical:4};
 
@@ -1100,6 +1141,7 @@ function doLogin(){
   if(u==='admin'&&p===getPW()){
     err.classList.remove('show');
     localStorage.setItem(ADM_KEY,JSON.stringify({user:'Administrator',at:new Date().toISOString()}));
+    logAudit({user:'Administrator',action:'Login ke Dashboard Admin',module:'Sistem'});
     startDash();
   }else{err.classList.add('show');el('ap').value='';el('ap').focus();}
 }
@@ -1113,6 +1155,7 @@ function startDash(){
 }
 function doLogout(){
   if(!confirm('Keluar dari dashboard?'))return;
+  logAudit({user:'Administrator',action:'Logout dari Dashboard Admin',module:'Sistem'});
   localStorage.removeItem(ADM_KEY);el('dash').style.display='none';el('lw').style.display='flex';
 }
 function changePW(){
@@ -1134,6 +1177,36 @@ function saveCLs(d){localStorage.setItem(CK,JSON.stringify(d));}
 function getCL(t){var cl=getCLs();return cl[t]||null;}
 function getNotifs(){try{return JSON.parse(localStorage.getItem(NOTIF_KEY)||'[]');}catch(e){return[];}}
 function saveNotifs(d){localStorage.setItem(NOTIF_KEY,JSON.stringify(d));}
+
+// ════ AUDIT TRAIL ════
+// Log tercatat di localStorage (kunci sama dengan App User: 'k3_audit_log') supaya aktivitas dari
+// App User (buat laporan) dan Dashboard Admin (ubah status, edit CAPA, dll) tercatat dalam satu jejak.
+function getAuditLog(){try{return JSON.parse(localStorage.getItem(AUDIT_KEY)||'[]');}catch(e){return[];}}
+function saveAuditLog(list){try{localStorage.setItem(AUDIT_KEY,JSON.stringify(list.slice(0,1000)));}catch(e){}}
+function getDeviceLabel(){
+  var ua=navigator.userAgent||'';
+  var os=/Android/.test(ua)?'Android':/iPhone|iPad|iPod/.test(ua)?'iOS':/Windows/.test(ua)?'Windows':/Mac/.test(ua)?'Mac':'Unknown';
+  var br=/Edg/.test(ua)?'Edge':/Chrome/.test(ua)?'Chrome':/Firefox/.test(ua)?'Firefox':/Safari/.test(ua)?'Safari':'Browser';
+  return os+' · '+br;
+}
+function logAudit(entry){
+  var list=getAuditLog();
+  var item={
+    id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+    timestamp:new Date().toISOString(),
+    user:entry.user||'Administrator',
+    userId:entry.userId||'',
+    action:entry.action||'',
+    module:entry.module||'',
+    oldValue:entry.oldValue!=null&&entry.oldValue!==''?String(entry.oldValue):'—',
+    newValue:entry.newValue!=null&&entry.newValue!==''?String(entry.newValue):'—',
+    device:getDeviceLabel(),
+    refId:entry.refId||''
+  };
+  list.unshift(item);
+  saveAuditLog(list);
+  try{if(FB_OK&&fbdb)fbdb.ref('audit/'+item.id).set(item).catch(function(){});}catch(e){}
+}
 
 // ════ NAVIGATION ════
 function toggleSidebar(){
@@ -1158,7 +1231,7 @@ function showP(name,btn){
   if(btn)btn.classList.add('on');
   curP=name;curPage=1;srch='';filtSt='all';filtSev='all';
   closeSidebar();
-  if(!['exec','overview','edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict'].includes(name))renderRP(name);
+  if(!['exec','overview','edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict','audit'].includes(name))renderRP(name);
   if(name==='users')renderUsers();
   if(name==='capa')renderCAPA();
   if(name==='compliance')renderCompliance();
@@ -1173,6 +1246,7 @@ function showP(name,btn){
   if(name==='airec')renderAIRec();
   if(name==='rca')renderRCA();
   if(name==='predict')renderPredict();
+  if(name==='audit')renderAuditTrail();
   el('notif-panel').classList.remove('show');
 }
 
@@ -1183,7 +1257,7 @@ function refreshAll(){
   checkNotifs();
   if(curP==='exec')renderExec();
   else if(curP==='overview')renderOverview();
-  else if(!['edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict'].includes(curP))renderRP(curP);
+  else if(!['edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict','audit'].includes(curP))renderRP(curP);
   else if(curP==='risk')renderRiskMatrix();
   else if(curP==='leading')renderLeading();
   else if(curP==='trend')renderTrend();
@@ -1193,11 +1267,13 @@ function refreshAll(){
   else if(curP==='airec')renderAIRec();
   else if(curP==='rca')renderRCA();
   else if(curP==='predict')renderPredict();
+  else if(curP==='audit')renderAuditTrail();
 }
 
 function updSB(all){
   el('sb-tot').textContent=all.length;el('sb-all').textContent=all.length;
   Object.keys(TYPES).forEach(function(t){var e=el('sb-'+t);if(e)e.textContent=all.filter(function(r){return r.type===t;}).length;});
+  Object.keys(QUICK_TYPES).forEach(function(t){var e=el('sb-'+t);if(e)e.textContent=all.filter(function(r){return r.type===t;}).length;});
   var capas=Object.values(getCAPAs());
   var openC=capas.filter(function(c){return c.status!=='Closed';}).length;
   var sbC=el('sb-capa');if(sbC){sbC.textContent=openC;sbC.className='sbi-cnt'+(openC>0?' red':'');}
@@ -1214,6 +1290,7 @@ function renderExec(){
   var critCAPA=capas.filter(function(c){return c.severity==='Critical'&&c.status!=='Closed';}).length;
   var ok=all.filter(function(r){return r.status==='OK';});
   var comp=all.length?Math.round(ok.length/all.length*100):0;
+  var pendingSync=all.filter(function(r){return !r.synced;}).length;
 
   // KPI
   el('exec-kpi').innerHTML=[
@@ -1221,7 +1298,8 @@ function renderExec(){
     {n:nc.length,l:'Total NC',s:Math.round(nc.length/Math.max(all.length,1)*100)+'% dari laporan',cls:'r',i:'⚠️'},
     {n:openCAPA,l:'CAPA Open',s:'Belum diselesaikan',cls:'o',i:'🔧'},
     {n:critCAPA,l:'Critical Open',s:'Perlu tindakan segera',cls:critCAPA>0?'r':'g',i:'🚨'},
-    {n:comp+'%',l:'Compliance',s:'Rata-rata keseluruhan',cls:comp>=80?'g':comp>=60?'y':'r',i:'📈'}
+    {n:comp+'%',l:'Compliance',s:'Rata-rata keseluruhan',cls:comp>=80?'g':comp>=60?'y':'r',i:'📈'},
+    {n:pendingSync,l:'Pending Sync',s:pendingSync>0?'Belum terkirim ke server':'Semua tersinkron ☁️',cls:pendingSync>0?'o':'g',i:'⏳'}
   ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-ico">'+k.i+'</div><div class="kpi-n">'+k.n+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
   // Heatmap
@@ -1289,6 +1367,74 @@ function renderExec(){
     var pct=Math.round(cnt/maxM*100);
     return '<div class="bar-row"><div class="bar-lbl">'+v+'</div><div class="bar-trk"><div class="bar-fill" style="width:'+pct+'%;background:'+COLORS[k]+'">'+cnt+'</div></div><div class="bar-val">'+cnt+'</div></div>';
   }).join('');
+
+  renderAIInsight();
+}
+
+// ════ AI INSIGHT (SEDERHANA) ════
+// Bandingkan temuan housekeeping minggu ini vs minggu lalu, dan cek temuan critical minggu ini.
+// Rule-based sederhana (bukan ML) — cukup untuk memberi highlight singkat di Executive Dashboard.
+function computeInsightData(){
+  var all=getReports();
+  var now=new Date();
+  var d7=new Date(now.getTime()-7*86400000);
+  var d14=new Date(now.getTime()-14*86400000);
+
+  function countHousekeepingNG(list){
+    var n=0;
+    list.forEach(function(r){
+      if(r.extra&&r.extra.CR){
+        Object.keys(r.extra.CR).forEach(function(k){
+          var sec=r.extra.CR[k];
+          if(sec&&sec.title&&/housekeeping/i.test(sec.title))n+=sec.ng||0;
+        });
+      }
+    });
+    return n;
+  }
+
+  var thisWeekReports=all.filter(function(r){var t=new Date(r.timestamp);return t>=d7&&t<=now;});
+  var lastWeekReports=all.filter(function(r){var t=new Date(r.timestamp);return t>=d14&&t<d7;});
+  var criticalThisWeek=thisWeekReports.filter(function(r){return r.severity==='Critical';}).length;
+
+  return{
+    housekeeping:countHousekeepingNG(thisWeekReports),
+    lastWeek:countHousekeepingNG(lastWeekReports),
+    critical:criticalThisWeek
+  };
+}
+
+function getInsight(data){
+  var txt='';
+
+  if(data.housekeeping>data.lastWeek){
+    txt='📈 Temuan housekeeping minggu ini ('+data.housekeeping+') meningkat dibanding minggu lalu ('+data.lastWeek+').';
+  }else if(data.housekeeping<data.lastWeek){
+    txt='📉 Temuan housekeeping minggu ini ('+data.housekeeping+') menurun dibanding minggu lalu ('+data.lastWeek+').';
+  }else{
+    txt='➖ Temuan housekeeping minggu ini stabil, sama seperti minggu lalu ('+data.housekeeping+').';
+  }
+
+  if(data.critical>0){
+    txt+=' Terdapat '+data.critical+' temuan critical minggu ini yang memerlukan tindakan segera.';
+  }
+
+  return txt;
+}
+
+function renderAIInsight(){
+  var box=el('ai-insight-card');
+  if(!box)return;
+  var data=computeInsightData();
+  var txt=getInsight(data);
+  var hasCritical=data.critical>0;
+  box.innerHTML='<div class="trend-card" style="border-left:4px solid '+(hasCritical?'var(--R)':'var(--YD)')+'">'
+    +'<div style="display:flex;align-items:flex-start;gap:12px">'
+    +'<div style="font-size:22px;line-height:1">🤖</div>'
+    +'<div style="flex:1">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:4px">AI Insight</div>'
+    +'<div style="font-size:12px;color:var(--G6);line-height:1.6">'+esc(txt)+'</div>'
+    +'</div></div></div>';
 }
 
 // ════ OVERVIEW ════
@@ -1327,9 +1473,29 @@ function renderOverview(){
       +'<td><strong>'+esc(r.userName||r.reporter||'—')+'</strong></td>'
       +'<td>'+esc(r.location||'—')+'</td>'
       +'<td>'+sevBadge(r.severity||'')+'</td>'
-      +'<td><span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+(r.status||'Pending')+'</span></td>'
+      +'<td><span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+statusLabel(r.status)+'</span></td>'
       +'</tr>';}).join('')+'</tbody></table>'
     :'<div style="text-align:center;padding:32px;color:var(--G4)">Belum ada laporan</div>';
+
+  renderQuickReportStrip(all);
+}
+
+// Ringkasan Quick Report (Hazard/Near Miss/SWA/Positif) bulan berjalan — sebelumnya tipe ini
+// tidak muncul sama sekali di Overview karena semua chart kategori hanya loop Object.keys(TYPES).
+function renderQuickReportStrip(all){
+  var box=el('quick-report-strip');
+  if(!box)return;
+  var now=new Date(),thisMonth=now.getMonth(),thisYear=now.getFullYear();
+  var monthly=all.filter(function(r){var d=new Date(r.timestamp);return d.getMonth()===thisMonth&&d.getFullYear()===thisYear;});
+  box.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">'
+    +Object.keys(QUICK_TYPES).map(function(t){
+      var cnt=monthly.filter(function(r){return r.type===t;}).length;
+      return '<div style="background:var(--G1);border-radius:10px;padding:12px;text-align:center;cursor:pointer;border-top:3px solid '+COLORS[t]+'" onclick="showP(\''+t+'\',null)">'
+        +'<div style="font-size:20px">'+ICONS[t]+'</div>'
+        +'<div style="font-size:20px;font-weight:800;color:var(--G9)">'+cnt+'</div>'
+        +'<div style="font-size:11px;color:var(--G5)">'+QUICK_TYPES[t]+'</div>'
+        +'</div>';
+    }).join('')+'</div>';
 }
 
 function sevBadge(sev){
@@ -1354,7 +1520,7 @@ function renderRP(name){
   var total=filtered.length,pages=Math.ceil(total/PAGE)||1;
   if(curPage>pages)curPage=pages;
   var paged=filtered.slice((curPage-1)*PAGE,curPage*PAGE);
-  var lbl=name==='all'?'Semua Laporan':(TYPES[name]||name);
+  var lbl=name==='all'?'Semua Laporan':(TYPES[name]||QUICK_TYPES[name]||name);
 
   el('p-'+name).innerHTML=
     '<div class="panel-hdr"><div class="panel-title">'+(ICONS[name]||'📋')+' '+lbl+' <span style="color:var(--G4);font-weight:400;font-size:15px">('+total+')</span></div></div>'
@@ -1383,7 +1549,7 @@ function renderRP(name){
       +'<td><strong>'+esc(r.userName||r.reporter||'—')+'</strong><div style="font-size:10px;color:var(--G4)">'+esc(r.userDept||'')+'</div></td>'
       +'<td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.location||'—')+'</td>'
       +'<td>'+sevBadge(r.severity||'')+'</td>'
-      +'<td><span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+(r.status||'Pending')+'</span></td>'
+      +'<td><span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+statusLabel(r.status)+'</span></td>'
       +'<td><span style="font-size:12px">'+(r.synced?'☁️':'⏳')+'</span></td>'
       +'<td style="white-space:nowrap">'
       +(r.status==='NC'?'<button style="padding:3px 8px;border:1px solid var(--R);border-radius:5px;font-size:10px;cursor:pointer;background:var(--W);color:var(--R);font-weight:600;margin-right:4px" onclick="event.stopPropagation();addCAPAfromReport(\''+r.id+'\')">+CAPA</button>':'')
@@ -1475,6 +1641,11 @@ function renderCAPA(){
   var closed=all.filter(function(c){return c.status==='Closed';}).length;
   var overdueList=all.filter(function(c){return c.status==='Overdue';});
   var overdue=overdueList.length;
+  var dueToday=all.filter(function(c){return c.status!=='Closed'&&c.dueDate===today;}).length;
+  var escalated=all.filter(function(c){return capaUrgency(c,today)==='escalated';}).length;
+  var closedWithDates=all.filter(function(c){return c.status==='Closed'&&c.dueDate&&c.closedAt;});
+  var closedOnTime=closedWithDates.filter(function(c){return c.closedAt.split('T')[0]<=c.dueDate;}).length;
+  var closedOnTimePct=closedWithDates.length?Math.round(closedOnTime/closedWithDates.length*100):null;
 
   // Render overdue table at top
   renderOverdueTable(overdueList,today);
@@ -1483,11 +1654,14 @@ function renderCAPA(){
   el('capa-kpi').innerHTML=[
     {n:open,l:'Open',cls:'capa-open',i:'🔴',filt:'Open'},
     {n:inprog,l:'In Progress',cls:'',i:'🟡',filt:'In Progress'},
+    {n:dueToday,l:'Due Today',cls:dueToday>0?'capa-overdue':'',i:'📅',filt:null},
     {n:overdue,l:'Overdue',cls:'capa-overdue',i:'⏰',filt:'Overdue'},
-    {n:closed,l:'Closed',cls:'capa-closed',i:'✅',filt:'Closed'}
+    {n:escalated,l:'Escalated (>7 hari)',cls:escalated>0?'capa-overdue':'',i:'🚨',filt:null},
+    {n:closed,l:'Closed',cls:'capa-closed',i:'✅',filt:'Closed'},
+    {n:closedOnTimePct===null?'—':closedOnTimePct+'%',l:'Closed on Time',cls:'',i:'🎯',filt:null}
   ].map(function(k){
-    var isActive=(fSt===k.filt);
-    return '<div class="capa-kpi capa-kpi-clickable '+k.cls+(isActive?' active':'')+'" onclick="filterByStatus(\''+k.filt+'\')" title="Klik filter '+k.l+'">'
+    var isActive=(k.filt&&fSt===k.filt);
+    return '<div class="capa-kpi'+(k.filt?' capa-kpi-clickable':'')+' '+k.cls+(isActive?' active':'')+'"'+(k.filt?' onclick="filterByStatus(\''+k.filt+'\')" title="Klik filter '+k.l+'"':'')+'>'
       +'<div style="font-size:20px">'+k.i+'</div>'
       +'<div class="capa-n">'+k.n+'</div>'
       +'<div class="capa-l">'+k.l+'</div>'
@@ -1498,13 +1672,14 @@ function renderCAPA(){
     var sev=(c.severity||'').toLowerCase();
     var isClosed=c.status==='Closed';
     var isOverdue=c.status==='Overdue';
+    var isEscalated=capaUrgency(c,today)==='escalated';
     var daysOverdue=isOverdue?calcOverdueDays(c.dueDate,today):0;
     var dueClass='ok';
     if(c.dueDate){dueClass=c.dueDate<today?'overdue':c.dueDate===today?'today':'ok';}
     return '<div class="capa-card '+sev+(isClosed?' closed':'')
-      +'"'+(isOverdue?' style="border-left-color:var(--R);border-left-width:5px"':'')+' >'
+      +'"'+(isEscalated?' style="border-left-color:#8B0000;border-left-width:6px;background:#FFF5F5"':isOverdue?' style="border-left-color:var(--R);border-left-width:5px"':'')+' >'
       +'<div class="cc-top">'
-      +'<div class="cc-title">'+(isOverdue?'⏰ ':'')+esc(c.title||'CAPA #'+c.id)+'</div>'
+      +'<div class="cc-title">'+(isEscalated?'🚨 ESKALASI — ':isOverdue?'⏰ ':'')+esc(c.title||'CAPA #'+c.id)+'</div>'
       +sevBadge(c.severity||'')
       +'</div>'
       +'<div class="cc-meta">'
@@ -1513,6 +1688,7 @@ function renderCAPA(){
       +'<span>📅 <span class="cc-due '+dueClass+'">Due: '+(c.dueDate||'—')+'</span></span>'
       +(isOverdue?'<span class="overdue-days" style="font-size:10px;margin-left:2px">+'+daysOverdue+' hari</span>':'')
       +'<span class="bdg bdg-'+(c.status||'open').toLowerCase().replace(' ','-')+'">'+(c.status||'Open')+'</span>'
+      +(isEscalated?'<span class="bdg" style="background:#8B0000;color:#fff;font-weight:700">🚨 Perlu Perhatian Supervisor/Manager</span>':'')
       +'</div>'
       +(c.description?'<div style="font-size:12px;color:var(--G6);margin-top:6px;line-height:1.5">'+esc(c.description)+'</div>':'')
       +(c.action?'<div style="font-size:12px;color:var(--GR);margin-top:4px">🔧 Tindakan: '+esc(c.action)+'</div>':'')
@@ -1530,7 +1706,11 @@ function addCAPAManual(){openCAPAForm(null,null);}
 function addCAPAfromReport(reportId){
   var r=getReports().find(function(x){return x.id===reportId;});
   if(!r)return;
-  openCAPAForm(null,r);
+  // Pakai id yang konsisten dengan yang dibuat otomatis dari App User (lihat saveCAPAFromReport),
+  // supaya tidak membuat CAPA duplikat untuk laporan yang sama.
+  var existingId='CAPA-'+reportId;
+  var caps=getCAPAs();
+  openCAPAForm(existingId,r,caps[existingId]||null);
 }
 function editCAPA(id){
   var caps=getCAPAs();
@@ -1580,6 +1760,8 @@ function saveCAPA(){
   var sev=getCapaSev();
   if(!sev){showToast('⚠️ Pilih Severity dari matrix!','warning');return;}
   var caps=getCAPAs();
+  var prev=caps[curCAPAId]||null;
+  var newStatus=el('cf-status').value;
   var capa={
     id:curCAPAId,title:title,
     area:el('cf-area').value,
@@ -1587,14 +1769,28 @@ function saveCAPA(){
     likelihood:CAPA_SEV_L,consequence:CAPA_SEV_C,
     description:el('cf-desc').value,action:el('cf-action').value,
     pic:pic,dueDate:due,
-    status:el('cf-status').value,
+    status:newStatus,
     verifiedBy:el('cf-verified').value||'',
-    createdAt:caps[curCAPAId]?caps[curCAPAId].createdAt:new Date().toISOString(),
+    createdAt:prev?prev.createdAt:new Date().toISOString(),
     updatedAt:new Date().toISOString()
   };
+  // Closed-on-Time butuh closedAt — sebelumnya hanya alur "Close dengan Evidence" yang mengisi ini,
+  // jadi CAPA yang ditutup manual lewat form edit (ganti status ke Closed) tidak pernah tercatat closedAt.
+  if(newStatus==='Closed'&&(!prev||prev.status!=='Closed')){
+    capa.closedAt=new Date().toISOString();
+  }else if(prev&&prev.closedAt&&newStatus==='Closed'){
+    capa.closedAt=prev.closedAt;
+  }
   caps[curCAPAId]=capa;
   saveCAPAsLocal(caps);
   if(FB_OK&&fbdb){fbdb.ref('capa/'+curCAPAId).set(capa).catch(function(){});}
+  logAudit({
+    action:prev?'Mengubah CAPA':'Membuat CAPA',
+    module:'CAPA — '+title,
+    oldValue:prev?prev.status:'',
+    newValue:capa.status,
+    refId:curCAPAId
+  });
   capaCloseMod();renderCAPA();
   // Add notification if critical
   if(capa.severity==='Critical'){
@@ -1711,6 +1907,7 @@ function saveEvidence(){
   if(!verifier){showToast('⚠️ Masukkan nama verifier!','warning');return;}
   var caps=getCAPAs();
   if(!caps[EV_CAPA_ID])return;
+  var prevStatus=caps[EV_CAPA_ID].status;
   var notes=el('ev-notes').value.trim();
   var totalEv=EV_DATA.before.length+EV_DATA.after.length+EV_DATA.doc.length;
   caps[EV_CAPA_ID].status='Closed';
@@ -1730,6 +1927,7 @@ function saveEvidence(){
     if(fbCapa.evidence){fbCapa.evidence={before:fbCapa.evidence.before.length+' foto',after:fbCapa.evidence.after.length+' foto',doc:fbCapa.evidence.doc.length+' dokumen',uploadedAt:fbCapa.evidence.uploadedAt};}
     fbdb.ref('capa/'+EV_CAPA_ID).set(fbCapa).catch(function(){});
   }
+  logAudit({action:'Menutup CAPA (Closed)',module:'CAPA — '+(caps[EV_CAPA_ID].title||EV_CAPA_ID),oldValue:prevStatus,newValue:'Closed — diverifikasi '+verifier,refId:EV_CAPA_ID});
   evCloseMod();renderCAPA();refreshAll();
   showToast('✅ CAPA closed! '+totalEv+' evidence tersimpan. Verifier: '+verifier,'success');
 }
@@ -1738,8 +1936,9 @@ function evCloseMod(){el('ev-mov').classList.remove('on');}
 
 function deleteCAPA(id){
   if(!confirm('Hapus CAPA ini? Tindakan tidak dapat dibatalkan.'))return;
-  var caps=getCAPAs();delete caps[id];saveCAPAsLocal(caps);
+  var caps=getCAPAs();var title=caps[id]?caps[id].title:id;delete caps[id];saveCAPAsLocal(caps);
   if(FB_OK&&fbdb){fbdb.ref('capa/'+id).remove().catch(function(){});}
+  logAudit({action:'Menghapus CAPA',module:'CAPA — '+title,oldValue:title,newValue:'(dihapus)',refId:id});
   renderCAPA();refreshAll();showToast('CAPA dihapus');
 }
 function capaCloseMod(){el('capa-mov').classList.remove('on');}
@@ -1786,7 +1985,7 @@ function showDet(id){
   [['Inspektor',r.userName||r.reporter||'—'],['ID',r.userId||'—'],['Departemen',r.userDept||'—'],['Shift',r.userShift||'—'],
    ['Lokasi',r.location||'—'],['Tanggal & Jam',fd(r.timestamp)+' '+ft(r.timestamp)],
    ['Severity',sevBadge(r.severity||'')],
-   ['Status','<span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+(r.status||'Pending')+'</span>'],
+   ['Status','<span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+statusLabel(r.status)+'</span>'],
    ['Firebase',r.synced?'<span style="color:var(--GR);font-weight:700">☁️ Terkirim</span>':'<span style="color:var(--OR)">⏳ Pending</span>']
   ].forEach(function(row){h+='<div class="di"><div class="dk">'+row[0]+'</div><div class="dv">'+row[1]+'</div></div>';});
   h+='<div class="di full"><div class="dk">Temuan & Catatan</div><div class="dv">'+(r.notes||'—')+'</div></div>';
@@ -1826,9 +2025,7 @@ function showDet(id){
   if(r.status==='NC'){
     h+='<div style="margin-top:16px"><button class="btn-save" style="width:100%;padding:11px" onclick="closeMod();addCAPAfromReport(\''+r.id+'\')">🔧 Buat CAPA dari Temuan Ini</button></div>';
   }
-  el('m-b').innerHTML=h;
-
-  // GPS
+  // (render dipindah ke akhir fungsi — lihat penjelasan di bawah)
   if(r.gps&&r.gps.lat){
     h+='<div class="m-sec-t">📍 Lokasi GPS</div>';
     h+='<div class="dr"><span class="dk">Koordinat</span><span class="dv"><a href="https://maps.google.com/?q='+r.gps.lat+','+r.gps.lng+'" target="_blank" style="color:var(--BL)">'+r.gps.lat+', '+r.gps.lng+'</a></span></div>';
@@ -1869,6 +2066,11 @@ function showDet(id){
     h+='<img src="'+r.signature.data+'" style="width:100%;max-height:80px;object-fit:contain;border:1px solid var(--G2);border-radius:6px;background:var(--G1);margin-top:4px"/>';
   }
 
+  // Render SEMUA section sekaligus di sini — sebelumnya el('m-b').innerHTML=h dipanggil terlalu awal
+  // (sebelum GPS/Foto/Evidence/Info CAPA/Tanda Tangan ditambahkan ke variabel h), sehingga bagian-bagian
+  // itu tidak pernah benar-benar tampil di layar meskipun datanya sudah ada.
+  el('m-b').innerHTML=h;
+
   el('mov').classList.add('on');
   window._curReportId = r.id;
   var pdfBtn = el('m-pdf-dl');
@@ -1884,10 +2086,23 @@ function closeMod(){
 // ════ NOTIFICATIONS ════
 function addNotif(notif){
   var ns=getNotifs();
-  notif.id=Date.now().toString();notif.read=false;
+  notif.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);notif.read=false;
   ns.unshift(notif);if(ns.length>50)ns=ns.slice(0,50);
   saveNotifs(ns);
   renderNotifs();
+}
+// Klasifikasi urgensi CAPA berdasarkan due date:
+// - 'due-soon'  : jatuh tempo dalam 0-3 hari ke depan (H-3 s/d H0) → kuning
+// - 'overdue'   : sudah lewat jatuh tempo 1-7 hari (H+1 s/d H+7) → merah
+// - 'escalated' : sudah lewat jatuh tempo LEBIH dari 7 hari → eskalasi (perlu perhatian Supervisor/Manager)
+function capaUrgency(c,todayStr){
+  if(!c.dueDate||c.status==='Closed')return null;
+  var due=new Date(c.dueDate+'T00:00:00'),today=new Date(todayStr+'T00:00:00');
+  var diffDays=Math.round((due-today)/86400000);
+  if(diffDays>=0&&diffDays<=3)return 'due-soon';
+  if(diffDays<0&&diffDays>=-7)return 'overdue';
+  if(diffDays<-7)return 'escalated';
+  return null;
 }
 function checkNotifs(){
   var all=getReports();
@@ -1896,13 +2111,19 @@ function checkNotifs(){
   var ns=getNotifs();
   var existing=ns.map(function(n){return n.refId||'';});
 
-  // Check overdue CAPA
+  // Reminder & Eskalasi CAPA otomatis — kunci per-hari (…-today) supaya tetap muncul lagi besoknya
+  // selama CAPA belum ditutup, bukan cuma sekali seumur hidup seperti versi sebelumnya.
   capas.forEach(function(c){
-    if(c.status!=='Closed'&&c.dueDate&&c.dueDate<today){
-      var key='overdue-'+c.id;
-      if(existing.indexOf(key)<0){
-        ns.unshift({id:Date.now().toString(),type:'warn',title:'⏰ CAPA Overdue',sub:'CAPA "'+c.title+'" sudah melewati due date!',time:new Date().toISOString(),read:false,refId:key});
-      }
+    var urgency=capaUrgency(c,today);
+    if(!urgency)return;
+    var key=urgency+'-'+c.id+'-'+today;
+    if(existing.indexOf(key)>=0)return;
+    if(urgency==='due-soon'){
+      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'warn',title:'🟡 CAPA Jatuh Tempo Sebentar Lagi',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') jatuh tempo '+c.dueDate,time:new Date().toISOString(),read:false,refId:key});
+    }else if(urgency==='overdue'){
+      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'warn',title:'🔴 CAPA Overdue',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') sudah melewati due date '+c.dueDate+'!',time:new Date().toISOString(),read:false,refId:key});
+    }else if(urgency==='escalated'){
+      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'crit',title:'🚨 ESKALASI: CAPA Overdue >7 Hari',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') overdue >7 hari sejak '+c.dueDate+' — perlu perhatian Supervisor/Manager!',time:new Date().toISOString(),read:false,refId:key});
     }
   });
 
@@ -1911,7 +2132,7 @@ function checkNotifs(){
     var key='nc-'+r.id;
     var hasCapa=capas.some(function(c){return c.reportId===r.id;});
     if(!hasCapa&&existing.indexOf(key)<0){
-      ns.unshift({id:Date.now().toString(),type:'info',title:'📋 NC Belum Ada CAPA',sub:'Laporan '+r.typeName+' di '+r.location+' belum memiliki CAPA',time:new Date().toISOString(),read:false,refId:key});
+      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'info',title:'📋 NC Belum Ada CAPA',sub:'Laporan '+r.typeName+' di '+r.location+' belum memiliki CAPA',time:new Date().toISOString(),read:false,refId:key});
     }
   });
 
@@ -1964,6 +2185,47 @@ function renderUsers(){
         +'</div></div></div>';
     }).join('')+'</div>'
     :'<div style="text-align:center;padding:48px;color:var(--G4)">Belum ada inspektor terdaftar</div>';
+}
+
+// ════ AUDIT TRAIL ════
+var auditPage=1, AUDIT_PAGE=20;
+function renderAuditTrail(){
+  var all=getAuditLog();
+  var q=(el('audit-srch')?el('audit-srch').value:'').toLowerCase();
+  var month=el('audit-filt-date')?el('audit-filt-date').value:'';
+  var filtered=all.filter(function(a){
+    var mq=!q||[a.user,a.action,a.module,a.oldValue,a.newValue].some(function(v){return v&&v.toLowerCase().indexOf(q)>=0;});
+    var mm=!month||a.timestamp.startsWith(month);
+    return mq&&mm;
+  });
+  var total=filtered.length,pages=Math.ceil(total/AUDIT_PAGE)||1;
+  if(auditPage>pages)auditPage=pages;
+  var paged=filtered.slice((auditPage-1)*AUDIT_PAGE,auditPage*AUDIT_PAGE);
+  el('audit-body').innerHTML=
+    '<table><thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Modul</th><th>Sebelum</th><th>Sesudah</th><th>Device</th></tr></thead><tbody>'
+    +(paged.length?paged.map(function(a){return '<tr>'
+      +'<td style="font-size:11px">'+fd(a.timestamp)+'<br><span style="color:var(--G4)">'+ft(a.timestamp)+'</span></td>'
+      +'<td><strong>'+esc(a.user||'—')+'</strong></td>'
+      +'<td style="font-size:12px">'+esc(a.action||'—')+'</td>'
+      +'<td style="font-size:11px;color:var(--G5)">'+esc(a.module||'—')+'</td>'
+      +'<td style="font-size:11px;color:var(--R);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.oldValue||'—')+'</td>'
+      +'<td style="font-size:11px;color:var(--GR);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.newValue||'—')+'</td>'
+      +'<td style="font-size:10px;color:var(--G4);white-space:nowrap">'+esc(a.device||'—')+'</td>'
+      +'</tr>';}).join(''):'<tr><td colspan="7" class="empty-row">Belum ada aktivitas tercatat</td></tr>')
+    +'</tbody></table>'
+    +'<div class="pagi"><div class="pagi-info">'+Math.min((auditPage-1)*AUDIT_PAGE+1,total||0)+'–'+Math.min(auditPage*AUDIT_PAGE,total)+' dari '+total+'</div>'
+    +'<div class="pagi-btns">'
+    +'<button class="pb" onclick="auditPage=Math.max(1,auditPage-1);renderAuditTrail()" '+(auditPage<=1?'disabled':'')+'>‹</button>'
+    +Array.from({length:Math.min(pages,7)},function(_,i){return '<button class="pb '+(i+1===auditPage?'on':'')+'" onclick="auditPage='+(i+1)+';renderAuditTrail()">'+(i+1)+'</button>';}).join('')
+    +'<button class="pb" onclick="auditPage=Math.min('+pages+',auditPage+1);renderAuditTrail()" '+(auditPage>=pages?'disabled':'')+'>›</button>'
+    +'</div></div>';
+}
+function exportAuditCSV(){
+  var all=getAuditLog();
+  if(!all.length){showToast('Belum ada aktivitas untuk diekspor');return;}
+  var hdrs=['Timestamp','User','Aksi','Modul','Sebelum','Sesudah','Device'];
+  var rows=all.map(function(a){return [a.timestamp,a.user,a.action,a.module,a.oldValue,a.newValue,a.device];});
+  dlCSV([hdrs].concat(rows),'K3_AuditTrail_'+new Date().toISOString().split('T')[0]);
 }
 
 // ════ EDIT CHECKLIST ════
@@ -2028,6 +2290,7 @@ function delItem(si,ii){if(editData.sections[si].items.length<=1){showToast('⚠
 function saveCL(){
   if(!curEF)return;
   var cl=getCLs();cl[curEF]=JSON.parse(JSON.stringify(editData));saveCLs(cl);
+  logAudit({action:'Mengubah Checklist',module:TYPES[curEF]||curEF,oldValue:'',newValue:editData.sections.length+' seksi',refId:curEF});
   if(FB_OK&&fbdb){fbdb.ref('checklists').set(cl).then(function(){showToast('✅ Checklist disimpan & terkirim ke semua inspektor!','success');}).catch(function(){showToast('✅ Disimpan lokal');});}
   else showToast('✅ Checklist berhasil disimpan!');
   renderFLi();el('save-info').textContent='✅ Tersimpan — aktif di semua form inspektor';
@@ -2036,6 +2299,7 @@ function resetCL(){
   if(!curEF)return;
   if(!confirm('Reset checklist "'+TYPES[curEF]+'" ke default?'))return;
   var cl=getCLs();delete cl[curEF];saveCLs(cl);
+  logAudit({action:'Reset Checklist ke Default',module:TYPES[curEF]||curEF,refId:curEF});
   editData=JSON.parse(JSON.stringify(DEFAULT_CL[curEF]||{sections:[]}));
   renderEB();renderFLi();showToast('↺ Reset ke default!');
 }
@@ -2045,7 +2309,7 @@ function exportCSV(type){
   var all=getReports();
   var data=type==='all'?all:all.filter(function(r){return r.type===type;});
   if(!data.length){showToast('Tidak ada data');return;}
-  var hdrs=['ID','Jenis','Inspektor','ID','Dept','Shift','Lokasi','Severity','Status','Sync','Tanggal','Jam','Catatan','Tindakan'];
+  var hdrs=['ID Laporan','Jenis','Inspektor','ID Pegawai','Dept','Shift','Lokasi','Severity','Status','Sync','Tanggal','Jam','Catatan','Tindakan'];
   var rows=data.map(function(r){return [r.id,r.typeName,r.userName||r.reporter,r.userId,r.userDept,r.userShift,r.location,r.severity||'',r.status,r.synced?'Terkirim':'Offline',fd(r.timestamp),ft(r.timestamp),r.notes||'',r.action||''];});
   dlCSV([hdrs].concat(rows),'K3_'+type+'_'+new Date().toISOString().split('T')[0]);
 }
@@ -2152,23 +2416,6 @@ function exportExcel(){
   var fn='INSPECTA_'+now2.getFullYear()+(('0'+(now2.getMonth()+1)).slice(-2))+(('0'+now2.getDate()).slice(-2))+'.xlsx';
   XLSX.writeFile(wb,fn);
   showToast('📊 Excel berhasil diunduh — '+all.length+' laporan, '+capas.length+' CAPA','success');
-}
-
-// ── EXPORT CSV (laporan saja) ──
-function exportCSV(){
-  var all=getReports();
-  if(!all.length){showToast('Belum ada data');return;}
-  var rows=[['No. Laporan','Tipe','Inspektor','Lokasi','Tanggal','Status','Severity','Temuan']];
-  all.forEach(function(r){
-    rows.push([r.noTemuan||r.id,r.typeName,r.reporter,r.location,fmtDate(r.timestamp),r.status,r.severity||'—',(r.notes||'').replace(/,/g,' ').replace(/\n/g,' ')]);
-  });
-  var csv=rows.map(function(row){return row.map(function(cell){return '"'+(String(cell||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\r\n');
-  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;a.download='INSPECTA_'+new Date().toISOString().split('T')[0]+'.csv';
-  a.click();URL.revokeObjectURL(url);
-  showToast('📋 CSV berhasil diunduh','success');
 }
 
 
@@ -3115,8 +3362,8 @@ function renderAIRec(){
 
   // 4. Severity tinggi/kritis naik dibanding 2 minggu sebelumnya
   var d14=new Date(now.getTime()-14*86400000), d28=new Date(now.getTime()-28*86400000);
-  var lastWk=all.filter(function(r){var t=new Date(r.timestamp);return t>=d14&&t<=now&&(r.severity==='high'||r.severity==='critical');}).length;
-  var prevWk=all.filter(function(r){var t=new Date(r.timestamp);return t>=d28&&t<d14&&(r.severity==='high'||r.severity==='critical');}).length;
+  var lastWk=all.filter(function(r){var t=new Date(r.timestamp);return t>=d14&&t<=now&&(r.severity==='High'||r.severity==='Critical');}).length;
+  var prevWk=all.filter(function(r){var t=new Date(r.timestamp);return t>=d28&&t<d14&&(r.severity==='High'||r.severity==='Critical');}).length;
   if(lastWk>prevWk&&lastWk>=2){
     recs.push({pri:'tinggi',ic:'📈',
       title:'Temuan Severity Tinggi/Kritis Meningkat',
