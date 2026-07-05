@@ -2412,9 +2412,18 @@ function pdfAddSignature(doc, r, y){
 // ═══════════════════════════════════════════
 function shiftKeyOf(ts){
   var d=new Date(ts);
-  var dateStr=d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
   var h=d.getHours();
-  var shift=h>=6&&h<18?'Shift Siang (DS 06:00–18:00)':'Shift Malam (NS 18:00–06:00)';
+  var shiftDate=new Date(d);
+  var shift;
+  if(h>=6&&h<18){
+    shift='Shift Siang (DS 06:00–18:00)';
+  } else {
+    shift='Shift Malam (NS 18:00–06:00)';
+    // Jam 00:00-05:59 masih bagian NS yang DIMULAI malam sebelumnya,
+    // jadi tanggal shift dimundurkan 1 hari supaya tidak terpecah jadi shift baru.
+    if(h<6)shiftDate.setDate(shiftDate.getDate()-1);
+  }
+  var dateStr=shiftDate.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
   return{dateStr:dateStr,shift:shift,key:dateStr+'__'+shift};
 }
 function downloadFatiguePDF(reportId,share){
