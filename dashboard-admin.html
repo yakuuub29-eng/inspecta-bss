@@ -161,7 +161,7 @@ body{font-family:var(--f);background:var(--G1);color:var(--G9);min-height:100vh;
 
 /* TABLE */
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
-.tw{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden}
+.tw{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 .ttbar{padding:10px 14px;border-bottom:1px solid var(--G2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--G0)}
 .sinp{flex:1;min-width:140px;padding:8px 12px;border:1.5px solid var(--G2);border-radius:var(--rs);font-size:13px;font-family:var(--f);outline:none;transition:border-color .13s;background:var(--W)}
 .sinp:focus{border-color:var(--Y)}
@@ -362,7 +362,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
 .mob-menu-btn{display:none;width:36px;height:36px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:8px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex-shrink:0;-webkit-appearance:none}
 
 /* RISK MATRIX */
-.risk-matrix-wrap{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden;margin-bottom:16px}
+.risk-matrix-wrap{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin-bottom:16px}
 .risk-matrix-hdr{background:var(--G9);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .risk-matrix-hdr-t{font-size:14px;font-weight:700;color:var(--Y);font-family:var(--fd)}
 .risk-matrix-body{padding:18px}
@@ -399,7 +399,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
 .li-bar{height:6px;background:var(--G2);border-radius:3px;overflow:hidden}
 .li-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
 .li-good .li-bar-fill{background:var(--GR)}.li-warn .li-bar-fill{background:var(--OR)}.li-bad .li-bar-fill{background:var(--R)}
-.li-table{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden}
+.li-table{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 .li-table-hdr{background:var(--G9);padding:12px 16px;font-size:13px;font-weight:700;color:var(--Y);font-family:var(--fd)}
 .li-table table{width:100%;border-collapse:collapse}
 .li-table th{padding:9px 14px;font-size:10px;font-weight:700;color:var(--G5);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--G2);background:var(--G0);text-align:left}
@@ -440,7 +440,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
 
 
 /* PIC RESPONSIBILITY TABLE */
-.pic-table-wrap{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden;margin-bottom:16px}
+.pic-table-wrap{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin-bottom:16px}
 .pic-table-hdr{background:var(--G9);padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
 .pic-table-hdr-t{font-size:14px;font-weight:700;color:var(--Y);font-family:var(--fd)}
 .pic-table table{width:100%;border-collapse:collapse}
@@ -543,7 +543,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
 <!-- LOGIN -->
 <div id="lw">
   <div class="ll">
-    <div class="ll-logo">⛏️</div>
+    <div class="ll-logo"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M20 4L4 20"/></svg></div>
     <div class="ll-tag">INSPECTA System</div>
     <div class="ll-h">Dashboard<br>SHE &amp;<br><span>Monitoring</span></div>
     <div class="ll-d">Platform manajemen K3 terintegrasi untuk tambang batubara. Real-time, offline-capable, audit-ready.</div>
@@ -574,7 +574,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
   <div class="topbar">
     <div class="tb-l">
       <button class="mob-menu-btn" id="mob-menu-btn" onclick="toggleSidebar()" title="Menu">☰</button>
-      <div class="tb-logo">⛏️</div>
+      <div class="tb-logo"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M20 4L4 20"/></svg></div>
       <div><div class="tb-title">INSPECTA</div><div class="tb-sub"><span class="ldot"></span><span id="fb-status">⏳ Menghubungkan...</span></div></div>
     </div>
     <div class="tb-r">
@@ -603,23 +603,23 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
       <button class="sbi" onclick="showP('overview',this)"><span class="sbi-i">📊</span>Overview<span class="sbi-cnt" id="sb-tot">0</span></button>
 
       <div class="sb-sec">Quick Report</div>
-      <button class="sbi" onclick="showP('hazard',this)"><span class="sbi-i">🚨</span>Hazard<span class="sbi-cnt" id="sb-hazard">0</span></button>
-      <button class="sbi" onclick="showP('nearmiss',this)"><span class="sbi-i">⚠️</span>Near Miss<span class="sbi-cnt" id="sb-nearmiss">0</span></button>
-      <button class="sbi" onclick="showP('stopwork',this)"><span class="sbi-i">🛑</span>Stop Kerja (SWA)<span class="sbi-cnt" id="sb-stopwork">0</span></button>
-      <button class="sbi" onclick="showP('positive',this)"><span class="sbi-i">👍</span>Observasi Positif<span class="sbi-cnt" id="sb-positive">0</span></button>
+      <button class="sbi" onclick="showP('hazard',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg></span>Hazard<span class="sbi-cnt" id="sb-hazard">0</span></button>
+      <button class="sbi" onclick="showP('nearmiss',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 9-9 9-9-9z"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/></svg></span>Near Miss<span class="sbi-cnt" id="sb-nearmiss">0</span></button>
+      <button class="sbi" onclick="showP('stopwork',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l5 5v8l-5 5H8l-5-5V8z"/><path d="M9 9l6 6M15 9l-6 6"/></svg></span>Stop Kerja (SWA)<span class="sbi-cnt" id="sb-stopwork">0</span></button>
+      <button class="sbi" onclick="showP('positive',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 17 20H7"/></svg></span>Observasi Positif<span class="sbi-cnt" id="sb-positive">0</span></button>
 
       <div class="sb-sec">Laporan Inspeksi</div>
-      <button class="sbi" onclick="showP('all',this)"><span class="sbi-i">📋</span>Semua<span class="sbi-cnt" id="sb-all">0</span></button>
-      <button class="sbi" onclick="showP('port',this)"><span class="sbi-i">🏗️</span>Port<span class="sbi-cnt" id="sb-port">0</span></button>
-      <button class="sbi" onclick="showP('pit',this)"><span class="sbi-i">⛏️</span>Front Loading<span class="sbi-cnt" id="sb-pit">0</span></button>
-      <button class="sbi" onclick="showP('hauling',this)"><span class="sbi-i">🚛</span>Hauling<span class="sbi-cnt" id="sb-hauling">0</span></button>
-      <button class="sbi" onclick="showP('workshop',this)"><span class="sbi-i">🔧</span>Workshop<span class="sbi-cnt" id="sb-workshop">0</span></button>
-      <button class="sbi" onclick="showP('workshoptyre',this)"><span class="sbi-i">🔩</span>Workshop Tyre<span class="sbi-cnt" id="sb-workshoptyre">0</span></button>
-      <button class="sbi" onclick="showP('p3k',this)"><span class="sbi-i">🚑</span>Kotak P3K<span class="sbi-cnt" id="sb-p3k">0</span></button>
-      <button class="sbi" onclick="showP('eyewash',this)"><span class="sbi-i">👁️</span>Eyewash<span class="sbi-cnt" id="sb-eyewash">0</span></button>
-      <button class="sbi" onclick="showP('tpslb3',this)"><span class="sbi-i">🗑️</span>TPS LB3<span class="sbi-cnt" id="sb-tpslb3">0</span></button>
-      <button class="sbi" onclick="showP('speedgun',this)"><span class="sbi-i">🚦</span>Speedgun<span class="sbi-cnt" id="sb-speedgun">0</span></button>
-      <button class="sbi" onclick="showP('fatigue',this)"><span class="sbi-i">😴</span>Fatigue<span class="sbi-cnt" id="sb-fatigue">0</span></button>
+      <button class="sbi" onclick="showP('all',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg></span>Semua<span class="sbi-cnt" id="sb-all">0</span></button>
+      <button class="sbi" onclick="showP('port',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21V9l5-5 5 5v12"/><path d="M4 21h16"/><path d="M10 21v-6h4v6"/></svg></span>Port<span class="sbi-cnt" id="sb-port">0</span></button>
+      <button class="sbi" onclick="showP('pit',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M20 4L4 20"/></svg></span>Front Loading<span class="sbi-cnt" id="sb-pit">0</span></button>
+      <button class="sbi" onclick="showP('hauling',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="9" rx="1"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></span>Hauling<span class="sbi-cnt" id="sb-hauling">0</span></button>
+      <button class="sbi" onclick="showP('workshop',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg></span>Workshop<span class="sbi-cnt" id="sb-workshop">0</span></button>
+      <button class="sbi" onclick="showP('workshoptyre',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"/></svg></span>Workshop Tyre<span class="sbi-cnt" id="sb-workshoptyre">0</span></button>
+      <button class="sbi" onclick="showP('p3k',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M12 10v6M9 13h6"/></svg></span>Kotak P3K<span class="sbi-cnt" id="sb-p3k">0</span></button>
+      <button class="sbi" onclick="showP('eyewash',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></span>Eyewash<span class="sbi-cnt" id="sb-eyewash">0</span></button>
+      <button class="sbi" onclick="showP('tpslb3',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 8h12M6 14h12"/></svg></span>TPS LB3<span class="sbi-cnt" id="sb-tpslb3">0</span></button>
+      <button class="sbi" onclick="showP('speedgun',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/></svg></span>Speedgun<span class="sbi-cnt" id="sb-speedgun">0</span></button>
+      <button class="sbi" onclick="showP('fatigue',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>Fatigue<span class="sbi-cnt" id="sb-fatigue">0</span></button>
 
       <div class="sb-sec">Pengendalian</div>
       <button class="sbi" onclick="showP('capa',this)"><span class="sbi-i">🔧</span>CAPA Tracking<span class="sbi-cnt red" id="sb-capa">0</span></button>
@@ -1081,7 +1081,7 @@ var TYPES={port:'Inspeksi Port',pit:'Inspeksi Front Loading',hauling:'Inspeksi J
 // disimpan terpisah dari TYPES supaya TIDAK ikut dihitung di Safety Score/Compliance/Heatmap NC
 // (metrik-metrik itu berbasis status OK/NC checklist, sementara Quick Report memakai status Open/Closed).
 var QUICK_TYPES={hazard:'Laporan Bahaya (Hazard)',nearmiss:'Hampir Celaka (Near Miss)',positive:'Observasi Positif',stopwork:'Stop Kerja (SWA)'};
-var ICONS={port:'🏗️',pit:'⛏️',hauling:'🚛',workshop:'🔧',workshoptyre:'🔩',tpslb3:'🗑️',p3k:'🚑',eyewash:'👁️',speedgun:'🚦',fatigue:'😴',hazard:'🚨',nearmiss:'⚠️',positive:'👍',stopwork:'🛑'};
+var ICONS={port:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21V9l5-5 5 5v12"/><path d="M4 21h16"/><path d="M10 21v-6h4v6"/></svg>',pit:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M20 4L4 20"/></svg>',hauling:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="9" rx="1"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg>',workshop:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg>',workshoptyre:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"/></svg>',tpslb3:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 8h12M6 14h12"/></svg>',p3k:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M12 10v6M9 13h6"/></svg>',eyewash:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>',speedgun:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/></svg>',fatigue:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',hazard:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg>',nearmiss:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 9-9 9-9-9z"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/></svg>',positive:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 17 20H7"/></svg>',stopwork:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l5 5v8l-5 5H8l-5-5V8z"/><path d="M9 9l6 6M15 9l-6 6"/></svg>',default:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg>',pin:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7.58 7-12A7 7 0 0 0 5 10c0 4.42 7 12 7 12z"/><circle cx="12" cy="10" r="2.4"/></svg>'};
 var COLORS={port:'#F5C400',pit:'#E53E3E',hauling:'#DD6B20',workshop:'#2B6CB0',tpslb3:'#6B46C1',p3k:'#2F855A',eyewash:'#319795',speedgun:'#C53030',fatigue:'#D69E2E',hazard:'#C53030',nearmiss:'#DD6B20',positive:'#2F855A',stopwork:'#1A1A1A'};
 var AREA_LABELS={port:'Port',pit:'Front Loading',hauling:'Hauling',workshop:'Workshop',workshoptyre:'Workshop Tyre',tpslb3:'TPS LB3',p3k:'P3K',eyewash:'Eyewash',speedgun:'Speedgun',fatigue:'Fatigue'};
 // Label status yang lebih jelas untuk admin: OK/NC/Open (kode internal) → Conform/Non-Conform/Perlu Tindak Lanjut
@@ -1108,21 +1108,43 @@ function initFB(){
         connected?'🟢 Firebase terhubung — data real-time':'🔴 Firebase offline — menunggu koneksi...'
       );
     });
-    fbdb.ref('reports').on('value',function(snap){
-      var d=snap.val();
-      if(d){
-        var arr=Object.values(d).sort(function(a,b){return new Date(b.timestamp)-new Date(a.timestamp);});
+    // Catatan penting (fix bug "data tidak sinkron"): SEBELUMNYA dashboard memakai
+    // fbdb.ref('reports').on('value', ...) yang men-download ULANG SELURUH isi node
+    // 'reports' (termasuk semua foto base64 dari SEMUA laporan) setiap kali ADA SATU
+    // SAJA laporan baru/berubah di mana pun. Di lokasi tambang dengan koneksi lemah,
+    // payload besar ini sering lambat/gagal di tengah jalan sehingga dashboard tampak
+    // "tidak sinkron" (laporan baru dari lapangan tidak muncul, atau daftar jadi tidak
+    // lengkap). Sekarang dipakai listener INKREMENTAL (child_added/changed/removed)
+    // yang hanya mengirim data laporan yang benar-benar berubah, jauh lebih ringan &
+    // andal. Perubahan digabung ke array lokal lalu di-debounce sebelum re-render agar
+    // saat sinkronisasi awal (ratusan laporan sekaligus) UI tidak macet re-render 1x per item.
+    var reportsById={};
+    getReports().forEach(function(r){reportsById[r.id]=r;});
+    var refreshTimer=null;
+    function scheduleRefresh(){
+      clearTimeout(refreshTimer);
+      refreshTimer=setTimeout(function(){
+        var arr=Object.values(reportsById).sort(function(a,b){return new Date(b.timestamp)-new Date(a.timestamp);});
         localStorage.setItem(SK,JSON.stringify(arr));
         refreshAll();
-      }
+      },250);
+    }
+    fbdb.ref('reports').on('child_added',function(snap){
+      var r=snap.val();if(r&&r.id)reportsById[r.id]=r;scheduleRefresh();
+    },function(err){console.warn('[INSPECTA] reports child_added error:',err);setFBS(false,'⚠️ Gagal memuat data laporan (cek koneksi)');});
+    fbdb.ref('reports').on('child_changed',function(snap){
+      var r=snap.val();if(r&&r.id)reportsById[r.id]=r;scheduleRefresh();
+    });
+    fbdb.ref('reports').on('child_removed',function(snap){
+      var r=snap.val();if(r&&r.id)delete reportsById[r.id];scheduleRefresh();
     });
     fbdb.ref('checklists').on('value',function(snap){
       var d=snap.val();if(d)localStorage.setItem(CK,JSON.stringify(d));
-    });
+    },function(err){console.warn('[INSPECTA] Firebase checklists error:',err);});
     fbdb.ref('capa').on('value',function(snap){
       var d=snap.val();
       if(d){localStorage.setItem(CAP_KEY,JSON.stringify(d));if(curP==='capa')renderCAPA();}
-    });
+    },function(err){console.warn('[INSPECTA] Firebase capa error:',err);});
   }catch(e){FB_OK=false;setFBS(false,'Firebase error');console.warn(e);}
 }
 function setFBS(ok,msg){
@@ -1523,7 +1545,7 @@ function renderRP(name){
   var lbl=name==='all'?'Semua Laporan':(TYPES[name]||QUICK_TYPES[name]||name);
 
   el('p-'+name).innerHTML=
-    '<div class="panel-hdr"><div class="panel-title">'+(ICONS[name]||'📋')+' '+lbl+' <span style="color:var(--G4);font-weight:400;font-size:15px">('+total+')</span></div></div>'
+    '<div class="panel-hdr"><div class="panel-title">'+(ICONS[name]||ICONS.default)+' '+lbl+' <span style="color:var(--G4);font-weight:400;font-size:15px">('+total+')</span></div></div>'
     +'<div class="tw">'
     +'<div class="ttbar">'
     +'<input class="sinp" placeholder="🔍 Cari nama, lokasi, temuan..." value="'+esc(srch)+'" oninput="srch=this.value;curPage=1;renderRP(\''+name+'\')" />'
@@ -2203,7 +2225,7 @@ function renderAuditTrail(){
   var paged=filtered.slice((auditPage-1)*AUDIT_PAGE,auditPage*AUDIT_PAGE);
   el('audit-body').innerHTML=
     '<table><thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Modul</th><th>Sebelum</th><th>Sesudah</th><th>Device</th></tr></thead><tbody>'
-    +(paged.length?paged.map(function(a){return '<tr>'
+    +(paged.length?paged.map(function(a){return '<tr onclick="showAuditDetail(\''+a.id+'\')">'
       +'<td style="font-size:11px">'+fd(a.timestamp)+'<br><span style="color:var(--G4)">'+ft(a.timestamp)+'</span></td>'
       +'<td><strong>'+esc(a.user||'—')+'</strong></td>'
       +'<td style="font-size:12px">'+esc(a.action||'—')+'</td>'
@@ -2219,6 +2241,21 @@ function renderAuditTrail(){
     +Array.from({length:Math.min(pages,7)},function(_,i){return '<button class="pb '+(i+1===auditPage?'on':'')+'" onclick="auditPage='+(i+1)+';renderAuditTrail()">'+(i+1)+'</button>';}).join('')
     +'<button class="pb" onclick="auditPage=Math.min('+pages+',auditPage+1);renderAuditTrail()" '+(auditPage>=pages?'disabled':'')+'>›</button>'
     +'</div></div>';
+}
+function showAuditDetail(id){
+  var a=getAuditLog().find(function(x){return x.id===id;});
+  if(!a)return;
+  el('m-t').textContent='🕵️ Detail Aktivitas';
+  el('m-s').textContent=fd(a.timestamp)+' · '+ft(a.timestamp);
+  el('m-b').innerHTML=
+    '<div class="di full"><div class="dk">User</div><div class="dv">'+esc(a.user||'—')+'</div></div>'
+    +'<div class="di full"><div class="dk">Aksi</div><div class="dv">'+esc(a.action||'—')+'</div></div>'
+    +'<div class="di full"><div class="dk">Modul</div><div class="dv">'+esc(a.module||'—')+'</div></div>'
+    +'<div class="di full"><div class="dk">Sebelum</div><div class="dv" style="color:var(--R)">'+esc(a.oldValue||'—')+'</div></div>'
+    +'<div class="di full"><div class="dk">Sesudah</div><div class="dv" style="color:var(--GR)">'+esc(a.newValue||'—')+'</div></div>'
+    +'<div class="di full"><div class="dk">Device</div><div class="dv">'+esc(a.device||'—')+'</div></div>';
+  var pdfBtn=el('m-pdf-btn');if(pdfBtn)pdfBtn.innerHTML=''; // entri audit tidak punya PDF
+  el('mov').classList.add('on');
 }
 function exportAuditCSV(){
   var all=getAuditLog();
@@ -2254,7 +2291,7 @@ function openEF(type,btn){
   if(btn)btn.classList.add('on');
   var cl=getCL(type)||DEFAULT_CL[type]||{sections:[]};
   editData=JSON.parse(JSON.stringify(cl));
-  el('edit-ft').textContent=ICONS[type]+' '+TYPES[type];
+  el('edit-ft').innerHTML=ICONS[type]+' '+esc(TYPES[type]);
   el('edit-fs').textContent='Klik teks untuk mengubah';
   el('btn-add-sec').style.display='inline-block';
   el('save-bar').style.display='flex';
@@ -2529,6 +2566,45 @@ function adminDownloadReportPDF(reportId){
     theme:'grid',
   });
   y=doc.lastAutoTable.finalY+5;
+
+  // Unit Melintas (Fatigue Call & Speedgun) — SEBELUMNYA TIDAK ADA SAMA SEKALI di PDF ini.
+  // Laporan Fatigue Call/Speedgun menyimpan isi laporannya di r.extra.units (bukan r.extra.CR seperti
+  // inspeksi checklist), jadi PDF-nya selama ini keluar nyaris kosong walau datanya sudah lengkap di modal.
+  if(r.extra&&r.extra.units&&r.extra.units.length){
+    if(y>210){doc.addPage();admPdfHeader(doc,r.typeName,r.noTemuan,2,pageEst);y=26;}
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);
+    doc.text('UNIT MELINTAS ('+r.extra.units.length+')',10,y);y+=4;
+
+    var isSpeedgun=r.type==='speedgun';
+    var head,body;
+    if(isSpeedgun){
+      head=[['#','Plat','Jenis','Speed','Limit','Status','Tindakan']];
+      body=r.extra.units.map(function(u,i){return[i+1,u.plate||'—',u.type||'—',(u.speed||0)+' km/h',(u.limit||'—')+' km/h',u.overSpeed?'Over Speed':'Normal',u.action||'—'];});
+    }else{
+      head=[['#','Plat','Jenis / Muatan','Jam','Operator','Respon','Catatan']];
+      body=r.extra.units.map(function(u,i){
+        var catatan=[u.signs&&u.signs!=='-'?u.signs:'',u.note||''].filter(Boolean).join(' — ')||'—';
+        return[i+1,u.plate||'—',(u.type||'—')+' / '+(u.load||'—'),u.time||'—',u.operator||'—',u.response||'—',catatan];
+      });
+    }
+    doc.autoTable({
+      startY:y,margin:{left:10,right:10},
+      head:head,body:body,
+      styles:{fontSize:7.5,cellPadding:1.8,font:'helvetica'},
+      headStyles:{fillColor:[26,26,26],textColor:[245,196,0],fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[250,250,250]},
+      columnStyles:{0:{cellWidth:8,halign:'center'}},
+      didParseCell:function(data){
+        if(data.section==='body'&&data.column.index===5){
+          var v=String(data.cell.raw);
+          if(isSpeedgun&&v.indexOf('Over')>=0)data.cell.styles.textColor=[229,62,62];
+          if(!isSpeedgun&&v.indexOf('Kurang')>=0)data.cell.styles.textColor=[229,62,62];
+        }
+      },
+      didDrawPage:function(data){if(data.pageNumber>1)admPdfHeader(doc,r.typeName,r.noTemuan,2,pageEst);}
+    });
+    y=doc.lastAutoTable.finalY+5;
+  }
 
   // Hasil checklist
   if(r.extra&&r.extra.CR&&Object.keys(r.extra.CR).length){
@@ -3000,7 +3076,7 @@ function renderTopFindings10(){
       var rankCls=i===0?'r1':i===1?'r2':i===2?'r3':'rn';
       var rankTxt=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
       var pct=Math.round(e[1].count/maxF*100);
-      var topAreas=Object.entries(e[1].areas).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(a){return ICONS[a[0]]||'📍';}).join('');
+      var topAreas=Object.entries(e[1].areas).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(a){return ICONS[a[0]]||ICONS.pin;}).join('');
       return '<div class="tf-bar-row">'
         +'<div class="tf-rank '+rankCls+'">'+rankTxt+'</div>'
         +'<div style="flex:1;min-width:0">'
@@ -3580,7 +3656,7 @@ function renderPredict(){
   } else {
     html+=riskAreas.map(function(a){
       return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--G2)">'
-        +'<div style="font-size:20px">'+(ICONS[a.type]||'📍')+'</div>'
+        +'<div style="font-size:20px">'+(ICONS[a.type]||ICONS.pin)+'</div>'
         +'<div style="flex:1"><div style="font-weight:700;font-size:13px">'+typeLabel(a.type)+'</div>'
         +'<div style="font-size:11px;color:var(--G5)">'+a.pv+' → '+a.rc+' NC (naik '+a.delta+')</div></div>'
         +'<div style="font-size:12px;font-weight:800;color:var(--R)">↑ '+a.delta+'</div>'
