@@ -2548,16 +2548,15 @@ function admShiftKeyOf(ts){
 function admResumeControlsHTML(name,reps){
   var shiftMap={};
   reps.forEach(function(r){var sk=admShiftKeyOf(r.timestamp);if(!shiftMap[sk.key])shiftMap[sk.key]={label:sk.dateStr+' — '+sk.shift,ts:r.timestamp};});
-  var shiftKeys=Object.keys(shiftMap).sort(function(a,b){return new Date(shiftMap[b].ts)-new Date(shiftMap[a].ts);});
+  var shiftKeys=Object.keys(shiftMap).sort(function(a,b){return new Date(shiftMap[a].ts)-new Date(shiftMap[b].ts);});
   var users=Array.from(new Set(reps.map(function(r){return r.userName||r.reporter||'';}).filter(Boolean))).sort();
-  var h='<select class="fsel" id="resume-shift-sel-'+name+'">'
-    +(shiftKeys.length?shiftKeys.map(function(k){return '<option value="'+esc(k)+'">'+esc(shiftMap[k].label)+'</option>';}).join(''):'<option value="">Belum ada data</option>')
+  var h='<select class="fsel" id="resume-user-sel-'+name+'"><option value="">👤 Semua User</option>'
+    +users.map(function(u){return '<option value="'+esc(u)+'">'+esc(u)+'</option>';}).join('')
     +'</select>'
-    +'<button class="exp-btn" '+(shiftKeys.length?'':'disabled')+' onclick="adminDownloadShiftResumePDF(\''+name+'\')">⬇ Resume Shift</button>'
-    +'<select class="fsel" id="resume-user-sel-'+name+'">'
-    +(users.length?users.map(function(u){return '<option value="'+esc(u)+'">'+esc(u)+'</option>';}).join(''):'<option value="">Belum ada data</option>')
+    +'<select class="fsel" id="resume-shift-sel-'+name+'"><option value="">🕒 Semua Shift</option>'
+    +shiftKeys.map(function(k){return '<option value="'+esc(k)+'">'+esc(shiftMap[k].label)+'</option>';}).join('')
     +'</select>'
-    +'<button class="exp-btn" '+(users.length?'':'disabled')+' onclick="adminDownloadUserResumePDF(\''+name+'\')">⬇ Resume User</button>';
+    +'<button class="exp-btn" '+(reps.length?'':'disabled')+' onclick="adminDownloadResumePDF(\''+name+'\')">⬇ Download Resume</button>';
   return h;
 }
 function admExtractUnits(r,isSpeedgun){
@@ -2607,65 +2606,52 @@ function admBuildUnitTable(doc,y,allUnits,isSpeedgun,showInspector){
   });
   return doc.lastAutoTable.finalY;
 }
-// Resume 1 SHIFT (tanggal+shift tertentu) — gabungan SEMUA inspektor pada shift itu
-function adminDownloadShiftResumePDF(type){
+// Resume gabungan: filter opsional User dan/atau Shift (masing-masing boleh "Semua").
+// - User tertentu + Semua Shift  -> rekap semua shift milik user itu (1 halaman per shift)
+// - Semua User + Shift tertentu  -> rekap semua inspektor pada shift itu (1 halaman, ada kolom Inspektor)
+// - User tertentu + Shift tertentu -> 1 halaman, laporan user itu pada shift itu saja
+// - Semua User + Semua Shift     -> rekap semua laporan tipe ini (1 halaman per shift)
+// Semua data diurutkan dari laporan PERTAMA dibuat -> TERAKHIR (bukan terbalik).
+function adminDownloadResumePDF(type){
   var jsPDF2=admGetPDF();
   if(!jsPDF2){showToast('⚠️ Library PDF sedang dimuat...','warning');return;}
-  var sel=el('resume-shift-sel-'+type);
-  if(!sel||!sel.value){showToast('Tidak ada data shift untuk diunduh');return;}
-  var key=sel.value;
+  var uSel=el('resume-user-sel-'+type),sSel=el('resume-shift-sel-'+type);
+  var uname=uSel?uSel.value:'',shiftKey=sSel?sSel.value:'';
   var isSpeedgun=type==='speedgun';
-  var reports=getReports().filter(function(r){return r.type===type&&admShiftKeyOf(r.timestamp).key===key;});
-  if(!reports.length){showToast('Data shift tidak ditemukan');return;}
-  var sk=admShiftKeyOf(reports[0].timestamp);
-  var allUnits=[];
-  reports.forEach(function(r){allUnits=allUnits.concat(admExtractUnits(r,isSpeedgun));});
-  var doc=new jsPDF2({orientation:'portrait',unit:'mm',format:'a4'});
-  var W=doc.internal.pageSize.getWidth();
-  var title=isSpeedgun?'LAPORAN KEGIATAN SPEEDGUN':'LAPORAN FATIGUE CALL';
-  var noLap='BSS-'+(isSpeedgun?'SPD':'FTG')+'-'+sk.dateStr.replace(/\s/g,'')+'-RESUME';
-  admPdfHeader(doc,title+' (Resume Shift)',noLap,1,1);
-  var y=26;
-  doc.setFillColor(26,26,26);doc.roundedRect(10,y,W-20,10,2,2,'F');
-  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(245,196,0);
-  doc.text(title+' — RESUME SHIFT',W/2,y+7,{align:'center'});y+=14;
-  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(60,60,60);
-  doc.text(sk.dateStr+'   |   '+sk.shift+'   |   '+reports.length+' laporan, '+allUnits.length+' unit',W/2,y,{align:'center'});y+=6;
-  doc.setTextColor(0,0,0);
-  if(allUnits.length){
-    y=admBuildUnitTable(doc,y,allUnits,isSpeedgun,true)+8;
-  } else {
-    doc.setFontSize(9);doc.setTextColor(120,120,120);
-    doc.text('Tidak ada data unit pada shift ini',W/2,y+10,{align:'center'});y+=20;
-  }
-  doc.save('Resume_Shift_'+(isSpeedgun?'Speedgun':'FatigueCall')+'_'+sk.dateStr.replace(/\s/g,'')+'.pdf');
-  showToast('📄 Resume shift terunduh!','success');
-}
-// Resume 1 USER (semua shift/tanggal untuk inspektor tsb) — 1 halaman per shift
-function adminDownloadUserResumePDF(type){
-  var jsPDF2=admGetPDF();
-  if(!jsPDF2){showToast('⚠️ Library PDF sedang dimuat...','warning');return;}
-  var sel=el('resume-user-sel-'+type);
-  if(!sel||!sel.value){showToast('Tidak ada inspektor untuk diunduh');return;}
-  var uname=sel.value;
-  var isSpeedgun=type==='speedgun';
-  var reports=getReports().filter(function(r){return r.type===type&&(r.userName||r.reporter)===uname;});
-  if(!reports.length){showToast('Data inspektor tidak ditemukan');return;}
+  var reports=getReports().filter(function(r){
+    if(r.type!==type)return false;
+    if(uname&&(r.userName||r.reporter)!==uname)return false;
+    if(shiftKey&&admShiftKeyOf(r.timestamp).key!==shiftKey)return false;
+    return true;
+  });
+  if(!reports.length){showToast('Tidak ada data untuk filter yang dipilih');return;}
+  // Urutkan dari laporan PERTAMA dibuat -> TERAKHIR (data tersimpan terbaru-di-depan)
+  reports=reports.slice().sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
+
   var groups={};
-  reports.forEach(function(r){var sk=admShiftKeyOf(r.timestamp);if(!groups[sk.key])groups[sk.key]={date:sk.dateStr,shift:sk.shift,reports:[]};groups[sk.key].reports.push(r);});
-  var keys=Object.keys(groups).sort(function(a,b){return new Date(groups[a].reports[0].timestamp)-new Date(groups[b].reports[0].timestamp);});
+  reports.forEach(function(r){
+    var sk=admShiftKeyOf(r.timestamp);
+    if(!groups[sk.key])groups[sk.key]={date:sk.dateStr,shift:sk.shift,reports:[]};
+    groups[sk.key].reports.push(r);
+  });
+  var keys=Object.keys(groups).sort(function(a,b){
+    return new Date(groups[a].reports[0].timestamp)-new Date(groups[b].reports[0].timestamp);
+  });
+
+  var showInspector=!uname; // tampilkan kolom Inspektor kalau rekap mencakup lebih dari 1 user
   var doc=new jsPDF2({orientation:'portrait',unit:'mm',format:'a4'});
   var W=doc.internal.pageSize.getWidth();
   var title=isSpeedgun?'LAPORAN KEGIATAN SPEEDGUN':'LAPORAN FATIGUE CALL';
   var pageNum=1,totalPages=keys.length;
+
   keys.forEach(function(k,gi){
     if(gi>0){doc.addPage();pageNum++;}
     var grp=groups[k];
     var firstRep=grp.reports[0];
     var allUnits=[];
     grp.reports.forEach(function(r){allUnits=allUnits.concat(admExtractUnits(r,isSpeedgun));});
-    var noLap=firstRep.noTemuan||'BSS-'+(isSpeedgun?'SPD':'FTG')+'-'+grp.date.replace(/\s/g,'')+'-001';
-    admPdfHeader(doc,title+' (Resume Inspektor)',noLap,pageNum,totalPages);
+    var noLap=firstRep.noTemuan||'BSS-'+(isSpeedgun?'SPD':'FTG')+'-'+grp.date.replace(/\s/g,'')+'-RESUME';
+    admPdfHeader(doc,title+' (Resume)',noLap,pageNum,totalPages);
     var y=26;
     doc.setFillColor(26,26,26);doc.roundedRect(10,y,W-20,10,2,2,'F');
     doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(245,196,0);
@@ -2673,21 +2659,28 @@ function adminDownloadUserResumePDF(type){
     doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(60,60,60);
     doc.text(grp.date+'   |   '+grp.shift,W/2,y,{align:'center'});y+=4;
     doc.setFontSize(8);doc.setTextColor(80,80,80);
-    doc.text('Inspektor: '+(firstRep.userName||firstRep.reporter||'—')+'   Departemen: '+(firstRep.userDept||'SHE'),W/2,y,{align:'center'});y+=4;
-    var geo=admPdfGeo(firstRep.gps);
-    if(geo){doc.setFontSize(7.5);doc.setTextColor(43,108,176);doc.text(geo,W/2,y,{align:'center'});y+=3.5;}
+    var siapa=showInspector?('Jumlah Inspektor: '+Array.from(new Set(grp.reports.map(function(r){return r.userName||r.reporter||'—';}))).length):('Inspektor: '+(firstRep.userName||firstRep.reporter||'—')+'   Departemen: '+(firstRep.userDept||'SHE'));
+    doc.text(siapa,W/2,y,{align:'center'});y+=4;
+    if(!showInspector){
+      var geo=admPdfGeo(firstRep.gps);
+      if(geo){doc.setFontSize(7.5);doc.setTextColor(43,108,176);doc.text(geo,W/2,y,{align:'center'});y+=3.5;}
+    }
     y+=2;doc.setTextColor(0,0,0);
     if(allUnits.length){
-      y=admBuildUnitTable(doc,y,allUnits,isSpeedgun,false)+8;
+      y=admBuildUnitTable(doc,y,allUnits,isSpeedgun,showInspector)+8;
     } else {
       doc.setFontSize(9);doc.setTextColor(120,120,120);
       doc.text('Tidak ada data unit pada laporan ini',W/2,y+10,{align:'center'});y+=20;
     }
-    admPdfSignature(doc,firstRep,y);
+    if(!showInspector)admPdfSignature(doc,firstRep,y);
   });
-  var uSafe=uname.replace(/[^a-zA-Z0-9-]/g,'_');
-  doc.save('Resume_'+(isSpeedgun?'Speedgun':'FatigueCall')+'_'+uSafe+'.pdf');
-  showToast('📄 Resume inspektor terunduh!','success');
+
+  var fnameParts=[isSpeedgun?'Speedgun':'FatigueCall'];
+  if(uname)fnameParts.push(uname.replace(/[^a-zA-Z0-9-]/g,'_'));
+  if(shiftKey)fnameParts.push(groups[keys[0]].date.replace(/\s/g,''));
+  if(!uname&&!shiftKey)fnameParts.push('Semua');
+  doc.save('Resume_'+fnameParts.join('_')+'.pdf');
+  showToast('📄 Resume terunduh!','success');
 }
 
 // ── Download 1 laporan dari Admin Dashboard (sama persis dengan user app) ──

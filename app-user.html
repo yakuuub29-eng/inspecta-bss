@@ -2444,6 +2444,8 @@ function downloadFatiguePDF(reportId,share){
     }
   }
   if(!reports.length){showToast('Laporan tidak ditemukan');return;}
+  // Urutkan dari laporan PERTAMA dibuat -> TERAKHIR (data tersimpan terbaru-di-depan / unshift)
+  reports=reports.slice().sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
 
   var groups={};
   reports.forEach(function(r){
@@ -2592,6 +2594,8 @@ function downloadSpeedgunPDF(reportId,share){
     }
   }
   if(!reports.length){showToast('Laporan tidak ditemukan');return;}
+  // Urutkan dari laporan PERTAMA dibuat -> TERAKHIR (data tersimpan terbaru-di-depan / unshift)
+  reports=reports.slice().sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
 
   var groups={};
   reports.forEach(function(r){
