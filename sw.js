@@ -1,10 +1,12 @@
-// INSPECTA Service Worker v1.2
+// INSPECTA Service Worker v1.3
 // PT Bina Sarana Sukses — SHE Department
 // v1.2: bump cache version untuk paksa hapus Cache Storage lama
 // (memperbaiki isu: app-user selalu terbuka sebagai dashboard-admin
 // akibat cache lama yang tidak terhapus oleh "clear cache" browser biasa)
+// v1.3: bump cache version lagi — ganti icon-192.png/icon-512.png ke versi flat (tanpa gradasi/shadow,
+// jauh lebih kecil ukurannya) supaya versi baru benar-benar ke-cache ulang, bukan pakai ikon lama.
 
-const CACHE_NAME = 'inspecta-v1.2';
+const CACHE_NAME = 'inspecta-v1.3';
 const STATIC_FILES = [
   './app-user.html',
   './dashboard-admin.html',
