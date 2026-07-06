@@ -683,7 +683,7 @@ function getCapaSt(){return CAPA_STATUS;}
 // ════ EVIDENCE BEFORE-AFTER ════
 var EV_BEFORE='', EV_AFTER='';
 function getAutoEvBefore(){
-  // Ambil foto pertama yang tersedia dari "Foto Temuan NG" (per checklist item),
+  // Ambil foto pertama yang tersedia dari "Foto Temuan NC" (per checklist item),
   // urut sesuai section & item, agar tidak perlu upload foto BEFORE terpisah di CAPA.
   var keys=Object.keys(NG_PHOTOS).filter(function(k){return NG_PHOTOS[k]&&NG_PHOTOS[k].length;});
   keys.sort(function(a,b){
@@ -1576,9 +1576,9 @@ function buildForm(type){
     return fgg(f,'<input type="text" class="fi" id="fi'+i+'" placeholder="'+f+'"/>');
   }).join('');
 
-  // SEVERITY MATRIX (tampil hanya jika ada temuan NG)
+  // SEVERITY MATRIX (tampil hanya jika ada temuan NC)
   SEV_L=0;SEV_C=0;
-  var sevHtml='<div class="fsec" id="sev-section" style="display:none"><div class="fsh"><span class="fsh-t">⚠️ Severity Temuan</span></div>'+buildSevMatrix('form')+'<div style="font-size:11px;color:var(--G5);padding:4px 14px 10px">Isi severity karena terdapat temuan NG pada inspeksi ini.</div></div>';
+  var sevHtml='<div class="fsec" id="sev-section" style="display:none"><div class="fsh"><span class="fsh-t">⚠️ Severity Temuan</span></div>'+buildSevMatrix('form')+'<div style="font-size:11px;color:var(--G5);padding:4px 14px 10px">Isi severity karena terdapat temuan NC pada inspeksi ini.</div></div>';
 
   var extra=sevHtml;
 
@@ -1621,14 +1621,14 @@ function buildForm(type){
             +'</div></div>'
             // NG DETAIL PANEL
             +'<div class="ng-detail" id="ngd-'+si+'-'+ii+'">'
-            +'<div class="ng-lbl">⚠️ Detail Temuan NG</div>'
+            +'<div class="ng-lbl">⚠️ Detail Temuan NC</div>'
             +'<textarea class="ng-inp" id="ng-desc-'+si+'-'+ii+'" placeholder="Uraikan kondisi tidak sesuai yang ditemukan..." rows="2"></textarea>'
             +'<div class="ng-grid">'
             +'<div><label class="ng-lbl">PIC Perbaikan</label><input class="ng-inp" id="ng-pic-'+si+'-'+ii+'" placeholder="Nama PIC"/></div>'
             +'<div><label class="ng-lbl">Target Selesai</label><input type="date" class="ng-inp" id="ng-due-'+si+'-'+ii+'"/></div>'
             +'</div>'
             +'<div>'
-            +'<label class="ng-lbl">📷 Foto Temuan (wajib untuk NG)</label>'
+            +'<label class="ng-lbl">📷 Foto Temuan (wajib untuk NC)</label>'
             +'<div class="photo-upload" onclick="triggerPhotoNG('+si+','+ii+')">'
             +'<input type="file" accept="image/*" id="ng-photo-'+si+'-'+ii+'" onchange="addPhotoNG(this,'+si+','+ii+')" multiple style="z-index:1"/>'
             +'<div style="font-size:20px">📷</div>'
@@ -1659,7 +1659,7 @@ function buildForm(type){
       +'<button class="addu" onclick="addFU()">＋ Tambah Unit Melintas</button>';
   }
 
-  // STATUS otomatis dari checklist NG — foto & catatan per item NG, tidak ada di sini.
+  // STATUS otomatis dari checklist NC — foto & catatan per item NC, tidak ada di sini.
 
   // ── CAPA: tampil hanya jika NC atau Open ──
   extra+='<div id="capa-sec-wrap" style="display:none">';
@@ -1688,6 +1688,15 @@ function buildForm(type){
     +'</div></div>'
     +'</div></div>';
   extra+='</div>'; // tutup capa-sec-wrap
+
+  // ── FOTO KEGIATAN (dokumentasi umum) ──
+  // Selalu tampil terlepas dari ada/tidaknya temuan NC — ini murni dokumentasi kegiatan inspeksi,
+  // BUKAN evidence CAPA (evidence CAPA/BEFORE-AFTER ada di section CAPA di atas, khusus utk temuan NC).
+  extra+='<div class="fsec"><div class="fsh"><span class="fsh-t">📷 Foto Kegiatan</span></div><div class="ffields">'
+    +'<div style="font-size:11px;color:var(--G5);padding:0 0 6px">Dokumentasikan pelaksanaan inspeksi ini (opsional, bukan bagian dari CAPA).</div>'
+    +'<label class="photo-add"><input type="file" accept="image/*" multiple onchange="addPhotos(this)"/><span style="font-size:20px">📷</span><span style="font-size:12px;color:var(--G5)">Tap untuk ambil / pilih foto</span></label>'
+    +'<div class="photo-grid" id="photo-grid"></div>'
+    +'</div></div>';
 
   // ── TANDA TANGAN DIGITAL ──
   extra+='<div class="sig-wrap">'
@@ -1785,7 +1794,7 @@ function getSev(){
   return SEV_MAP[SEV_L+'-'+SEV_C]||'';
 }
 
-// Tampilkan/sembunyikan section severity dan CAPA berdasarkan ada tidaknya temuan NG
+// Tampilkan/sembunyikan section severity dan CAPA berdasarkan ada tidaknya temuan NC
 function updSevVisibility(){
   var hasNG=Object.keys(CS).some(function(k){return CS[k]==='ng';});
   var sec=el('sev-section');
@@ -2231,10 +2240,10 @@ function showDet(id){
 
   // NG Details
   if(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length){
-    h+='<div class="m-sec-t">Detail Temuan NG ('+r.extra.ngDetails.length+')</div>';
+    h+='<div class="m-sec-t">Detail Temuan NC ('+r.extra.ngDetails.length+')</div>';
     r.extra.ngDetails.forEach(function(ng,i){
       h+='<div style="background:var(--RL);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--R)">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--R);margin-bottom:4px">⚠️ NG #'+(i+1)+' — '+ng.item+'</div>'
+        +'<div style="font-size:12px;font-weight:700;color:var(--R);margin-bottom:4px">⚠️ NC #'+(i+1)+' — '+ng.item+'</div>'
         +(ng.desc?'<div style="font-size:12px;color:var(--B);margin-bottom:3px">'+ng.desc+'</div>':'')
         +(ng.pic?'<div style="font-size:11px;color:var(--G6)">👤 PIC: <strong>'+ng.pic+'</strong></div>':'')
         +(ng.dueDate?'<div style="font-size:11px;color:var(--G6)">📅 Target: <strong>'+ng.dueDate+'</strong></div>':'')
@@ -2707,7 +2716,7 @@ function downloadSpeedgunPDF(reportId,share){
 
 // ═══════════════════════════════════════════
 // INSPEKSI UMUM — PDF per laporan
-// (checklist + temuan NG + foto + tanda tangan + geotag)
+// (checklist + temuan NC + foto + tanda tangan + geotag)
 // ═══════════════════════════════════════════
 function downloadInspeksiPDF(reportId,share){
   var jsPDF=getPDF();
@@ -2788,7 +2797,7 @@ function downloadInspeksiPDF(reportId,share){
     });
     doc.autoTable({
       startY:y,margin:{left:10,right:10},
-      head:[['Seksi','OK','NG','N/A','Total','Compliance']],
+      head:[['Seksi','OK','NC','N/A','Total','Compliance']],
       body:rows,
       styles:{fontSize:8,cellPadding:2,font:'helvetica'},
       headStyles:{fillColor:[26,26,26],textColor:[245,196,0],fontStyle:'bold'},
@@ -2812,11 +2821,11 @@ function downloadInspeksiPDF(reportId,share){
     y=doc.lastAutoTable.finalY+5;
   }
 
-  // Temuan NG
+  // Temuan NC
   if(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length){
     if(y>200){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
     doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(229,62,62);
-    doc.text('TEMUAN NON-CONFORMANCE (NG) — '+r.extra.ngDetails.length+' item',10,y);y+=4;
+    doc.text('TEMUAN NON-CONFORMANCE (NC) — '+r.extra.ngDetails.length+' item',10,y);y+=4;
 
     var ngRows=r.extra.ngDetails.map(function(ng,i){
       return [i+1,ng.item||'—',ng.desc||'—',ng.pic||'—',ng.dueDate||'—'];
@@ -2835,12 +2844,12 @@ function downloadInspeksiPDF(reportId,share){
     });
     y=doc.lastAutoTable.finalY+5;
 
-    // Foto per temuan NG
+    // Foto per temuan NC
     var hasPhotos=r.extra.ngDetails.some(function(ng){return ng.photos&&ng.photos.length&&ng.photos[0];});
     if(hasPhotos){
       if(y>200){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
       doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);
-      doc.text('FOTO BUKTI TEMUAN NG',10,y);y+=5;
+      doc.text('FOTO BUKTI TEMUAN NC',10,y);y+=5;
 
       r.extra.ngDetails.forEach(function(ng,i){
         if(!ng.photos||!ng.photos.length) return;

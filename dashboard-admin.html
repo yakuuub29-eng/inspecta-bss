@@ -925,7 +925,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
       <div class="panel" id="p-topfindings">
         <div class="panel-hdr">
           <div class="panel-title">📊 Top 10 Temuan</div>
-          <div class="panel-sub">Temuan NG dan NC yang paling sering muncul di seluruh area</div>
+          <div class="panel-sub">Temuan NC yang paling sering muncul di seluruh area</div>
         </div>
         <div id="topfindings-body"></div>
       </div>
@@ -943,7 +943,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
       <div class="panel" id="p-rca">
         <div class="panel-hdr">
           <div class="panel-title">🔍 Root Cause Analysis</div>
-          <div class="panel-sub">Analisis Pareto 80/20 &amp; kategorisasi akar masalah dari seluruh temuan NG</div>
+          <div class="panel-sub">Analisis Pareto 80/20 &amp; kategorisasi akar masalah dari seluruh temuan NC</div>
         </div>
         <div id="rca-body" style="padding:0 18px 18px"></div>
       </div>
@@ -2017,7 +2017,7 @@ function showDet(id){
 
   if(r.extra&&r.extra.CR&&Object.keys(r.extra.CR).length){
     h+='<div class="m-sec-t">Hasil Checklist</div>';
-    h+='<table class="cl-tbl"><thead><tr><th>Seksi</th><th>OK</th><th>NG</th><th>N/A</th><th>Total</th><th>%</th></tr></thead><tbody>';
+    h+='<table class="cl-tbl"><thead><tr><th>Seksi</th><th>OK</th><th>NC</th><th>N/A</th><th>Total</th><th>%</th></tr></thead><tbody>';
     Object.values(r.extra.CR).forEach(function(s){
       var pct=s.total?Math.round((s.ok+s.na)/s.total*100):0;
       h+='<tr><td>'+esc(s.title)+'</td><td style="color:var(--GR);font-weight:700">'+s.ok+'</td><td style="color:var(--R);font-weight:700">'+s.ng+'</td><td style="color:var(--G5)">'+s.na+'</td><td>'+s.total+'</td><td><strong style="color:'+(s.ng>0?'var(--R)':'var(--GR)')+'">'+pct+'%</strong></td></tr>';
@@ -2771,7 +2771,7 @@ function adminDownloadReportPDF(reportId){
     doc.text('HASIL CHECKLIST',10,y);y+=4;
     doc.autoTable({
       startY:y,margin:{left:10,right:10},
-      head:[['Seksi','OK','NG','N/A','Total','Compliance']],
+      head:[['Seksi','OK','NC','N/A','Total','Compliance']],
       body:Object.values(r.extra.CR).map(function(s){var pct=s.total?Math.round((s.ok+s.na)/s.total*100):0;return[s.title,s.ok,s.ng,s.na,s.total,pct+'%'];}),
       styles:{fontSize:8,cellPadding:2,font:'helvetica'},
       headStyles:{fillColor:[26,26,26],textColor:[245,196,0],fontStyle:'bold'},
@@ -2782,14 +2782,14 @@ function adminDownloadReportPDF(reportId){
     y=doc.lastAutoTable.finalY+5;
   }
 
-  // Temuan NG
+  // Temuan NC
   if(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length){
     if(y>200){doc.addPage();admPdfHeader(doc,r.typeName,r.noTemuan,2,pageEst);y=26;}
     doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(229,62,62);
-    doc.text('TEMUAN NG — '+r.extra.ngDetails.length+' item',10,y);y+=4;
+    doc.text('TEMUAN NC — '+r.extra.ngDetails.length+' item',10,y);y+=4;
     doc.autoTable({
       startY:y,margin:{left:10,right:10},
-      head:[['#','Item Temuan','Uraian / Kondisi NG','PIC','Target Selesai']],
+      head:[['#','Item Temuan','Uraian / Kondisi NC','PIC','Target Selesai']],
       body:r.extra.ngDetails.map(function(ng,i){return[i+1,ng.item||'—',ng.desc||'—',ng.pic||'—',ng.dueDate||'—'];}),
       styles:{fontSize:8,cellPadding:2.5,font:'helvetica'},
       headStyles:{fillColor:[197,48,48],textColor:[255,255,255],fontStyle:'bold'},
@@ -2798,12 +2798,12 @@ function adminDownloadReportPDF(reportId){
     });
     y=doc.lastAutoTable.finalY+5;
 
-    // Foto NG per temuan
+    // Foto NC per temuan
     var hasPhotos=r.extra.ngDetails.some(function(ng){return ng.photos&&ng.photos.length&&ng.photos[0];});
     if(hasPhotos){
       if(y>200){doc.addPage();admPdfHeader(doc,r.typeName,r.noTemuan,2,pageEst);y=26;}
       doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);
-      doc.text('FOTO BUKTI TEMUAN NG',10,y);y+=5;
+      doc.text('FOTO BUKTI TEMUAN NC',10,y);y+=5;
       r.extra.ngDetails.forEach(function(ng,i){
         if(!ng.photos||!ng.photos.length) return;
         doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(197,48,48);
@@ -3203,7 +3203,7 @@ function renderSafetyScore(){
 // ════ TOP 10 FINDINGS ════
 function renderTopFindings10(){
   var all=getReports();
-  // Aggregate NG items from ngDetails
+  // Aggregate NC items from ngDetails
   var findings={};
   all.forEach(function(r){
     if(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length){
@@ -3671,7 +3671,7 @@ function renderRCA(){
   var totalCount=sorted.reduce(function(s,e){return s+e[1].count;},0);
 
   if(!sorted.length){
-    el('rca-body').innerHTML='<div class="trend-card" style="text-align:center;padding:32px;color:var(--G4)">Belum ada data temuan NG untuk dianalisis.</div>';
+    el('rca-body').innerHTML='<div class="trend-card" style="text-align:center;padding:32px;color:var(--G4)">Belum ada data temuan NC untuk dianalisis.</div>';
     return;
   }
 
