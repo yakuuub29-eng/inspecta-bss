@@ -1217,13 +1217,8 @@ function updPendUI(){
 }
 function getMine(){return CU?getLocal().filter(function(r){return r.userId===CU.empId;}):[];}
 function getLiveCL(type){
-  var base=(typeof TT_BASE!=='undefined'&&TT_BASE[type])||null;
-  try{
-    var s=JSON.parse(localStorage.getItem(CK)||'{}');
-    if(s[type]&&s[type].sections&&s[type].sections.length)return s[type].sections.map(function(x){return{t:x.title||x.t,items:x.items};});
-    if(base&&s[base]&&s[base].sections&&s[base].sections.length)return s[base].sections.map(function(x){return{t:x.title||x.t,items:x.items};});
-  }catch(e){}
-  return CLD[type]||(base?CLD[base]:null)||[];
+  try{var s=JSON.parse(localStorage.getItem(CK)||'{}');if(s[type]&&s[type].sections&&s[type].sections.length)return s[type].sections.map(function(x){return{t:x.title||x.t,items:x.items};});}catch(e){}
+  return CLD[type]||[];
 }
 
 // ════ CHECKLIST DATA ════
@@ -1511,14 +1506,108 @@ var CLD={
 };
 
 // ════ CHECKLIST "INSPEKSI TIDAK TERENCANA" ════
-// Kartu di beranda "Inspeksi Tidak Terencana" (Workshop/Pit/TPS LB3/Jalan Hauling) memakai
-// checklist YANG SAMA dengan inspeksi terjadwalnya (supaya tetap sesuai regulasi & konsisten),
-// jadi cukup di-alias ke checklist yang sudah ada — bukan diduplikasi. getLiveCL() di bawah juga
-// akan otomatis ikut checklist custom (hasil edit admin) dari tipe dasarnya lewat TT_BASE.
-CLD.ttworkshop=CLD.workshop;
-CLD.ttpit=CLD.pit;
-CLD.tttpslb3=CLD.tpslb3;
-CLD.tthauling=CLD.hauling;
+// Fokusnya BEDA dari Inspeksi Harian: kalau Inspeksi Harian mengecek kondisi lapangan
+// operasional hari itu, Inspeksi Tidak Terencana adalah audit kepatuhan terhadap regulasi
+// (Permenaker, SMKP Minerba/Kepmen ESDM, GMP/Kepmenkes, PP Pengelolaan LB3, dll) — jadi
+// isinya sengaja tidak disamakan dengan checklist Inspeksi Harian.
+CLD.ttworkshop=[
+  {t:'Legalitas & Sertifikasi Alat (Permenaker No. 38/2016 K3 Pesawat Tenaga & Produksi)',items:[
+    'Alat angkat-angkut (crane, hoist, forklift) memiliki Akte Izin/SILO dan riksa uji berkala dari PJK3/Disnaker yang masih berlaku',
+    'Operator alat angkat-angkut & alat produksi memiliki SIO/SIA sesuai kelas alat yang dioperasikan',
+    'Label/plat riksa uji (kode warna bulanan) terpasang pada tiap alat sesuai jadwal pemeriksaan berkala'
+  ]},
+  {t:'Kepatuhan Lingkungan Kerja (Permenaker No. 5/2018 K3 Lingkungan Kerja)',items:[
+    'Tersedia hasil pengukuran berkala kebisingan, pencahayaan, dan kualitas udara area kerja sesuai Nilai Ambang Batas (NAB)',
+    'Area dengan intensitas kebisingan >85 dB(A) sudah diberi rambu wajib pelindung telinga',
+    'Sistem ventilasi/exhaust menjamin kualitas udara kerja sesuai NAB debu & gas'
+  ]},
+  {t:'Pengelolaan B3 & Limbah di Area Workshop (turunan PP 22/2021)',items:[
+    'Oli bekas & majun terkontaminasi disimpan sementara di wadah tertutup berlabel sebelum dipindahkan ke TPS LB3',
+    'MSDS (Lembar Data Keselamatan Bahan) tersedia dan mudah diakses untuk B3 yang digunakan di workshop',
+    'Tidak ada ceceran/tumpahan oli & B3 yang dibiarkan tanpa penanganan (spill kit tersedia)'
+  ]},
+  {t:'Sistem Manajemen K3 / SMKP Minerba (Kepmen ESDM 1827 K/30/MEM/2018)',items:[
+    'Pekerjaan berisiko tinggi (pekerjaan panas/hot work, bekerja di ketinggian) dilengkapi izin kerja (Permit to Work) & JSA/IBPR',
+    'P2H (Pemeriksaan sebelum pengoperasian) alat & unit di workshop terdokumentasi dan ditandatangani',
+    'Rekaman pelatihan/kompetensi K3 tenaga kerja workshop tersedia dan tidak kedaluwarsa'
+  ]},
+  {t:'Kesiapsiagaan Tanggap Darurat',items:[
+    'APAR bersertifikat, memiliki kartu kontrol/KIP yang ter-update setiap bulan, dan sesuai klasifikasi kebakaran area',
+    'Jalur evakuasi & titik kumpul darurat teridentifikasi jelas dan tidak terhalang'
+  ]}
+];
+CLD.ttpit=[
+  {t:'Kepatuhan Geoteknik & Kestabilan Lereng (SMKP Minerba - Kaidah Teknik Pertambangan yang Baik)',items:[
+    'Tersedia laporan pemantauan geoteknik/kestabilan lereng berkala (visual/instrumentasi) untuk area Pit yang aktif',
+    'Area dengan indikasi retakan/pergerakan tanah sudah dipasangi rambu larangan & radius aman, serta dilaporkan ke bagian geoteknik',
+    'Rekomendasi geoteknik (sudut lereng, tinggi jenjang/bench) diterapkan sesuai desain tambang yang disetujui'
+  ]},
+  {t:'Legalitas & Kompetensi Personel (Permenaker No. 38/2016 & SMKP)',items:[
+    'Pengawas Operasional (POP/POM) yang bertanggung jawab di area Pit memiliki sertifikat kompetensi yang masih berlaku',
+    'Operator alat berat (excavator, dump truck, dozer) memiliki SIO/SIM Perusahaan (KIMPER) sesuai kelas unit'
+  ]},
+  {t:'Sistem Izin Kerja & Manajemen Risiko',items:[
+    'Pekerjaan di area Pit yang teridentifikasi berisiko tinggi memiliki IBPR/JSA dan izin kerja yang sesuai',
+    'Meeting P5M (Pujian, Peringatan, Pengarahan, Pengecekan, Persetujuan) terdokumentasi sebelum shift dimulai'
+  ]},
+  {t:'Pengelolaan Air Tambang (Baku Mutu Lingkungan)',items:[
+    'Sistem drainase tambang & kolam pengendapan (settling pond) berfungsi mengalirkan air sesuai desain, tidak terjadi luapan ke area kerja',
+    'Kualitas air limpasan yang dibuang ke lingkungan telah diuji dan memenuhi baku mutu air limbah pertambangan (sesuai izin lingkungan)'
+  ]},
+  {t:'Kesiagaan Darurat & Rambu K3',items:[
+    'Jalur evakuasi darurat dari dasar Pit menuju permukaan teridentifikasi & bebas hambatan',
+    'Rambu K3 (batas kecepatan, larangan, peringatan bahaya jatuh/longsor) terpasang sesuai standar SMKP'
+  ]}
+];
+CLD.tttpslb3=[
+  {t:'Legalitas & Perizinan (PP No. 22 Tahun 2021 jo. Permen LHK No. 6/2021)',items:[
+    'TPS LB3 memiliki Persetujuan Teknis/Rincian Teknis Penyimpanan Limbah B3 yang masih berlaku dari instansi lingkungan hidup',
+    'Masa berlaku persetujuan/izin TPS LB3 dipantau dan diperpanjang sebelum kedaluwarsa'
+  ]},
+  {t:'Kepatuhan Simbol, Label & Karakteristik Limbah (Permen LHK No. 6/2021)',items:[
+    'Simbol B3 pada kemasan/wadah sesuai karakteristik limbah (mudah menyala, korosif, beracun, dll) sesuai lampiran Permen LHK',
+    'Label limbah B3 mencantumkan identitas penghasil, tanggal masuk, dan jenis limbah secara lengkap dan terbaca jelas',
+    'Pemisahan limbah dilakukan berdasarkan karakteristik yang tidak boleh dicampur (misal: limbah mudah menyala terpisah dari korosif)'
+  ]},
+  {t:'Manifest Elektronik & Pelaporan (Festronik / SIRAJA Limbah)',items:[
+    'Setiap pengeluaran limbah B3 dari TPS dilengkapi Manifest Elektronik (Festronik) yang terverifikasi',
+    'Neraca limbah B3 dilaporkan secara berkala melalui SIRAJA Limbah/SIMPEL sesuai ketentuan pelaporan triwulan'
+  ]},
+  {t:'Masa Simpan Sesuai Kategori & Volume (PP No. 22 Tahun 2021 Pasal 293)',items:[
+    'Limbah B3 kategori 1 tidak disimpan lebih dari 90 hari sejak dihasilkan',
+    'Limbah B3 kategori 2 dengan volume ≥50 kg/hari tidak disimpan lebih dari 180 hari, atau 365 hari untuk volume <50 kg/hari',
+    'Terdapat pencatatan/log tanggal masuk-keluar limbah untuk memantau masa simpan tiap jenis limbah'
+  ]},
+  {t:'Sarana Prasarana Sesuai Baku Teknis',items:[
+    'Lantai TPS kedap air (impermeable), memiliki kemiringan yang mengarah ke bak penampung tumpahan/ceceran',
+    'Jarak TPS LB3 terhadap fasilitas umum, sumber air, dan badan air sesuai baku teknis (buffer zone)',
+    'Tersedia APAR, spill kit, dan APD sesuai jenis limbah yang dikelola di TPS'
+  ]}
+];
+CLD.tthauling=[
+  {t:'Kepatuhan Geometri Jalan Tambang (SMKP Minerba - Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II)',items:[
+    'Lebar jalan angkut minimal 3-4 kali lebar unit terbesar pada jalan lurus, sesuai kaidah teknik pertambangan yang baik',
+    'Kemiringan/grade jalan tidak melebihi batas maksimal yang diizinkan (umumnya ≤10%) sesuai desain jalan tambang',
+    'Superelevasi & jarak pandang henti (stopping sight distance) pada tikungan sesuai standar desain jalan tambang'
+  ]},
+  {t:'Sistem Manajemen Kelelahan / Fatigue Management System',items:[
+    'Jadwal kerja & waktu istirahat pengemudi sesuai ketentuan fatigue management perusahaan (jam kerja tidak melebihi batas)',
+    'Terdapat mekanisme pemantauan kelelahan pengemudi (fatigue call/monitoring system) yang berfungsi dan direkam',
+    'Pengemudi yang terindikasi lelah/mengantuk memiliki prosedur penanganan (istirahat wajib/pergantian pengemudi)'
+  ]},
+  {t:'Legalitas & Kompetensi Pengemudi (Permenaker No. 38/2016)',items:[
+    'Pengemudi unit hauling memiliki SIM Perusahaan (KIMPER)/SIO sesuai kelas unit yang dioperasikan dan masih berlaku',
+    'Pengemudi telah melalui pemeriksaan fit to work sebelum memulai shift'
+  ]},
+  {t:'Pengendalian Debu & Kualitas Udara (Baku Mutu Lingkungan)',items:[
+    'Penyiraman jalan hauling dilakukan secara berkala sesuai jadwal (khususnya tanjakan, tikungan, area kering)',
+    'Hasil pengukuran kualitas udara ambien (debu/PM10) di sekitar jalan hauling memenuhi baku mutu yang berlaku'
+  ]},
+  {t:'Sistem Manajemen Lalu Lintas Tambang',items:[
+    'Rambu-rambu lalu lintas tambang (batas kecepatan, prioritas jalan, rambu peringatan) terpasang sesuai traffic management plan',
+    'Komunikasi radio 2 arah antar unit & pengawas berfungsi baik di sepanjang jalur hauling'
+  ]}
+];
 // Catering belum ada checklist terjadwal, jadi dibuat baru mengacu pada Kepmenkes RI No.
 // 1096/2011 (Higiene Sanitasi Jasaboga) + praktik umum HSE Catering area tambang.
 CLD.ttcatering=[
@@ -1555,11 +1644,6 @@ CLD.ttcatering=[
     'Area penyajian/kantin bersih dan bebas dari genangan air atau sisa makanan berserakan'
   ]}
 ];
-
-// Tipe dasar untuk masing-masing tipe "Tidak Terencana" — dipakai getLiveCL() supaya checklist
-// custom hasil edit admin pada inspeksi terjadwal (mis. 'workshop') otomatis berlaku juga untuk
-// versi tidak terencananya ('ttworkshop'), tanpa admin perlu mengedit checklist dua kali.
-var TT_BASE={ttworkshop:'workshop',ttpit:'pit',tttpslb3:'tpslb3',tthauling:'hauling'};
 
 // ════ PIN SYSTEM ════
 function doSetup(){
