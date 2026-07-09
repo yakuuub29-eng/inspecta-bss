@@ -87,7 +87,7 @@ select.li{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 
 /* ── HOME ── */
 .banner{background:linear-gradient(140deg,#111,#2A2A2A);padding:18px 16px;color:var(--W);position:relative;overflow:hidden}
-.banner::after{content:'⛏';position:absolute;right:-8px;bottom:-12px;font-size:90px;opacity:.05;transform:rotate(-10deg);pointer-events:none}
+.banner::after{content:'';position:absolute;right:-8px;bottom:-12px;width:90px;height:90px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.2'%3E%3Cpath d='M4 4c4 0 8 2 10 6'/%3E%3Cpath d='M20 4c-4 0-8 2-10 6'/%3E%3Cpath d='M8 14L3 19'/%3E%3Cpath d='M16 14l5 5'/%3E%3C/svg%3E");background-size:contain;background-repeat:no-repeat;opacity:.05;transform:rotate(-10deg);pointer-events:none}
 .bd{font-size:11px;color:var(--G4);margin-bottom:3px}
 .bg{font-size:20px;font-family:var(--fd);font-weight:800;margin-bottom:2px}
 .bs{font-size:11px;color:var(--G4)}
@@ -385,7 +385,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
 <!-- ═══ LOGIN SETUP (first time) ═══ -->
 <div id="login">
   <div class="lhero">
-    <div class="llogo">⛏️</div>
+    <div class="llogo"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4c4 0 8 2 10 6"/><path d="M20 4c-4 0-8 2-10 6"/><path d="M8 14L3 19"/><path d="M16 14l5 5"/></svg></div>
     <div class="ltitle">INSPECTA</div>
     <div class="lsub">Daftarkan akun Anda — hanya sekali</div>
   </div>
@@ -401,14 +401,14 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
 
     <div><label class="ll">Buat PIN (4 digit)</label>
       <input class="li" id="lpin" type="password" inputmode="numeric" maxlength="4" placeholder="Contoh: 1234"/></div>
-    <button class="lbtn" onclick="doSetup()">✅ Daftar & Masuk</button>
+    <button class="lbtn" onclick="doSetup()"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> Daftar & Masuk</button>
     <div class="lfoot">© 2026 INSPECTA · PT Bina Sarana Sukses</div>
   </div>
 </div>
 
 <!-- ═══ PIN LOGIN (returning user) ═══ -->
 <div id="pin-screen">
-  <div class="pin-logo">⛏️</div>
+  <div class="pin-logo"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4c4 0 8 2 10 6"/><path d="M20 4c-4 0-8 2-10 6"/><path d="M8 14L3 19"/><path d="M16 14l5 5"/></svg></div>
   <div class="pin-greeting" id="pin-greet">Selamat Datang</div>
   <div class="pin-sub" id="pin-sub">Masukkan PIN 4 digit Anda</div>
   <div class="pin-dots" id="pin-dots">
@@ -426,7 +426,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
     <button class="pin-key" onclick="pinKey('8')">8</button>
     <button class="pin-key" onclick="pinKey('9')">9</button>
     <button class="pin-key zero" onclick="pinKey('0')">0</button>
-    <button class="pin-key del" onclick="pinDel()">⌫</button>
+    <button class="pin-key del" onclick="pinDel()"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h9a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H9l-6-8z"/><path d="M13 9.5l4 4M17 9.5l-4 4"/></svg></button>
   </div>
   <div class="pin-change" onclick="resetAccount()">Ganti akun / lupa PIN</div>
 </div>
@@ -434,11 +434,11 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
 <!-- ═══ APP ═══ -->
 <div id="app">
   <div class="topbar">
-    <div class="off-bar" id="off-bar">📵 Offline — laporan tersimpan lokal & dikirim otomatis saat ada jaringan</div>
+    <div class="off-bar" id="off-bar"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M8.3 8.3a15 15 0 0 0-3.3 2.2c-.6.5-.6 1.4 0 1.9L7 14.4M11.5 6.6A15 15 0 0 1 21 10.4c.6.5.6 1.4 0 1.9l-2 1.9M9 16l3 3 1-1"/></svg> Offline — laporan tersimpan lokal & dikirim otomatis saat ada jaringan</div>
     <div class="sync-bar" id="sync-bar"><div class="sync-spin"></div> Menyinkronkan laporan offline...</div>
     <header class="hdr">
       <div class="hdr-l">
-        <div class="hdr-logo">⛏️</div>
+        <div class="hdr-logo"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4c4 0 8 2 10 6"/><path d="M20 4c-4 0-8 2-10 6"/><path d="M8 14L3 19"/><path d="M16 14l5 5"/></svg></div>
         <div><div class="hdr-t">INSPECTA</div><div class="hdr-s" id="hshift">—</div></div>
       </div>
       <button class="uchip" onclick="confirmLogout()">
@@ -451,14 +451,14 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
   <div class="scr on" id="s-home">
     <div class="banner">
       <div class="bd" id="bdate"></div>
-      <div class="bg" id="bgreet">Selamat Datang 👷</div>
+      <div class="bg" id="bgreet">Selamat Datang <svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.5"/><path d="M12 3.2a5.5 5.5 0 0 1 5.5 5.3H6.5A5.5 5.5 0 0 1 12 3.2z"/><path d="M4.5 21c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5"/></svg></div>
       <div class="bs" id="bdept">—</div>
-      <div class="bb">⚠️ Safety First — Zero Accident</div>
+      <div class="bb"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Safety First — Zero Accident</div>
     </div>
 
     <!-- QUICK REPORT -->
     <div class="quick-bar">
-      <div class="quick-title">⚡ Quick Report — Laporkan Segera</div>
+      <div class="quick-title"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h6l-1 8 9-12h-6z"/></svg> Quick Report — Laporkan Segera</div>
       <div class="quick-btns">
         <button class="qbtn qbtn-hazard" onclick="openQuick('hazard')"><span class="qbtn-ico"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg></span>Hazard Report</button>
         <button class="qbtn qbtn-nearmiss" onclick="openQuick('nearmiss')"><span class="qbtn-ico"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 9-9 9-9-9z"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/></svg></span>Hampir Celaka (Near Miss)</button>
@@ -472,10 +472,10 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
       <div class="sc"><div class="sn" id="s-td">0</div><div class="sl">Hari Ini</div></div>
       <div class="sc red"><div class="sn" id="s-nc">0</div><div class="sl">Temuan NC</div></div>
     </div>
-    <div class="pend-strip" id="pend-strip" onclick="manualSync()" style="cursor:pointer" title="Tap untuk coba kirim ulang sekarang">⏳ <span id="pend-cnt">0</span> laporan menunggu dikirim (tap untuk coba kirim ulang)</div>
+    <div class="pend-strip" id="pend-strip" onclick="manualSync()" style="cursor:pointer" title="Tap untuk coba kirim ulang sekarang"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12"/><path d="M7 3c0 5 4 6 5 9-1 3-5 4-5 9M17 3c0 5-4 6-5 9 1 3 5 4 5 9"/></svg> <span id="pend-cnt">0</span> laporan menunggu dikirim (tap untuk coba kirim ulang)</div>
 
     <div class="stitle">Form Inspeksi & Pelaporan</div>
-    <div class="stitle" style="padding-top:10px">🔍 Inspeksi Harian</div>
+    <div class="stitle" style="padding-top:10px"><svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px;margin-right:3px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>Inspeksi Harian</div>
     <div class="sec-hd" onclick="toggleSec('harian')"><span id="sec-lbl-harian">Tampilkan poin inspeksi</span><span class="sec-arr" id="sec-arr-harian">▾</span></div>
     <div class="mgrid sec-body" id="sec-harian">
       <div class="mc" onclick="openForm('hauling')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="9" rx="1"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div><div class="mn">Inspeksi Jalan Hauling</div><div class="mc-cnt" id="c-hauling">0 laporan</div><div class="marr">›</div></div>
@@ -487,7 +487,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
       <div class="mc" onclick="openForm('p3k')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M12 10v6M9 13h6"/></svg></div><div class="mn">Inspeksi Kotak P3K</div><div class="mc-cnt" id="c-p3k">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('eyewash')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="mn">Inspeksi Eyewash</div><div class="mc-cnt" id="c-eyewash">0 laporan</div><div class="marr">›</div></div>
     </div>
-    <div class="stitle">🔀 Inspeksi Tidak Terencana</div>
+    <div class="stitle"><svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px;margin-right:3px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 7h6c2 0 3 1 4 2l4 6c1 1 2 2 4 2"/><path d="M17 21l4-4-4-4"/><path d="M3 17h6c2 0 3-1 4-2"/></svg>Inspeksi Tidak Terencana</div>
     <div class="sec-hd" onclick="toggleSec('tt')"><span id="sec-lbl-tt">Tampilkan poin inspeksi</span><span class="sec-arr" id="sec-arr-tt">▾</span></div>
     <div class="mgrid sec-body" id="sec-tt" style="padding-top:0">
       <div class="mc" onclick="openForm('ttworkshop')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg></div><div class="mn">Inspeksi Workshop</div><div class="mc-cnt" id="c-ttworkshop">0 laporan</div><div class="marr">›</div></div>
@@ -496,7 +496,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
       <div class="mc" onclick="openForm('tthauling')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="9" rx="1"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div><div class="mn">Inspeksi Jalan Hauling</div><div class="mc-cnt" id="c-tthauling">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('ttcatering')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2v7a2 2 0 0 0 2 2v11"/><path d="M11 2v6M7 2v6"/><path d="M17 2c-1.5 0-2.5 2-2.5 5s1 5 2.5 5v10"/></svg></div><div class="mn">Inspeksi Catering</div><div class="mc-cnt" id="c-ttcatering">0 laporan</div><div class="marr">›</div></div>
     </div>
-    <div class="stitle">📋 Laporan</div>
+    <div class="stitle"><svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px;margin-right:3px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg>Laporan</div>
     <div class="sec-hd" onclick="toggleSec('laporan')"><span id="sec-lbl-laporan">Tampilkan poin laporan</span><span class="sec-arr" id="sec-arr-laporan">▾</span></div>
     <div class="mgrid sec-body" id="sec-laporan" style="padding-top:0">
       <div class="mc" onclick="openForm('fatigue')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></div><div class="mn">Laporan Fatigue Call</div><div class="mc-cnt" id="c-fatigue">0 laporan</div><div class="marr">›</div></div>
@@ -518,8 +518,8 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
         <option value="p3k">Kotak P3K</option><option value="eyewash">Eyewash</option>
 
         <option value="speedgun">Speedgun</option><option value="fatigue">Fatigue</option>
-        <option value="hazard">🚨 Hazard Report</option><option value="nearmiss">⚠️ Near Miss</option>
-        <option value="positive">👍 Positive Obs.</option><option value="stopwork">🛑 Stop Work</option>
+        <option value="hazard"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 1 5 5v6a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/><path d="M5 13H3M21 13h-2M12 2V1"/><path d="M6 21h12"/></svg> Hazard Report</option><option value="nearmiss"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Near Miss</option>
+        <option value="positive"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 17 20H7"/></svg> Positive Obs.</option><option value="stopwork"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 3h7L21 8.5v7L15.5 21h-7L3 15.5v-7z"/><path d="M9 9l6 6M15 9l-6 6"/></svg> Stop Work</option>
       </select>
     </div>
     <div style="padding:12px 14px" id="hlist"></div>
@@ -531,16 +531,16 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
   <!-- TINDAK LANJUT SCREEN -->
   <div class="scr" id="s-tl">
     <div style="background:var(--W);padding:12px 14px;border-bottom:1px solid var(--G2);position:sticky;top:0;z-index:50">
-      <div style="font-size:14px;font-weight:700">🔧 Riwayat Tindak Lanjut (CAPA)</div>
+      <div style="font-size:14px;font-weight:700"><svg viewBox="0 0 24 24" width="14" height="14" style="vertical-align:-2px;margin-right:4px" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg>Riwayat Tindak Lanjut (CAPA)</div>
       <div style="font-size:11px;color:var(--G5);margin-top:2px">Progres penyelesaian temuan yang dibuat</div>
     </div>
     <div id="tl-body"></div>
   </div>
 
   <nav class="bnav">
-    <button class="nv on" id="nv-home" onclick="goHome(this)"><span class="ni">🏠</span><span class="nl">Beranda</span></button>
-    <button class="nv" id="nv-hist" onclick="goHist(this)"><span class="ni">📋</span><span class="nl">Riwayat</span><span class="nv-badge" id="nv-badge">0</span></button>
-    <button class="nv" id="nv-tl" onclick="goTL(this)"><span class="ni">🔧</span><span class="nl">Tindak Lanjut</span></button>
+    <button class="nv on" id="nv-home" onclick="goHome(this)"><span class="ni"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span><span class="nl">Beranda</span></button>
+    <button class="nv" id="nv-hist" onclick="goHist(this)"><span class="ni"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg></span><span class="nl">Riwayat</span><span class="nv-badge" id="nv-badge">0</span></button>
+    <button class="nv" id="nv-tl" onclick="goTL(this)"><span class="ni"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg></span><span class="nl">Tindak Lanjut</span></button>
   </nav>
 </div>
 
@@ -548,7 +548,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
 <div class="mov" id="mov" onclick="if(event.target===this)closeMod()">
   <div class="msh">
     <div class="mhnd"></div>
-    <div class="mhdr"><div><div class="mt" id="m-t">Detail</div><div class="ms" id="m-s"></div></div><button class="mclose" onclick="closeMod()">✕</button></div>
+    <div class="mhdr"><div><div class="mt" id="m-t">Detail</div><div class="ms" id="m-s"></div></div><button class="mclose" onclick="closeMod()"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="mbody" id="m-b"></div>
     <div id="m-pdf-btn" style="padding:10px 20px 18px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid var(--G2)"></div>
   </div>
@@ -618,7 +618,7 @@ function renderSpdUnits(){
     return '<div style="border-bottom:1px solid var(--G2);padding:10px 14px" id="spu'+u.id+'">'
       +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
       +'<span style="font-size:11px;font-weight:700;color:var(--YD)">Unit #'+(i+1)+'</span>'
-      +(SPD_UNITS.length>1?'<button style="font-size:11px;color:var(--R);background:none;border:none;cursor:pointer;padding:2px 6px" onclick="remSpdUnit('+u.id+')">✕ Hapus</button>':'')
+      +(SPD_UNITS.length>1?'<button style="font-size:11px;color:var(--R);background:none;border:none;cursor:pointer;padding:2px 6px" onclick="remSpdUnit('+u.id+')"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Hapus</button>':'')
       +'</div>'
       // Row 1: No Unit + Kecepatan (paling penting, besar)
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
@@ -799,7 +799,7 @@ function renderTL(){
     +'<div style="text-align:center;background:#FEEBC8;border-radius:var(--rs);padding:10px 4px"><div style="font-size:20px;font-weight:800;color:var(--OR);font-family:var(--fd)">'+inprog+'</div><div style="font-size:9px;color:var(--OR);font-weight:700">IN PROGRESS</div></div>'
     +'<div style="text-align:center;background:var(--GL);border-radius:var(--rs);padding:10px 4px"><div style="font-size:20px;font-weight:800;color:var(--GR);font-family:var(--fd)">'+closed+'</div><div style="font-size:9px;color:var(--GR);font-weight:700">CLOSED</div></div>'
     +'</div>'
-    +(overdue?'<div style="background:var(--R);color:#fff;padding:9px 14px;font-size:12px;font-weight:700">⏰ '+overdue+' CAPA melewati batas waktu (Overdue)!</div>':'')
+    +(overdue?'<div style="background:var(--R);color:#fff;padding:9px 14px;font-size:12px;font-weight:700"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M5 3L2.5 5.5M19 3l2.5 2.5"/></svg> '+overdue+' CAPA melewati batas waktu (Overdue)!</div>':'')
     +'<div style="background:var(--W);border-bottom:1px solid var(--G2);padding:0 14px;display:flex;gap:0">'
     +'<button class="tl-tab on" onclick="setTLTab(\'all\',this)">Semua</button>'
     +'<button class="tl-tab" onclick="setTLTab(\'open\',this)">Open</button>'
@@ -816,7 +816,7 @@ function renderTLList(){
   m.sort(function(a,b){return (a.capa.dueDate||'9999')>(b.capa.dueDate||'9999')?1:-1;});
   var lst=el('tl-list');if(!lst)return;
   if(!m.length){lst.innerHTML='<div style="text-align:center;padding:40px;color:var(--G4)">Tidak ada data CAPA</div>';return;}
-  var stLabel={'open':'🔴 Open','in-progress':'🟡 In Progress','pending-verification':'🔵 Pending Verifikasi','closed':'✅ Closed'};
+  var stLabel={'open':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#E53E3E"/></svg> Open','in-progress':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#F2C94C"/></svg> In Progress','pending-verification':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#2B6CB0"/></svg> Pending Verifikasi','closed':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> Closed'};
   var stCls={'open':'tl-st-open','in-progress':'tl-st-inprog','pending-verification':'tl-st-pending','closed':'tl-st-closed'};
   lst.innerHTML=m.map(function(r){
     var capa=r.capa;
@@ -824,7 +824,7 @@ function renderTLList(){
     var daysLeft='';
     if(capa.dueDate&&capa.status!=='closed'){
       var diff=Math.ceil((new Date(capa.dueDate)-new Date(today))/(1000*60*60*24));
-      daysLeft=diff<0?'<span style="color:var(--R);font-weight:700">⏰ Terlambat '+Math.abs(diff)+' hari</span>':diff===0?'<span style="color:var(--OR);font-weight:700">⚠️ Jatuh tempo hari ini</span>':'<span style="color:var(--G5)">Sisa '+diff+' hari</span>';
+      daysLeft=diff<0?'<span style="color:var(--R);font-weight:700"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M5 3L2.5 5.5M19 3l2.5 2.5"/></svg> Terlambat '+Math.abs(diff)+' hari</span>':diff===0?'<span style="color:var(--OR);font-weight:700"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Jatuh tempo hari ini</span>':'<span style="color:var(--G5)">Sisa '+diff+' hari</span>';
     }
     var pct=capa.status==='closed'?100:capa.status==='pending-verification'?75:capa.status==='in-progress'?40:10;
     var pctColor=capa.status==='closed'?'var(--GR)':capa.status==='in-progress'?'var(--OR)':'var(--R)';
@@ -836,13 +836,13 @@ function renderTLList(){
       +'<div style="font-size:11px;color:var(--G5);margin-top:2px">'+esc(r.location||'—')+' · '+fd(r.timestamp)+'</div></div>'
       +'<span class="tl-status '+(stCls[capa.status]||'tl-st-open')+'">'+(stLabel[capa.status]||'Open')+'</span>'
       +'</div>'
-      +'<div style="font-size:11px;color:var(--G6);margin-top:6px">👤 PIC: <strong>'+esc(capa.pic||'—')+'</strong></div>'
-      +'<div style="font-size:11px;color:var(--G6);margin-top:2px">📅 Due: '+(capa.dueDate||'—')+' '+daysLeft+'</div>'
+      +'<div style="font-size:11px;color:var(--G6);margin-top:6px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg> PIC: <strong>'+esc(capa.pic||'—')+'</strong></div>'
+      +'<div style="font-size:11px;color:var(--G6);margin-top:2px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg> Due: '+(capa.dueDate||'—')+' '+daysLeft+'</div>'
       +(r.notes?'<div style="font-size:11px;color:var(--G5);margin-top:4px;line-height:1.4">'+esc(r.notes.substring(0,80))+(r.notes.length>80?'...':'')+'</div>':'')
       +'<div class="tl-progress-track"><div class="tl-progress-fill" style="width:'+pct+'%;background:'+pctColor+'"></div></div>'
       +(hasBefore||hasAfter?'<div style="display:flex;gap:6px;margin-top:8px">'
-        +(hasBefore?'<div style="font-size:10px;background:#FED7D7;color:var(--R);padding:2px 8px;border-radius:8px;font-weight:700">📷 Before</div>':'')
-        +(hasAfter?'<div style="font-size:10px;background:var(--GL);color:var(--GR);padding:2px 8px;border-radius:8px;font-weight:700">✅ After</div>':'')
+        +(hasBefore?'<div style="font-size:10px;background:#FED7D7;color:var(--R);padding:2px 8px;border-radius:8px;font-weight:700"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> Before</div>':'')
+        +(hasAfter?'<div style="font-size:10px;background:var(--GL);color:var(--GR);padding:2px 8px;border-radius:8px;font-weight:700"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> After</div>':'')
         +'</div>':'')
       +'</div>';
   }).join('');
@@ -853,7 +853,7 @@ function showDetTL(id){
   var capa=r.capa;
   el('m-t').textContent='Detail CAPA';
   el('m-s').textContent=r.typeName+' · '+fd(r.timestamp);
-  var stLabel={'open':'🔴 Open','in-progress':'🟡 In Progress','pending-verification':'🔵 Pending Verifikasi','closed':'✅ Closed'};
+  var stLabel={'open':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#E53E3E"/></svg> Open','in-progress':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#F2C94C"/></svg> In Progress','pending-verification':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#2B6CB0"/></svg> Pending Verifikasi','closed':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> Closed'};
   var h='';
   [['Laporan',r.typeName||'—'],['Lokasi',r.location||'—'],['Tanggal',fd(r.timestamp)],['Temuan',r.notes||'—'],
    ['PIC Perbaikan',capa.pic||'—'],['Due Date',capa.dueDate||'—'],['Status',stLabel[capa.status]||'—'],
@@ -862,8 +862,8 @@ function showDetTL(id){
   if(capa.evBefore||capa.evAfter){
     h+='<div class="m-sec-t">Evidence Before → After</div>';
     h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">';
-    h+='<div><div style="font-size:10px;font-weight:700;color:var(--R);margin-bottom:4px">📷 BEFORE</div>'+(capa.evBefore&&capa.evBefore.startsWith('data:')?'<img src="'+capa.evBefore+'" style="width:100%;height:100px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open(this.src)"/>':'<div style="height:100px;background:var(--G1);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--G4)">Belum ada foto</div>')+'</div>';
-    h+='<div><div style="font-size:10px;font-weight:700;color:var(--GR);margin-bottom:4px">✅ AFTER</div>'+(capa.evAfter&&capa.evAfter.startsWith('data:')?'<img src="'+capa.evAfter+'" style="width:100%;height:100px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open(this.src)"/>':'<div style="height:100px;background:var(--G1);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--G4)">Belum ada foto</div>')+'</div>';
+    h+='<div><div style="font-size:10px;font-weight:700;color:var(--R);margin-bottom:4px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> BEFORE</div>'+(capa.evBefore&&capa.evBefore.startsWith('data:')?'<img src="'+capa.evBefore+'" style="width:100%;height:100px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open(this.src)"/>':'<div style="height:100px;background:var(--G1);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--G4)">Belum ada foto</div>')+'</div>';
+    h+='<div><div style="font-size:10px;font-weight:700;color:var(--GR);margin-bottom:4px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> AFTER</div>'+(capa.evAfter&&capa.evAfter.startsWith('data:')?'<img src="'+capa.evAfter+'" style="width:100%;height:100px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open(this.src)"/>':'<div style="height:100px;background:var(--G1);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--G4)">Belum ada foto</div>')+'</div>';
     h+='</div>';
   }
   if(capa.sig){h+='<div class="m-sec-t">Tanda Tangan</div><img src="'+capa.sig+'" style="width:100%;border-radius:6px;border:1px solid var(--G2);margin-top:6px"/>';}
@@ -881,7 +881,7 @@ function updShiftAuto(){
   var h=now.getHours();
   // DS: 06:00–18:00 | NS: 18:00–06:00
   var isDS=(h>=6&&h<18);
-  var shiftLabel=isDS?'⛅ Shift Siang (DS 06:00–18:00)':'🌙 Shift Malam (NS 18:00–06:00)';
+  var shiftLabel=isDS?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="3.5"/><path d="M11 17a4 4 0 0 0-.3-8 5.3 5.3 0 0 0-10 1.7A3.7 3.7 0 0 0 2 14a3.7 3.7 0 0 0 3.7 3.7h5.6z"/></svg> Shift Siang (DS 06:00–18:00)':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg> Shift Malam (NS 18:00–06:00)';
   var el2=document.getElementById('hshift');
   if(el2)el2.textContent=shiftLabel;
   // Simpan ke CU untuk dipakai saat submit
@@ -1165,7 +1165,28 @@ function pushToFB(rep){
     .then(function(){
       var loc=getLocal();loc=loc.map(function(r){if(r.id===rep.id)r.synced=true;return r;});saveLocal(loc);
       var p=getPending().filter(function(id){return id!==rep.id;});savePend(p);updPendUI();
+      logToSheet(rep);
     }).catch(function(e){console.warn('pushToFB:',e);});
+}
+// ════ AUTO-LIST KE GOOGLE SHEETS ════
+// Tiap laporan yang berhasil masuk Firebase juga dikirim (fire-and-forget) ke Netlify Function
+// yang menambahkan barisnya ke Google Sheets — 1 tab per jenis form, otomatis dibuat kalau
+// belum ada. Gagal kirim ke sheet TIDAK memengaruhi laporan utama (sudah aman di Firebase),
+// jadi errornya cukup dicatat di console saja.
+function logToSheet(rep){
+  try{
+    fetch('/api/log-to-sheet',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        type:rep.type, typeName:rep.typeName,
+        timestamp:rep.timestamp, noTemuan:rep.noTemuan,
+        reporter:rep.userName||rep.reporter||'', dept:rep.userDept||'', shift:rep.userShift||'',
+        location:rep.location||'', status:rep.status||'', severity:rep.severity||'',
+        ncCount:(rep.extra&&rep.extra.ngDetails)?rep.extra.ngDetails.length:''
+      })
+    }).catch(function(e){console.warn('[INSPECTA] logToSheet gagal (laporan tetap aman di Firebase):',e);});
+  }catch(e){console.warn('[INSPECTA] logToSheet error:',e);}
 }
 var SYNC_IN_PROGRESS=false;
 function syncPending(){
@@ -1181,6 +1202,7 @@ function syncPending(){
       .then(function(){
         var l=getLocal();l=l.map(function(r){if(r.id===id)r.synced=true;return r;});saveLocal(l);
         var pp=getPending().filter(function(pid){return pid!==id;});savePend(pp);
+        logToSheet(rep);
         done++;chkDone();
       }).catch(function(e){console.warn('[INSPECTA] Gagal sync laporan '+id+':',e);failed++;done++;chkDone();});
   });
@@ -1440,7 +1462,7 @@ var CLD={
       'Masker Resusitasi (Resuscitation Mask) — 1 pcs (alat bantu resusitasi/CPR)',
       'Semua item tidak ada yang kadaluarsa'
     ]},
-    {t:'📋 Referensi Regulasi',infoOnly:true,items:[
+    {t:'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg> Referensi Regulasi',infoOnly:true,items:[
       'Permenaker No. 08 Tahun 2015 tentang Pertolongan Pertama Pada Kecelakaan di Tempat Kerja',
       'Permen ESDM No. 1827 Tahun 2018 tentang Pelaksanaan Kaidah Teknik Pertambangan yang Baik'
     ]}
@@ -1808,16 +1830,16 @@ function buildForm(type){
   var previewNo=peekNoTemuan(type);
   var autoInfoHtml='<div style="background:var(--YP);border-radius:var(--rs);padding:10px 14px;border-left:3px solid var(--Y);display:flex;flex-direction:column;gap:6px">'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
-    +'<div><div style="font-size:9px;font-weight:700;color:var(--YD);text-transform:uppercase;letter-spacing:.5px">👤 Inspektor</div>'
+    +'<div><div style="font-size:9px;font-weight:700;color:var(--YD);text-transform:uppercase;letter-spacing:.5px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg> Inspektor</div>'
     +'<div style="font-size:13px;font-weight:700;color:var(--B);margin-top:2px">'+(CU?CU.name:'—')+'</div>'
     +'<div style="font-size:10px;color:var(--G5)">'+(CU?CU.dept+' · '+CU.empId:'')+'</div></div>'
-    +'<div><div style="font-size:9px;font-weight:700;color:var(--YD);text-transform:uppercase;letter-spacing:.5px">🕐 Waktu</div>'
+    +'<div><div style="font-size:9px;font-weight:700;color:var(--YD);text-transform:uppercase;letter-spacing:.5px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Waktu</div>'
     +'<div style="font-size:13px;font-weight:700;color:var(--B);margin-top:2px">'+autoTime+'</div>'
     +'<div style="font-size:10px;color:var(--G5)">'+autoDate+'</div></div>'
     +'</div>'
     +'<div style="background:var(--B);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:700;color:var(--Y);text-align:center">'+autoShift+'</div>'
     +'<div style="background:var(--W);border:1.5px dashed var(--Y);border-radius:6px;padding:7px 10px;display:flex;align-items:center;justify-content:space-between">'
-    +'<span style="font-size:9px;font-weight:700;color:var(--G5);text-transform:uppercase;letter-spacing:.5px">📋 No. Laporan (estimasi)</span>'
+    +'<span style="font-size:9px;font-weight:700;color:var(--G5);text-transform:uppercase;letter-spacing:.5px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg> No. Laporan (estimasi)</span>'
     +'<span style="font-size:12px;font-weight:800;color:var(--B);letter-spacing:.5px;font-family:monospace">'+previewNo+'</span>'
     +'</div>'
     +'</div>';
@@ -1828,12 +1850,12 @@ function buildForm(type){
 
   // SEVERITY MATRIX (tampil hanya jika ada temuan NC)
   SEV_L=0;SEV_C=0;
-  var sevHtml='<div class="fsec" id="sev-section" style="display:none"><div class="fsh"><span class="fsh-t">⚠️ Severity Temuan</span></div>'+buildSevMatrix('form')+'<div style="font-size:11px;color:var(--G5);padding:4px 14px 10px">Isi severity karena terdapat temuan NC pada inspeksi ini.</div></div>';
+  var sevHtml='<div class="fsec" id="sev-section" style="display:none"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Severity Temuan</span></div>'+buildSevMatrix('form')+'<div style="font-size:11px;color:var(--G5);padding:4px 14px 10px">Isi severity karena terdapat temuan NC pada inspeksi ini.</div></div>';
 
   var extra=sevHtml;
 
   // GPS TAG
-  extra+='<div class="fsec"><div class="fsh"><span class="fsh-t">📍 Lokasi GPS</span></div><div class="ffields">'
+  extra+='<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg> Lokasi GPS</span></div><div class="ffields">'
     +'<div class="gps-tag" id="gps-tag" onclick="getGPS()">'
     +'<div class="gps-dot gps-loading" id="gps-dot"></div>'
     +'<span id="gps-txt">Mendapatkan lokasi GPS...</span>'
@@ -1857,7 +1879,7 @@ function buildForm(type){
       sec.items.forEach(function(item,ii){
         if(isInfo){
           extra+='<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--G2)">'
-            +'<span style="font-size:14px;flex-shrink:0;margin-top:1px">📌</span>'
+            +'<span style="font-size:14px;flex-shrink:0;margin-top:1px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg></span>'
             +'<span style="font-size:12px;color:var(--G7);line-height:1.6;flex:1">'+item+'</span>'
             +'</div>';
         } else {
@@ -1871,7 +1893,7 @@ function buildForm(type){
             +'</div></div>'
             // NG DETAIL PANEL
             +'<div class="ng-detail" id="ngd-'+si+'-'+ii+'">'
-            +'<div class="ng-lbl">⚠️ Detail Temuan NC</div>'
+            +'<div class="ng-lbl"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Detail Temuan NC</div>'
             +'<textarea class="ng-inp" id="ng-desc-'+si+'-'+ii+'" placeholder="Uraikan kondisi tidak sesuai yang ditemukan..." rows="2"></textarea>'
             +'<div class="ng-grid">'
             +'<div><label class="ng-lbl">PIC Perbaikan</label><input class="ng-inp" id="ng-pic-'+si+'-'+ii+'" placeholder="Nama PIC"/></div>'
@@ -1880,10 +1902,10 @@ function buildForm(type){
             +'<label class="ng-lbl">Tindakan Perbaikan (Rencana)</label>'
             +'<textarea class="ng-inp" id="ng-action-'+si+'-'+ii+'" placeholder="Rencana tindakan perbaikan/corrective action..." rows="2"></textarea>'
             +'<div>'
-            +'<label class="ng-lbl">📷 Foto Temuan (wajib untuk NC)</label>'
+            +'<label class="ng-lbl"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> Foto Temuan (wajib untuk NC)</label>'
             +'<div class="photo-upload" onclick="triggerPhotoNG('+si+','+ii+')">'
             +'<input type="file" accept="image/*" id="ng-photo-'+si+'-'+ii+'" onchange="addPhotoNG(this,'+si+','+ii+')" multiple style="z-index:1"/>'
-            +'<div style="font-size:20px">📷</div>'
+            +'<div style="font-size:20px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg></div>'
             +'<div style="font-size:11px;color:var(--R);font-weight:600;margin-top:3px">Tap untuk foto temuan</div>'
             +'</div>'
             +'<div class="photo-preview" id="ng-prev-'+si+'-'+ii+'"></div>'
@@ -1896,7 +1918,7 @@ function buildForm(type){
 
   // TEMUAN LAIN (Additional Findings) — di luar poin checklist baku, tapi tetap masuk NC & CAPA
   if(cfg.extraFindings){
-    extra+='<div class="fsec"><div class="fsh"><span class="fsh-t">🔍 Temuan Lain (Additional Findings)</span></div>'
+    extra+='<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6.5"/><path d="M14.7 14.7L20 20"/></svg> Temuan Lain (Additional Findings)</span></div>'
       +'<div style="font-size:11px;color:var(--G5);padding:8px 14px 4px">Gunakan bagian ini untuk mencatat temuan di luar poin checklist baku (mis. kondisi spesifik area/alat yang tidak tercakup di atas). Setiap temuan yang diisi akan otomatis dianggap NC dan masuk ke CAPA, sama seperti poin checklist yang ditandai NC.</div>'
       +'<div id="extra-find-wrap"></div>'
       +'<button type="button" class="addu" onclick="addExtraFind()">＋ Tambah Temuan Lain</button>'
@@ -1905,10 +1927,10 @@ function buildForm(type){
 
   // SPEEDGUN
   if(cfg.spdMode){
-    extra+='<div class="fsec"><div class="fsh"><span class="fsh-t">🚦 Batas Kecepatan Area</span></div><div class="ffields">'
+    extra+='<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="18" rx="3"/><circle cx="12" cy="6.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="11" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="15.5" r="1.3" fill="currentColor" stroke="none"/><path d="M12 20v2"/></svg> Batas Kecepatan Area</span></div><div class="ffields">'
       +fgg('Batas Kecepatan','<div class="rg" id="spd-lim"><button class="rb" onclick="selRb(\'spd-lim\',this);recheckAllSpdUnits()">20 km/h</button><button class="rb on" onclick="selRb(\'spd-lim\',this);recheckAllSpdUnits()">30 km/h</button><button class="rb" onclick="selRb(\'spd-lim\',this);recheckAllSpdUnits()">40 km/h</button><button class="rb" onclick="selRb(\'spd-lim\',this);recheckAllSpdUnits()">60 km/h</button></div>')
       +'</div></div>'
-      +'<div class="fsec" id="spd-units-sec"><div class="fsh"><span class="fsh-t">📋 Data Unit Melintas</span><span class="fsh-c" id="spd-unit-count">0 unit</span></div><div id="spd-units-wrap"></div></div>'
+      +'<div class="fsec" id="spd-units-sec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg> Data Unit Melintas</span><span class="fsh-c" id="spd-unit-count">0 unit</span></div><div id="spd-units-wrap"></div></div>'
       +'<button class="addu" onclick="addSpdUnit()">＋ Tambah Unit Melintas</button>';
     SPD_UNITS=[];
     setTimeout(function(){addSpdUnit();},50);
@@ -1916,7 +1938,7 @@ function buildForm(type){
 
   // FATIGUE
   if(cfg.fatMode){
-    extra+='<div class="fsec" id="fu-sec"><div class="fsh"><span class="fsh-t">😴 Data Unit Melintas</span></div><div id="fu-wrap"></div></div>'
+    extra+='<div class="fsec" id="fu-sec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/><path d="M4 6l3-1.5M4 4.5L7 6"/></svg> Data Unit Melintas</span></div><div id="fu-wrap"></div></div>'
       +'<button class="addu" onclick="addFU()">＋ Tambah Unit Melintas</button>';
   }
 
@@ -1925,26 +1947,26 @@ function buildForm(type){
   // ── CAPA: tampil hanya jika NC atau Open ──
   extra+='<div id="capa-sec-wrap" style="display:none">';
   extra+='<div class="capa-form-sec">'
-    +'<div class="capa-form-hdr"><span style="font-size:16px">🔧</span><span class="capa-form-hdr-t">CAPA — Tindakan Perbaikan</span></div>'
+    +'<div class="capa-form-hdr"><span style="font-size:16px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg></span><span class="capa-form-hdr-t">CAPA — Tindakan Perbaikan</span></div>'
     +'<div style="font-size:11px;color:var(--G5);padding:4px 14px 8px">PIC dan Due Date sudah diisi per temuan NC di atas. Lengkapi evidence perbaikan dan status di bawah ini.</div>'
     +'<div class="capa-fields">'
-    +'<div class="fg"><label class="fl">📊 Status CAPA</label>'
+    +'<div class="fg"><label class="fl"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg> Status CAPA</label>'
     +'<div class="capa-status-row">'
-    +'<button class="capa-st-btn st-open on" id="cst-open" onclick="selCapaSt(this)">🔴 Open</button>'
-    +'<button class="capa-st-btn st-inprog" id="cst-inprog" onclick="selCapaSt(this)">🟡 In Progress</button>'
-    +'<button class="capa-st-btn st-pending" id="cst-pending" onclick="selCapaSt(this)">🔵 Pending Verifikasi</button>'
-    +'<button class="capa-st-btn st-closed" id="cst-closed" onclick="selCapaSt(this)">✅ Closed</button>'
+    +'<button class="capa-st-btn st-open on" id="cst-open" onclick="selCapaSt(this)"><svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#E53E3E"/></svg> Open</button>'
+    +'<button class="capa-st-btn st-inprog" id="cst-inprog" onclick="selCapaSt(this)"><svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#F2C94C"/></svg> In Progress</button>'
+    +'<button class="capa-st-btn st-pending" id="cst-pending" onclick="selCapaSt(this)"><svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#2B6CB0"/></svg> Pending Verifikasi</button>'
+    +'<button class="capa-st-btn st-closed" id="cst-closed" onclick="selCapaSt(this)"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> Closed</button>'
     +'</div></div>'
-    +'<div class="fg"><label class="fl">📷 Evidence Perbaikan</label>'
+    +'<div class="fg"><label class="fl"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> Evidence Perbaikan</label>'
     +'<div id="ev-auto-before-box" class="ev-auto-before" style="display:none">'
-    +'<div class="ev-auto-ic" id="ev-auto-before-ic">📷</div>'
+    +'<div class="ev-auto-ic" id="ev-auto-before-ic"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg></div>'
     +'<img id="ev-auto-before-img" style="display:none" onclick="window.open(this.src)"/>'
-    +'<div class="ev-auto-before-txt">✅ Foto <b>BEFORE</b> otomatis dipakai dari foto temuan NC di atas — tidak perlu upload ulang.</div>'
+    +'<div class="ev-auto-before-txt"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> Foto <b>BEFORE</b> otomatis dipakai dari foto temuan NC di atas — tidak perlu upload ulang.</div>'
     +'</div>'
     +'<div class="ev-ba-wrap single">'
-    +'<div class="ev-ba-slot"><div class="ev-ba-lbl after">✅ AFTER</div>'
+    +'<div class="ev-ba-slot"><div class="ev-ba-lbl after"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> AFTER</div>'
     +'<div class="ev-ba-add" id="ev-after-wrap"><input type="file" accept="image/*" onchange="setEvBA(this,\'after\')"/>'
-    +'<div style="font-size:20px">✅</div><div style="font-size:10px;color:var(--G5);margin-top:3px">Foto setelah diperbaiki</div></div>'
+    +'<div style="font-size:20px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg></div><div style="font-size:10px;color:var(--G5);margin-top:3px">Foto setelah diperbaiki</div></div>'
     +'<img id="ev-after-img" class="ev-ba-img" style="display:none" onclick="window.open(this.src)"/></div>'
     +'</div></div>'
     +'</div></div>';
@@ -1953,31 +1975,31 @@ function buildForm(type){
   // ── FOTO KEGIATAN (dokumentasi umum) ──
   // Selalu tampil terlepas dari ada/tidaknya temuan NC — ini murni dokumentasi kegiatan inspeksi,
   // BUKAN evidence CAPA (evidence CAPA/BEFORE-AFTER ada di section CAPA di atas, khusus utk temuan NC).
-  extra+='<div class="fsec"><div class="fsh"><span class="fsh-t">📷 Foto Kegiatan</span></div><div class="ffields">'
+  extra+='<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> Foto Kegiatan</span></div><div class="ffields">'
     +'<div style="font-size:11px;color:var(--G5);padding:0 0 6px">Dokumentasikan pelaksanaan inspeksi ini (opsional, bukan bagian dari CAPA).</div>'
-    +'<label class="photo-add"><input type="file" accept="image/*" multiple onchange="addPhotos(this)"/><span style="font-size:20px">📷</span><span style="font-size:12px;color:var(--G5)">Tap untuk ambil / pilih foto</span></label>'
+    +'<label class="photo-add"><input type="file" accept="image/*" multiple onchange="addPhotos(this)"/><span style="font-size:20px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg></span><span style="font-size:12px;color:var(--G5)">Tap untuk ambil / pilih foto</span></label>'
     +'<div class="photo-grid" id="photo-grid"></div>'
     +'</div></div>';
 
   // ── TANDA TANGAN DIGITAL ──
   extra+='<div class="sig-wrap">'
-    +'<div class="sig-hdr">✍️ Tanda Tangan Digital Inspektor</div>'
+    +'<div class="sig-hdr"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Tanda Tangan Digital Inspektor</div>'
     +'<div class="sig-canvas-wrap">'
     +'<canvas id="sig-canvas" class="sig-canvas" width="800" height="200"></canvas>'
     +'<div class="sig-actions">'
-    +'<button class="sig-clear" onclick="sigClear()">🗑 Hapus Tanda Tangan</button>'
+    +'<button class="sig-clear" onclick="sigClear()"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg> Hapus Tanda Tangan</button>'
     +'</div>'
     +'<div class="sig-name-row">'+fgg('Nama Penandatangan','<input class="fi" id="sig-name" value="'+(CU?CU.name:'')+'" placeholder="Nama inspektor..."/>')+'</div>'
     +'</div></div>';
 
-  var offNote=IS_ONLINE?'':'<div class="offline-note">📵 <span>Anda <strong>offline</strong> — laporan disimpan lokal & dikirim otomatis saat ada jaringan</span></div>';
+  var offNote=IS_ONLINE?'':'<div class="offline-note"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M8.3 8.3a15 15 0 0 0-3.3 2.2c-.6.5-.6 1.4 0 1.9L7 14.4M11.5 6.6A15 15 0 0 1 21 10.4c.6.5.6 1.4 0 1.9l-2 1.9M9 16l3 3 1-1"/></svg> <span>Anda <strong>offline</strong> — laporan disimpan lokal & dikirim otomatis saat ada jaringan</span></div>';
 
   return '<div class="fhdr"><button class="bk" onclick="goHome(null)" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>'
     +'<div><div class="ft">'+cfg.icon+' '+cfg.title+'</div><div class="fs">'+cfg.sub+'</div></div></div>'
     +'<div class="fbody">'
-    +'<div class="fsec"><div class="fsh"><span class="fsh-t">📋 Informasi Umum</span></div><div class="ffields">'+infoHtml+'</div></div>'
+    +'<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg> Informasi Umum</span></div><div class="ffields">'+infoHtml+'</div></div>'
     +extra+offNote
-    +'<button class="subbtn" id="subbtn" onclick="submitForm()">'+(IS_ONLINE?'☁️ Simpan & Kirim (Submit)':'💾 Simpan Offline (Offline Mode)')+'</button></div>';
+    +'<button class="subbtn" id="subbtn" onclick="submitForm()">'+(IS_ONLINE?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Simpan & Kirim (Submit)':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13H5z"/><path d="M8 3v6h8V3"/><path d="M7 21v-7h10v7"/></svg> Simpan Offline (Offline Mode)')+'</button></div>';
 }
 function fgg(label,input,noWrap){return (noWrap?'':'<div class="fg">')+'<label class="fl">'+label+'</label>'+input+(noWrap?'':'</div>');}
 function today(){return new Date().toISOString().split('T')[0];}
@@ -2130,9 +2152,9 @@ function doGetGPS(dot,txt){
     function(err){
       if(dot){dot.className='gps-dot';dot.style.background='#E53E3E';}
       var msg='';
-      if(err.code===1)msg='⚠️ Izin GPS ditolak — aktifkan di Pengaturan > Izin Lokasi, lalu tap di sini';
-      else if(err.code===2)msg='⚠️ Sinyal GPS lemah — pindah ke area terbuka, lalu tap di sini';
-      else msg='⚠️ GPS timeout — tap di sini untuk coba lagi';
+      if(err.code===1)msg='<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Izin GPS ditolak — aktifkan di Pengaturan > Izin Lokasi, lalu tap di sini';
+      else if(err.code===2)msg='<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Sinyal GPS lemah — pindah ke area terbuka, lalu tap di sini';
+      else msg='<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> GPS timeout — tap di sini untuk coba lagi';
       if(txt)txt.textContent=msg;
     },
     {enableHighAccuracy:true, timeout:15000, maximumAge:30000}
@@ -2157,7 +2179,7 @@ function addPhotos(input){
 function renderPhotoGrid(){
   var grid=el('photo-grid');if(!grid)return;
   grid.innerHTML=PHOTOS.map(function(src,i){
-    return '<div class="pthumb"><img src="'+src+'" onclick="viewPhoto(\''+i+'\')" alt="foto '+(i+1)+'"/><div class="pthumb-del" onclick="delPhoto('+i+')">✕</div></div>';
+    return '<div class="pthumb"><img src="'+src+'" onclick="viewPhoto(\''+i+'\')" alt="foto '+(i+1)+'"/><div class="pthumb-del" onclick="delPhoto('+i+')"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>';
   }).join('');
 }
 function delPhoto(i){PHOTOS.splice(i,1);renderPhotoGrid();}
@@ -2209,8 +2231,8 @@ function renderExtraFind(){
   wrap.innerHTML=EXTRA_FIND.map(function(f,idx){
     return '<div class="ng-detail show" style="margin:8px 14px;border:1px solid var(--G2)">'
       +'<div style="display:flex;align-items:center;justify-content:space-between">'
-      +'<div class="ng-lbl">⚠️ Temuan Lain #'+(idx+1)+'</div>'
-      +'<span onclick="removeExtraFind(\''+f.id+'\')" style="color:var(--R);font-weight:700;font-size:12px;cursor:pointer;padding:2px 6px">✕ Hapus</span>'
+      +'<div class="ng-lbl"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Temuan Lain #'+(idx+1)+'</div>'
+      +'<span onclick="removeExtraFind(\''+f.id+'\')" style="color:var(--R);font-weight:700;font-size:12px;cursor:pointer;padding:2px 6px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Hapus</span>'
       +'</div>'
       +'<label class="ng-lbl">Nama / Judul Temuan</label>'
       +'<input class="ng-inp" id="extra-name-'+f.id+'" placeholder="mis. Ceceran oli di area bongkar spare part"/>'
@@ -2223,10 +2245,10 @@ function renderExtraFind(){
       +'<label class="ng-lbl">Tindakan Perbaikan (Rencana)</label>'
       +'<textarea class="ng-inp" id="extra-action-'+f.id+'" placeholder="Rencana tindakan perbaikan/corrective action..." rows="2"></textarea>'
       +'<div>'
-      +'<label class="ng-lbl">📷 Foto Temuan</label>'
+      +'<label class="ng-lbl"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> Foto Temuan</label>'
       +'<div class="photo-upload" onclick="triggerPhotoExtra(\''+f.id+'\')">'
       +'<input type="file" accept="image/*" id="extra-photo-'+f.id+'" onchange="addPhotoExtra(this,\''+f.id+'\')" multiple style="z-index:1"/>'
-      +'<div style="font-size:20px">📷</div>'
+      +'<div style="font-size:20px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg></div>'
       +'<div style="font-size:11px;color:var(--R);font-weight:600;margin-top:3px">Tap untuk foto temuan</div>'
       +'</div>'
       +'<div class="photo-preview" id="extra-prev-'+f.id+'"></div>'
@@ -2296,7 +2318,7 @@ function renderFU(){
     var nowTime=new Date().toTimeString().slice(0,5);
     var signs=['Mata merah','Menguap','Kepala tertunduk','Respon lambat','Tidak ada tanda (No signs)'];
     return '<div class="urow" style="margin:10px 14px" id="fu'+u.id+'">'
-      +'<div class="urhdr"><span class="urn">Unit #'+(i+1)+'</span>'+(FU.length>1?'<button class="urm" onclick="remFU('+u.id+')">✕ Hapus</button>':'')+'</div>'
+      +'<div class="urhdr"><span class="urn">Unit #'+(i+1)+'</span>'+(FU.length>1?'<button class="urm" onclick="remFU('+u.id+')"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg> Hapus</button>':'')+'</div>'
       +'<div class="ugrid">'
       +'<div class="fg h"><label class="fl">No. Unit</label><input type="text" class="fi" id="u'+u.id+'-pl" placeholder="DT-001" value="'+(u._pl||'')+'"/></div>'
       +'<div class="fg h"><label class="fl">Jenis</label><select class="fi" id="u'+u.id+'-ty"><option value="">Pilih</option>'
@@ -2308,8 +2330,8 @@ function renderFU(){
       +'<div class="fg h"><label class="fl">Jam Melintas</label><input type="time" class="fi" id="u'+u.id+'-tm" value="'+(u._tm||nowTime)+'"/></div>'
       +'<div class="fg"><label class="fl">Nama Operator</label><input type="text" class="fi" id="u'+u.id+'-op" placeholder="Nama operator" value="'+(u._op||'')+'"/></div>'
       +'<div class="fg"><label class="fl">Respon</label><div style="display:flex;gap:6px">'
-        +'<button class="rb2 g'+(u._rg?' on':'')+'" id="u'+u.id+'-rg" onclick="setRsp('+u.id+',\'g\')">✅ Baik (Good)</button>'
-        +'<button class="rb2 b'+(u._rb?' on':'')+'" id="u'+u.id+'-rb" onclick="setRsp('+u.id+',\'b\')">⚠️ Kurang Responsif (Low Response)</button>'
+        +'<button class="rb2 g'+(u._rg?' on':'')+'" id="u'+u.id+'-rg" onclick="setRsp('+u.id+',\'g\')"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> Baik (Good)</button>'
+        +'<button class="rb2 b'+(u._rb?' on':'')+'" id="u'+u.id+'-rb" onclick="setRsp('+u.id+',\'b\')"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Kurang Responsif (Low Response)</button>'
         +'</div></div>'
       +'<div class="fg"><label class="fl">Tanda Kelelahan</label><div class="rg" id="u'+u.id+'-sg" style="flex-wrap:wrap">'
         +signs.map(function(s){var on=u._sg&&u._sg.indexOf(s)>=0;return '<button class="rb'+(on?' on':'')+'" style="font-size:10px;padding:4px 9px" onclick="this.classList.toggle(\'on\')">'+s+'</button>';}).join('')
@@ -2337,21 +2359,21 @@ function openQuick(type){
     +'<div><div class="ft">'+cfg.icon+' '+cfg.title+'</div><div class="fs">'+cfg.sub+'</div></div></div>'
     +'<div class="quick-form">'
     +'<div class="quick-header '+cfg.cls+'"><div class="qh-ico">'+cfg.icon+'</div><div class="qh-title">'+cfg.title+'</div><div class="qh-sub">'+cfg.sub+'</div></div>'
-    +'<div class="fsec"><div class="fsh"><span class="fsh-t">📋 Detail Laporan</span></div><div class="ffields">'
+    +'<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg> Detail Laporan</span></div><div class="ffields">'
     +fgg('Nama Pelapor','<input class="fi" id="fi0" value="'+(CU?CU.name:'')+'" placeholder="Nama Anda"/>')
     +fgg('Tanggal & Waktu','<input type="datetime-local" class="fi" id="fi1" value="'+new Date().toISOString().slice(0,16)+'"/>')
     +fgg('Lokasi Kejadian','<input class="fi" id="fi2" placeholder="Contoh: Pit A, Blok 3"/>')
     +fgg('Uraian Kejadian / Temuan','<textarea class="fi" id="notes" rows="4" placeholder="Jelaskan secara detail apa yang terjadi / ditemukan..."></textarea>')
     +fgg('Tindakan Segera','<textarea class="fi" id="action" rows="2" placeholder="Tindakan yang sudah / akan dilakukan..."></textarea>')
     +'</div></div>'
-    +(type!=='positive'?'<div class="fsec"><div class="fsh"><span class="fsh-t">⚠️ Severity</span></div>'+buildSevMatrix('quick')+'</div>':'')
-    +'<div class="fsec"><div class="fsh"><span class="fsh-t">📍 GPS & Foto</span></div><div class="ffields">'
+    +(type!=='positive'?'<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Severity</span></div>'+buildSevMatrix('quick')+'</div>':'')
+    +'<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg> GPS & Foto</span></div><div class="ffields">'
     +'<div class="gps-tag" id="gps-tag" onclick="getGPS()"><div class="gps-dot gps-loading" id="gps-dot"></div><span id="gps-txt">Tap untuk ambil GPS</span></div>'
-    +'<label class="photo-add"><input type="file" accept="image/*" multiple onchange="addPhotos(this)"/><span style="font-size:20px">📷</span><span style="font-size:12px;color:var(--G5)">Tap untuk ambil / pilih foto</span></label>'
+    +'<label class="photo-add"><input type="file" accept="image/*" multiple onchange="addPhotos(this)"/><span style="font-size:20px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg></span><span style="font-size:12px;color:var(--G5)">Tap untuk ambil / pilih foto</span></label>'
     +'<div class="photo-grid" id="photo-grid"></div>'
     +'</div></div>'
-    +(IS_ONLINE?'':'<div class="offline-note">📵 <span>Offline — akan dikirim otomatis saat ada jaringan</span></div>')
-    +'<button class="subbtn" id="subbtn" onclick="submitQuick(\''+type+'\')">'+(IS_ONLINE?'☁️ Kirim Laporan (Submit Report)':'💾 Simpan Offline (Offline Mode)')+'</button>'
+    +(IS_ONLINE?'':'<div class="offline-note"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2l20 20"/><path d="M8.3 8.3a15 15 0 0 0-3.3 2.2c-.6.5-.6 1.4 0 1.9L7 14.4M11.5 6.6A15 15 0 0 1 21 10.4c.6.5.6 1.4 0 1.9l-2 1.9M9 16l3 3 1-1"/></svg> <span>Offline — akan dikirim otomatis saat ada jaringan</span></div>')
+    +'<button class="subbtn" id="subbtn" onclick="submitQuick(\''+type+'\')">'+(IS_ONLINE?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Kirim Laporan (Submit Report)':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13H5z"/><path d="M8 3v6h8V3"/><path d="M7 21v-7h10v7"/></svg> Simpan Offline (Offline Mode)')+'</button>'
     +'</div>';
   setScr('s-form');
   document.querySelectorAll('.nv').forEach(function(b){b.classList.remove('on');});
@@ -2360,7 +2382,7 @@ function openQuick(type){
 
 function submitQuick(type){
   var btn=el('subbtn');btn.disabled=true;
-  showLoad(IS_ONLINE?'☁️ Mengirim (Submitting)...':'💾 Menyimpan secara offline...');
+  showLoad(IS_ONLINE?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Mengirim (Submitting)...':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13H5z"/><path d="M8 3v6h8V3"/><path d="M7 21v-7h10v7"/></svg> Menyimpan secara offline...');
   var cfg=QUICK_CFG[type];
   genNoTemuanAsync(type,function(noTemuan){
     var rep={
@@ -2386,7 +2408,7 @@ function submitQuick(type){
 // ════ SUBMIT FORM ════
 function submitForm(){
   var btn=el('subbtn');btn.disabled=true;
-  showLoad(IS_ONLINE?'☁️ Mengirim laporan...':'💾 Menyimpan secara offline...');
+  showLoad(IS_ONLINE?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Mengirim laporan...':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13H5z"/><path d="M8 3v6h8V3"/><path d="M7 21v-7h10v7"/></svg> Menyimpan secara offline...');
   var cfg=FCFG[CFT];
   // Catatan: form ini TIDAK punya input nama pelapor terpisah (nama diambil otomatis dari profil/CU).
   // Field fi0, fi1, fi2... dibuat dinamis sesuai cfg.info, dan fi0 SELALU merupakan field lokasi utama.
@@ -2517,7 +2539,7 @@ var TYPE_COLORS={hazard:'#C53030',nearmiss:'#DD6B20',positive:'#2F855A',stopwork
 function sevPill(sev){
   if(!sev)return '';
   var cls={Low:'sev-pill-low',Medium:'sev-pill-medium',High:'sev-pill-high',Critical:'sev-pill-critical'}[sev]||'';
-  var ico={Low:'🟢',Medium:'🟡',High:'🟠',Critical:'🔴'}[sev]||'';
+  var ico={Low:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#2F855A"/></svg>',Medium:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#F2C94C"/></svg>',High:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#ED8936"/></svg>',Critical:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#E53E3E"/></svg>'}[sev]||'';
   return '<span class="pill '+cls+'">'+ico+' '+sev+'</span>';
 }
 function renderHist(){
@@ -2526,20 +2548,20 @@ function renderHist(){
   if(filt!=='all')rep=rep.filter(function(r){return r.type===filt;});
   var pend=getPending();
   var lst=el('hlist');
-  if(!rep.length){lst.innerHTML='<div class="empty"><div style="font-size:44px">📋</div><div style="font-size:14px;font-weight:600;margin-top:10px">Belum ada laporan</div></div>';return;}
+  if(!rep.length){lst.innerHTML='<div class="empty"><div style="font-size:44px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg></div><div style="font-size:14px;font-weight:600;margin-top:10px">Belum ada laporan</div></div>';return;}
   lst.innerHTML=rep.map(function(r){
     var sc=r.status==='NC'?'nc':r.status==='OK'?'okc':r.status==='Open'?'opc':r.type||'';
     var pc=r.status==='NC'?'pnc':r.status==='OK'?'pok':'pop';
     var isPend=pend.indexOf(r.id)>=0;
-    var syncPill=isPend?'<span class="pill poff">⏳ Menunggu Sync</span>':'<span class="pill psyn">☁️ Terkirim</span>';
+    var syncPill=isPend?'<span class="pill poff"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12"/><path d="M7 3c0 5 4 6 5 9-1 3-5 4-5 9M17 3c0 5-4 6-5 9 1 3 5 4 5 9"/></svg> Menunggu Sync</span>':'<span class="pill psyn"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Terkirim</span>';
     var clSummary='';
-    if(r.extra&&r.extra.CR){var oks=0,ngs=0,tot=0;Object.values(r.extra.CR).forEach(function(s){oks+=s.ok;ngs+=s.ng;tot+=s.total;});if(tot>0)clSummary='<span class="pill pok">✅'+oks+'</span>'+(ngs>0?'<span class="pill pnc">❌'+ngs+'</span>':'');}
-    var photoCount=(r.photos&&r.photos.length>0)?'<span class="pill" style="background:var(--G2);color:var(--G6)">📷 '+r.photos.length+'</span>':'';
+    if(r.extra&&r.extra.CR){var oks=0,ngs=0,tot=0;Object.values(r.extra.CR).forEach(function(s){oks+=s.ok;ngs+=s.ng;tot+=s.total;});if(tot>0)clSummary='<span class="pill pok"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>'+oks+'</span>'+(ngs>0?'<span class="pill pnc"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'+ngs+'</span>':'');}
+    var photoCount=(r.photos&&r.photos.length>0)?'<span class="pill" style="background:var(--G2);color:var(--G6)"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> '+r.photos.length+'</span>':'';
     return '<div class="hcard '+sc+'" onclick="showDet(\''+r.id+'\')">'
       +'<div class="hmeta"><span class="htype">'+r.typeName+'</span><span class="htime">'+ft(r.timestamp)+'</span></div>'
       +(r.noTemuan?'<div style="font-size:10px;font-weight:700;color:var(--G5);font-family:monospace;margin-bottom:3px">'+r.noTemuan+'</div>':'')
       +'<div class="htitle">'+(r.userName||r.reporter||'—')+'</div>'
-      +'<div class="hloc">📍 '+r.location+' · '+fd(r.timestamp)+'</div>'
+      +'<div class="hloc"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg> '+r.location+' · '+fd(r.timestamp)+'</div>'
       +'<div class="hpills"><span class="pill '+pc+'">'+(r.status||'Pending')+'</span>'+sevPill(r.severity)+syncPill+clSummary+photoCount+'</div>'
       +'</div>';
   }).join('');
@@ -2549,9 +2571,9 @@ function renderHist(){
 function pdfBtnHtmlFor(r){
   var fn=r.type==='fatigue'?'downloadFatiguePDF':r.type==='speedgun'?'downloadSpeedgunPDF':'downloadInspeksiPDF';
   var lbl=(r.type==='fatigue'||r.type==='speedgun')?'Download PDF (Shift Ini)':(r.type==='gabungan'?'Download PICA':'Download PDF Laporan');
-  var html='<button class="pdf-btn blue" onclick="'+fn+'(\''+r.id+'\')">📄 '+lbl+'</button>';
+  var html='<button class="pdf-btn blue" onclick="'+fn+'(\''+r.id+'\')"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg> '+lbl+'</button>';
   if(canShareFiles()){
-    html+='<button class="pdf-btn green" onclick="'+fn+'(\''+r.id+'\',true)">📤 Bagikan (WA, dll)</button>';
+    html+='<button class="pdf-btn green" onclick="'+fn+'(\''+r.id+'\',true)"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg> Bagikan (WA, dll)</button>';
   }
   return html;
 }
@@ -2563,10 +2585,10 @@ function showDet(id){
   var info=[['No. Laporan',r.noTemuan||'—'],['Inspektor',r.userName||r.reporter||'—'],['Lokasi',r.location||'—'],['Departemen',r.userDept||'—'],['Shift',r.userShift||'—'],['Tanggal',fd(r.timestamp)],['Jam',ft(r.timestamp)],
     ['Severity',sevPill(r.severity)||'—'],
     ['Status','<span class="pill '+(r.status==='OK'?'pok':r.status==='NC'?'pnc':'pop')+'">'+(r.status||'Pending')+'</span>'],
-    ['Sinkronisasi (Sync)',r.synced?'☁️ Terkirim (Synced)':'⏳ Menunggu'],
+    ['Sinkronisasi (Sync)',r.synced?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Terkirim (Synced)':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12"/><path d="M7 3c0 5 4 6 5 9-1 3-5 4-5 9M17 3c0 5-4 6-5 9 1 3 5 4 5 9"/></svg> Menunggu'],
     ['Temuan',r.notes||'—'],['Tindakan (Action)',r.action||'—']
   ];
-  if(r.gps) info.push(['Koordinat GPS','📍 '+r.gps.lat+', '+r.gps.lng+' (±'+r.gps.acc+'m)']);
+  if(r.gps) info.push(['Koordinat GPS','<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg> '+r.gps.lat+', '+r.gps.lng+' (±'+r.gps.acc+'m)']);
   info.forEach(function(row){h+='<div class="dr"><span class="dk">'+row[0]+'</span><span class="dv">'+row[1]+'</span></div>';});
   if(r.extra&&r.extra.infoExtra&&r.extra.infoExtra.length){
     r.extra.infoExtra.forEach(function(fx){h+='<div class="dr"><span class="dk">'+esc(fx.label)+'</span><span class="dv">'+esc(fx.value)+'</span></div>';});
@@ -2583,7 +2605,7 @@ function showDet(id){
     h+='<div class="m-sec-t">Hasil Checklist</div>';
     Object.values(r.extra.CR).forEach(function(s){
       var pct=s.total?Math.round((s.ok+s.na)/s.total*100):0;
-      h+='<div class="dr"><span class="dk">'+s.title+'</span><span class="dv"><span style="color:var(--GR)">✅'+s.ok+'</span> <span style="color:var(--R)">❌'+s.ng+'</span> <span style="color:var(--G5)">N/A:'+s.na+'</span> <strong style="color:'+(s.ng>0?'var(--R)':'var(--GR)')+'">'+pct+'%</strong></span></div>';
+      h+='<div class="dr"><span class="dk">'+s.title+'</span><span class="dv"><span style="color:var(--GR)"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>'+s.ok+'</span> <span style="color:var(--R)"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>'+s.ng+'</span> <span style="color:var(--G5)">N/A:'+s.na+'</span> <strong style="color:'+(s.ng>0?'var(--R)':'var(--GR)')+'">'+pct+'%</strong></span></div>';
     });
     // Detail lengkap setiap point checklist (bukan hanya rekap)
     var anyItemsUi=Object.values(r.extra.CR).some(function(s){return s.items&&s.items.length;});
@@ -2605,11 +2627,11 @@ function showDet(id){
     h+='<div class="m-sec-t">Detail Temuan NC ('+r.extra.ngDetails.length+')</div>';
     r.extra.ngDetails.forEach(function(ng,i){
       h+='<div style="background:var(--RL);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;border-left:3px solid var(--R)">'
-        +'<div style="font-size:12px;font-weight:700;color:var(--R);margin-bottom:4px">⚠️ NC #'+(i+1)+' — '+ng.item+'</div>'
+        +'<div style="font-size:12px;font-weight:700;color:var(--R);margin-bottom:4px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> NC #'+(i+1)+' — '+ng.item+'</div>'
         +(ng.desc?'<div style="font-size:12px;color:var(--B);margin-bottom:3px">'+esc(ng.desc)+'</div>':'')
-        +(ng.action?'<div style="font-size:11.5px;color:var(--G7);margin-bottom:3px">🔧 Rencana Tindakan: '+esc(ng.action)+'</div>':'')
-        +(ng.pic?'<div style="font-size:11px;color:var(--G6)">👤 PIC: <strong>'+ng.pic+'</strong></div>':'')
-        +(ng.dueDate?'<div style="font-size:11px;color:var(--G6)">📅 Target: <strong>'+ng.dueDate+'</strong></div>':'')
+        +(ng.action?'<div style="font-size:11.5px;color:var(--G7);margin-bottom:3px"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg> Rencana Tindakan: '+esc(ng.action)+'</div>':'')
+        +(ng.pic?'<div style="font-size:11px;color:var(--G6)"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg> PIC: <strong>'+ng.pic+'</strong></div>':'')
+        +(ng.dueDate?'<div style="font-size:11px;color:var(--G6)"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg> Target: <strong>'+ng.dueDate+'</strong></div>':'')
         +(ng.photos&&ng.photos.length?'<div style="display:flex;gap:4px;margin-top:6px">'+ng.photos.map(function(src){return '<img src="'+src+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px;cursor:pointer" onclick="window.open(this.src)"/>';}).join('')+'</div>':'')
         +'</div>';
     });
@@ -2617,7 +2639,7 @@ function showDet(id){
 
   if(r.extra&&r.extra.speed){
     h+='<div class="m-sec-t">Data Kecepatan</div>';
-    [['Kecepatan','<strong style="font-size:18px;color:'+(r.extra.overSpeed?'var(--R)':'var(--GR)')+'">'+r.extra.speed+' km/h</strong>'],['Batas',r.extra.limit],['Kecepatan Berlebih (Over Speed)',r.extra.overSpeed?'⚠️ Ya (Over Speed)':'✅ Tidak'],['No. Unit',r.extra.plate||'—'],['Jenis Unit',r.extra.vtype||'—'],['Operator',r.extra.driver||'—']].forEach(function(row){h+='<div class="dr"><span class="dk">'+row[0]+'</span><span class="dv">'+row[1]+'</span></div>';});
+    [['Kecepatan','<strong style="font-size:18px;color:'+(r.extra.overSpeed?'var(--R)':'var(--GR)')+'">'+r.extra.speed+' km/h</strong>'],['Batas',r.extra.limit],['Kecepatan Berlebih (Over Speed)',r.extra.overSpeed?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Ya (Over Speed)':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> Tidak'],['No. Unit',r.extra.plate||'—'],['Jenis Unit',r.extra.vtype||'—'],['Operator',r.extra.driver||'—']].forEach(function(row){h+='<div class="dr"><span class="dk">'+row[0]+'</span><span class="dv">'+row[1]+'</span></div>';});
   }
   if(r.extra&&r.extra.units&&r.extra.units.length){
     h+='<div class="m-sec-t">Unit Melintas ('+r.extra.units.length+')</div>';
@@ -3528,10 +3550,10 @@ function updHistPDFBar(){
   var bar=el('hist-pdf-bar');if(!bar)return;
   if(filt==='fatigue'){
     bar.style.display='flex';
-    bar.innerHTML='<button class="pdf-btn green" onclick="downloadFatiguePDF()">📄 Download PDF Fatigue Shift</button>';
+    bar.innerHTML='<button class="pdf-btn green" onclick="downloadFatiguePDF()"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg> Download PDF Fatigue Shift</button>';
   } else if(filt==='speedgun'){
     bar.style.display='flex';
-    bar.innerHTML='<button class="pdf-btn blue" onclick="downloadSpeedgunPDF()">📄 Download PDF Speedgun Shift</button>';
+    bar.innerHTML='<button class="pdf-btn blue" onclick="downloadSpeedgunPDF()"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg> Download PDF Speedgun Shift</button>';
   } else {
     bar.style.display='none';bar.innerHTML='';
   }
