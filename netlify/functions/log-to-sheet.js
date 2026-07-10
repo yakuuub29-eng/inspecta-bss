@@ -216,3 +216,4 @@ export default async (req) => {
 };
 
 export const config = { path: '/api/log-to-sheet' };
+
