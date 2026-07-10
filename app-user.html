@@ -883,7 +883,7 @@ function updShiftAuto(){
   var isDS=(h>=6&&h<18);
   var shiftLabel=isDS?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="9" r="3.5"/><path d="M11 17a4 4 0 0 0-.3-8 5.3 5.3 0 0 0-10 1.7A3.7 3.7 0 0 0 2 14a3.7 3.7 0 0 0 3.7 3.7h5.6z"/></svg> Shift Siang (DS 06:00–18:00)':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg> Shift Malam (NS 18:00–06:00)';
   var el2=document.getElementById('hshift');
-  if(el2)el2.textContent=shiftLabel;
+  if(el2)el2.innerHTML=shiftLabel;
   // Simpan ke CU untuk dipakai saat submit
   if(CU){CU.shift=isDS?'DS (06:00–18:00)':'NS (18:00–06:00)';
     localStorage.setItem(UK,JSON.stringify(CU));}

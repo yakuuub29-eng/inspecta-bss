@@ -1,12 +1,20 @@
-// INSPECTA Service Worker v1.3
+// INSPECTA Service Worker v1.2
 // PT Bina Sarana Sukses — SHE Department
-// v1.2: bump cache version untuk paksa hapus Cache Storage lama
-// (memperbaiki isu: app-user selalu terbuka sebagai dashboard-admin
-// akibat cache lama yang tidak terhapus oleh "clear cache" browser biasa)
-// v1.3: bump cache version lagi — ganti icon-192.png/icon-512.png ke versi flat (tanpa gradasi/shadow,
-// jauh lebih kecil ukurannya) supaya versi baru benar-benar ke-cache ulang, bukan pakai ikon lama.
+//
+// PERBAIKAN v1.2: Strategi fetch untuk file HTML (app-user.html, dashboard-admin.html)
+// diubah dari "cache-first" menjadi "network-first". Sebelumnya, begitu file sempat
+// ke-cache sekali, PWA akan TERUS menampilkan versi lama itu selama-lamanya walau
+// server sudah di-update — karena SW hanya mengambil versi baru di belakang layar
+// untuk cache berikutnya, bukan untuk ditampilkan saat itu juga. Sekarang: kalau HP
+// online, selalu ambil versi TERBARU dari server dulu; kalau gagal/offline, baru
+// pakai cache sebagai fallback (jadi tetap bisa dipakai offline di lapangan seperti
+// biasa, tapi update selalu langsung kepakai begitu ada sinyal).
+//
+// CATATAN UNTUK UPDATE SELANJUTNYA: naikkan angka versi di CACHE_NAME setiap kali
+// sw.js sendiri diubah, supaya browser mendeteksi ada Service Worker baru dan proses
+// install/activate (yang membersihkan cache lama) benar-benar berjalan.
 
-const CACHE_NAME = 'inspecta-v1.3';
+const CACHE_NAME = 'inspecta-v1.2';
 const STATIC_FILES = [
   './app-user.html',
   './dashboard-admin.html',
@@ -16,6 +24,13 @@ const STATIC_FILES = [
   './offline.html',
   './404.html'
 ];
+
+// File yang WAJIB selalu dicek ke jaringan dulu (app shell utama).
+// Ekstensi statis (icon, manifest) tetap boleh cache-first karena jarang berubah.
+function isAppShell(url) {
+  return url.endsWith('/app-user.html') || url.endsWith('/dashboard-admin.html') ||
+         url.endsWith('/') || url.endsWith('/index.html');
+}
 
 // ── INSTALL ──
 self.addEventListener('install', function(e) {
@@ -48,7 +63,10 @@ self.addEventListener('activate', function(e) {
   );
 });
 
-// ── FETCH: Cache-first untuk HTML/assets, Network-first untuk Firebase ──
+// ── FETCH ──
+// Firebase/CDN/API      → network only (data real-time, tidak boleh cache)
+// App shell (HTML)      → network-first, fallback ke cache kalau offline
+// Static assets lainnya → cache-first, update cache di belakang layar
 self.addEventListener('fetch', function(e) {
   var url = e.request.url;
 
@@ -64,7 +82,25 @@ self.addEventListener('fetch', function(e) {
     return;
   }
 
-  // App files → Cache-first, background update
+  // App shell HTML → NETWORK-FIRST supaya update selalu langsung kepakai saat online
+  if (e.request.mode === 'navigate' || isAppShell(url)) {
+    e.respondWith(
+      fetch(e.request).then(function(response) {
+        if (response && response.status === 200) {
+          var clone = response.clone();
+          caches.open(CACHE_NAME).then(function(cache) { cache.put(e.request, clone); });
+        }
+        return response;
+      }).catch(function() {
+        return caches.match(e.request).then(function(cached) {
+          return cached || caches.match('./offline.html');
+        });
+      })
+    );
+    return;
+  }
+
+  // Static assets lain (icon, manifest, dll) → cache-first, update di belakang layar
   e.respondWith(
     caches.match(e.request).then(function(cached) {
       var networkFetch = fetch(e.request).then(function(response) {
