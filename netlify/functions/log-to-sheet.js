@@ -134,6 +134,52 @@ async function appendRow(sheetId, tabName, row, token) {
 }
 
 export default async (req) => {
+  const url = new URL(req.url);
+
+  // ── MODE TES ── Buka link ini langsung di browser (GET, bukan dari aplikasi) untuk
+  // mengecek koneksi ke Google Sheets tanpa perlu submit laporan sungguhan:
+  //   https://<site-anda>.netlify.app/api/log-to-sheet?test=1
+  // Hasilnya (sukses / pesan error persis) langsung tampil di layar sebagai teks.
+  if (req.method === 'GET' && url.searchParams.get('test') === '1') {
+    try {
+      const sheetId = Netlify.env.get('GOOGLE_SHEET_ID');
+      if (!sheetId) {
+        return new Response('❌ GAGAL: env var GOOGLE_SHEET_ID belum diset di Netlify.', { status: 200 });
+      }
+      const email = Netlify.env.get('GOOGLE_SA_EMAIL');
+      if (!email) {
+        return new Response('❌ GAGAL: env var GOOGLE_SA_EMAIL belum diset di Netlify.', { status: 200 });
+      }
+      const privateKey = Netlify.env.get('GOOGLE_SA_PRIVATE_KEY');
+      if (!privateKey) {
+        return new Response('❌ GAGAL: env var GOOGLE_SA_PRIVATE_KEY belum diset di Netlify.', { status: 200 });
+      }
+
+      const token = await getAccessToken();
+      const tabName = 'TES KONEKSI';
+      await ensureTab(sheetId, tabName, token);
+      await appendRow(sheetId, tabName, [
+        new Date().toISOString(), 'TEST-' + Date.now(), 'Tes Koneksi', 'System Test', '-', '-', '-', 'OK', '-', '-',
+      ], token);
+
+      return new Response(
+        '✅ BERHASIL! Cek Google Sheet Anda, harus ada tab baru bernama "TES KONEKSI" dengan 1 baris data.\n\n' +
+        'Kalau ini muncul tapi laporan asli dari aplikasi tetap tidak masuk, berarti masalahnya ada di sisi ' +
+        'aplikasi (app-user.html) — kemungkinan besar HP masih pakai versi cache lama.',
+        { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+      );
+    } catch (e) {
+      return new Response(
+        '❌ GAGAL: ' + String((e && e.message) || e) +
+        '\n\nPenyebab paling umum:\n' +
+        '1. Spreadsheet belum di-share (Editor) ke email service account\n' +
+        '2. Google Sheets API belum di-Enable di Google Cloud Console\n' +
+        '3. GOOGLE_SA_PRIVATE_KEY tidak lengkap / rusak saat disalin',
+        { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+      );
+    }
+  }
+
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ ok: false, error: 'Method not allowed' }), { status: 405 });
   }
