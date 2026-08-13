@@ -278,6 +278,18 @@ tr{cursor:pointer;transition:background .1s}
 .item-del:hover{background:var(--RL);color:var(--R)}
 .add-item-btn{width:100%;padding:7px;border:1.5px dashed var(--G3);border-radius:6px;background:transparent;cursor:pointer;font-size:12px;color:var(--G5);font-family:var(--f);transition:all .13s;margin-top:3px}
 .add-item-btn:hover{border-color:var(--Y);color:var(--YD);background:var(--YP)}
+.item-exp-btn{width:22px;height:22px;border:none;background:none;cursor:pointer;color:var(--G4);font-size:11px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
+.item-exp-btn:hover{background:var(--G2);color:var(--G7)}
+.item-exp-btn.on{color:var(--BL)}
+.item-detail{margin:2px 0 6px 26px;padding:12px;border:1px solid var(--G2);border-left:3px solid var(--BL);border-radius:8px;background:var(--W);display:flex;flex-direction:column;gap:8px}
+.item-detail-row{display:flex;flex-direction:column;gap:3px}
+.item-detail-l{font-size:9.5px;font-weight:800;color:var(--G5);text-transform:uppercase;letter-spacing:.3px}
+.item-detail-inp{font-size:11.5px;border:1px solid var(--G2);border-radius:6px;padding:6px 9px;outline:none;font-family:var(--f);background:var(--G0);resize:vertical;min-height:32px;line-height:1.5}
+.item-detail-inp:focus{border-color:var(--Y);background:var(--W)}
+.item-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.item-detail-sel{font-size:11.5px;border:1px solid var(--G2);border-radius:6px;padding:6px 9px;outline:none;font-family:var(--f);background:var(--G0)}
+.item-detail-reg{border-left-color:#2B6CB0}
+.item-detail-reg .item-detail-l{color:#1E4E8C}
 .save-bar{padding:14px 18px;border-top:1px solid var(--G2);display:flex;align-items:center;justify-content:space-between;background:var(--G0)}
 .save-info{font-size:12px;color:var(--G5)}
 .btn-save{padding:10px 22px;background:var(--Y);border:none;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--fd);color:var(--G9);transition:all .13s}
@@ -2651,27 +2663,76 @@ function renderEB(){
       +'<div class="sec-acts"><button class="sact" onclick="mvSec('+si+',-1)">↑</button><button class="sact" onclick="mvSec('+si+',1)">↓</button><button class="sact del" onclick="delSec('+si+')">🗑 Hapus</button></div></div>'
       +'<div class="items-wrap" id="iw-'+si+'">'
       +sec.items.map(function(item,ii){
-        // Dukung item objek {text,criteria,reg,risk,evidence,action,freq} dari Master Area V1.0
-        // maupun string polos (checklist lama). Saat admin edit teks, hanya field .text yang
-        // diubah — field risk/reg/evidence/action/freq TETAP dipertahankan agar tidak hilang.
+        // Dukung item objek {text,criteria,reg,risk,evidence,action,freq,regDetail} dari Master
+        // Area V1.0 maupun string polos (checklist lama). Saat admin edit teks, hanya field .text
+        // yang diubah — field lain TETAP dipertahankan agar tidak hilang (lihat saveCL()).
         var isObj=(typeof item==='object'&&item!==null);
         var itemTxt=isObj?item.text:item;
         var riskTag=isObj&&item.risk?(' <span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:#FEF0E1;color:#B54708">'+item.risk+'</span>'):'';
-        return '<div class="item-row"><span class="item-n">'+(ii+1)+'.</span>'
+        var expKey=si+'-'+ii;
+        var isExp=EXP_ITEMS.has(expKey);
+        var row='<div class="item-row"><span class="item-n">'+(ii+1)+'.</span>'
+          +'<button class="item-exp-btn'+(isExp?' on':'')+'" onclick="toggleItemExp('+si+','+ii+')" title="Detail lengkap (kriteria, regulasi, dll)">'+(isExp?'▼':'▶')+'</button>'
           +'<input class="item-inp" value="'+esc(itemTxt)+'" onchange="'+(isObj?('editData.sections['+si+'].items['+ii+'].text=this.value;'):('editData.sections['+si+'].items['+ii+']=this.value;'))+'updSI()" placeholder="Poin checklist..."/>'
           +riskTag
           +'<button class="item-del" onclick="delItem('+si+','+ii+')">✕</button></div>';
+        if(isExp){
+          if(!isObj){
+            row+='<div class="item-detail"><div style="font-size:11px;color:var(--G5)">Poin ini masih format lama (teks polos), belum punya kriteria/regulasi/dll.</div>'
+              +'<button class="add-item-btn" style="margin-top:4px" onclick="upgradeItemToObj('+si+','+ii+')">＋ Tambahkan Detail Lengkap</button></div>';
+          } else {
+            row+='<div class="item-detail">'
+              +'<div class="item-detail-row"><label class="item-detail-l">Kriteria Pemeriksaan (Objektif)</label>'
+              +'<textarea class="item-detail-inp" rows="2" onchange="setItemField('+si+','+ii+',\'criteria\',this.value)" placeholder="Apa yang harus diperiksa secara objektif...">'+esc(item.criteria||'')+'</textarea></div>'
+              +'<div class="item-detail-grid">'
+              +'<div class="item-detail-row"><label class="item-detail-l">Tingkat Risiko</label>'
+              +'<select class="item-detail-sel" onchange="setItemField('+si+','+ii+',\'risk\',this.value)">'
+              +['','Low','Medium','High','Extreme'].map(function(r){return '<option value="'+r+'"'+(item.risk===r?' selected':'')+'>'+(r||'— Tidak diset —')+'</option>';}).join('')
+              +'</select></div>'
+              +'<div class="item-detail-row"><label class="item-detail-l">Frekuensi Inspeksi</label>'
+              +'<input class="item-detail-inp" style="min-height:auto" value="'+esc(item.freq||'')+'" onchange="setItemField('+si+','+ii+',\'freq\',this.value)" placeholder="mis. Bulanan"/></div>'
+              +'</div>'
+              +'<div class="item-detail-row"><label class="item-detail-l">Dasar Regulasi (Ref singkat)</label>'
+              +'<input class="item-detail-inp" style="min-height:auto" value="'+esc(item.reg||'')+'" onchange="setItemField('+si+','+ii+',\'reg\',this.value)" placeholder="mis. Permenaker 04/1980 (APAR)"/></div>'
+              +'<div class="item-detail-row"><label class="item-detail-l">Bukti Wajib Diunggah</label>'
+              +'<input class="item-detail-inp" style="min-height:auto" value="'+esc(item.evidence||'')+'" onchange="setItemField('+si+','+ii+',\'evidence\',this.value)" placeholder="mis. Foto"/></div>'
+              +'<div class="item-detail-row"><label class="item-detail-l">Rekomendasi Tindakan (jika Tidak Sesuai)</label>'
+              +'<textarea class="item-detail-inp" rows="2" onchange="setItemField('+si+','+ii+',\'action\',this.value)" placeholder="Tindakan yang disarankan...">'+esc(item.action||'')+'</textarea></div>'
+              +'<div class="item-detail-row item-detail-reg"><label class="item-detail-l">📌 Ketentuan Spesifik (Pasal/Lampiran) — tampil di popup Referensi Regulasi app inspector</label>'
+              +'<textarea class="item-detail-inp" rows="3" onchange="setItemField('+si+','+ii+',\'regDetail\',this.value)" placeholder="Kutipan pasal/lampiran spesifik yang berkaitan langsung dengan poin ini...">'+esc(item.regDetail||'')+'</textarea></div>'
+              +'</div>';
+          }
+        }
+        return row;
       }).join('')
       +'<button class="add-item-btn" onclick="addItem('+si+')">＋ Tambah Poin</button>'
       +'</div></div>';
   }).join('');
   updSI();
 }
+var EXP_ITEMS=new Set();
+function toggleItemExp(si,ii){
+  var key=si+'-'+ii;
+  if(EXP_ITEMS.has(key))EXP_ITEMS.delete(key);else EXP_ITEMS.add(key);
+  renderEB();
+}
+function upgradeItemToObj(si,ii){
+  var txt=editData.sections[si].items[ii];
+  editData.sections[si].items[ii]={text:txt,criteria:'',reg:'',risk:'',evidence:'',action:'',freq:''};
+  renderEB();
+}
+function setItemField(si,ii,field,value){
+  var item=editData.sections[si].items[ii];
+  if(typeof item!=='object'||item===null)return; // safety guard
+  item[field]=value;
+  updSI();
+  if(field==='risk')renderEB(); // refresh badge warna di baris ringkas
+}
 function updSI(){var tot=editData.sections.reduce(function(a,s){return a+s.items.length;},0);var si=el('save-info');if(si)si.textContent=editData.sections.length+' seksi · '+tot+' poin — belum disimpan';}
-function addSec(){if(!curEF){showToast('⚠️ Pilih form dulu!');return;}editData.sections.push({title:'Seksi Baru',items:['Poin baru — klik untuk ubah']});renderEB();setTimeout(function(){el('edit-body').scrollTop=99999;},100);}
+function addSec(){if(!curEF){showToast('⚠️ Pilih form dulu!');return;}editData.sections.push({title:'Seksi Baru',items:[{text:'Poin baru — klik untuk ubah',criteria:'',reg:'',risk:'',evidence:'',action:'',freq:''}]});renderEB();setTimeout(function(){el('edit-body').scrollTop=99999;},100);}
 function delSec(si){if(!confirm('Hapus seksi "'+editData.sections[si].title+'"?'))return;editData.sections.splice(si,1);renderEB();}
 function mvSec(si,d){var ni=si+d;if(ni<0||ni>=editData.sections.length)return;var tmp=editData.sections[si];editData.sections[si]=editData.sections[ni];editData.sections[ni]=tmp;renderEB();}
-function addItem(si){editData.sections[si].items.push('Poin baru — klik untuk ubah');renderEB();setTimeout(function(){var inps=document.querySelectorAll('#iw-'+si+' .item-inp');if(inps.length){var l=inps[inps.length-1];l.focus();l.select();}},80);}
+function addItem(si){editData.sections[si].items.push({text:'Poin baru — klik untuk ubah',criteria:'',reg:'',risk:'',evidence:'',action:'',freq:''});renderEB();setTimeout(function(){var inps=document.querySelectorAll('#iw-'+si+' .item-inp');if(inps.length){var l=inps[inps.length-1];l.focus();l.select();}},80);}
 function delItem(si,ii){if(editData.sections[si].items.length<=1){showToast('⚠️ Minimal 1 poin!');return;}editData.sections[si].items.splice(ii,1);renderEB();}
 function saveCL(){
   if(!curEF)return;
