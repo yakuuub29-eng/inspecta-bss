@@ -3241,7 +3241,32 @@ function adminDownloadReportPDF(reportId){
     });
     y=doc.lastAutoTable.finalY+5;
 
-    // Foto NC per temuan
+    // Dasar Regulasi per temuan NC — menampilkan kutipan pasal/lampiran spesifik
+    // (field regDetail) yang jadi acuan hukum temuan tersebut, bukan cuma nama
+    // regulasi umum. Ini yang paling dicari auditor eksternal/SMKP: bukti bahwa
+    // temuan digrounded pada ketentuan hukum yang jelas, bukan penilaian subjektif.
+    var ngWithReg=r.extra.ngDetails.filter(function(ng){return ng.regDetail||ng.reg;});
+    if(ngWithReg.length){
+      if(y>220){doc.addPage();admPdfHeader(doc,r.typeName,r.noTemuan,2,pageEst);y=26;}
+      doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(30,78,140);
+      doc.text('DASAR REGULASI TEMUAN',10,y);y+=5;
+      ngWithReg.forEach(function(ng,i){
+        if(y>255){doc.addPage();admPdfHeader(doc,r.typeName,r.noTemuan,2,pageEst);y=26;}
+        doc.setFillColor(235,244,255);doc.roundedRect(10,y-4,W-20,5.5,1,1,'F');
+        doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.setTextColor(30,78,140);
+        doc.text('#'+(i+1)+' '+(ng.item||'').substring(0,75),12,y);y+=4;
+        doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+        var regLines=doc.splitTextToSize('Ref: '+(ng.reg||'—'),W-24);
+        doc.text(regLines,12,y);y+=regLines.length*3.2+1;
+        if(ng.regDetail){
+          var detailLines=doc.splitTextToSize(ng.regDetail,W-24);
+          if(y+detailLines.length*3.2>270){doc.addPage();admPdfHeader(doc,r.typeName,r.noTemuan,2,pageEst);y=26;}
+          doc.setFont('helvetica','italic');doc.setTextColor(50,50,50);
+          doc.text(detailLines,12,y);y+=detailLines.length*3.2+3;
+        } else { y+=2; }
+      });
+      y+=3;
+    }
     var hasPhotos=r.extra.ngDetails.some(function(ng){return ng.photos&&ng.photos.length&&ng.photos[0];});
     if(hasPhotos){
       if(y>200){doc.addPage();admPdfHeader(doc,r.typeName,r.noTemuan,2,pageEst);y=26;}
@@ -3394,6 +3419,31 @@ function adminDownloadPICAPDF(reportId){
       didDrawPage:function(data){if(data.pageNumber>1)admPdfHeader(doc,'PICA — '+(r.typeName||'Inspeksi Gabungan'),r.noTemuan,2,pageEst);}
     });
     y=doc.lastAutoTable.finalY+6;
+
+    // Dasar Regulasi per temuan — sama seperti PDF laporan tunggal, menampilkan
+    // kutipan pasal/lampiran spesifik (regDetail) yang jadi acuan hukum temuan.
+    var findWithReg=findings.filter(function(f){return f.regDetail||f.reg;});
+    if(findWithReg.length){
+      if(y>220){doc.addPage();admPdfHeader(doc,'PICA — '+(r.typeName||'Inspeksi Gabungan'),r.noTemuan,2,pageEst);y=26;}
+      doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(30,78,140);
+      doc.text('DASAR REGULASI TEMUAN',10,y);y+=5;
+      findWithReg.forEach(function(f,i){
+        if(y>255){doc.addPage();admPdfHeader(doc,'PICA — '+(r.typeName||'Inspeksi Gabungan'),r.noTemuan,2,pageEst);y=26;}
+        doc.setFillColor(235,244,255);doc.roundedRect(10,y-4,W-20,5.5,1,1,'F');
+        doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.setTextColor(30,78,140);
+        doc.text('#'+(i+1)+' '+(f.item||'').substring(0,75),12,y);y+=4;
+        doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+        var regLines=doc.splitTextToSize('Ref: '+(f.reg||'—'),W-24);
+        doc.text(regLines,12,y);y+=regLines.length*3.2+1;
+        if(f.regDetail){
+          var detailLines=doc.splitTextToSize(f.regDetail,W-24);
+          if(y+detailLines.length*3.2>270){doc.addPage();admPdfHeader(doc,'PICA — '+(r.typeName||'Inspeksi Gabungan'),r.noTemuan,2,pageEst);y=26;}
+          doc.setFont('helvetica','italic');doc.setTextColor(50,50,50);
+          doc.text(detailLines,12,y);y+=detailLines.length*3.2+3;
+        } else { y+=2; }
+      });
+      y+=3;
+    }
   } else {
     doc.setFontSize(9);doc.setFont('helvetica','italic');doc.setTextColor(120,120,120);
     doc.text('Tidak ada temuan NC / Temuan Lain pada inspeksi ini — seluruh poin checklist dalam kondisi OK.',10,y);

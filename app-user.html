@@ -918,9 +918,12 @@ function showDetTL(id){
   var stLabel={'Open':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#E53E3E"/></svg> Open','Assigned':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#3182CE"/></svg> Assigned','In Progress':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#F2C94C"/></svg> In Progress','Waiting Verification':'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#805AD5"/></svg> Waiting Verifikasi','Closed':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> Closed'};
   var h='';
   [['Laporan',r.typeName||'—'],['Lokasi',r.location||'—'],['Tanggal',fd(r.timestamp)],['Temuan',r.notes||'—'],
-   ['PIC Perbaikan',capa.pic||'—'],['Due Date',capa.dueDate||'—'],['Status',stLabel[capa.status]||capa.status||'—'],
-   ['Tindakan',r.action||'—']
+   ['PIC Perbaikan',capa.pic||'—'],['Due Date',capa.dueDate||'—']
   ].forEach(function(row){h+='<div class="dr"><span class="dk">'+row[0]+'</span><span class="dv">'+esc(row[1])+'</span></div>';});
+  // Status pakai badge SVG (HTML) — TIDAK di-esc() karena esc() akan menampilkan
+  // kode SVG-nya sebagai teks mentah, bukan merender ikonnya (bug yang pernah terjadi).
+  h+='<div class="dr"><span class="dk">Status</span><span class="dv">'+(stLabel[capa.status]||esc(capa.status)||'—')+'</span></div>';
+  h+='<div class="dr"><span class="dk">Tindakan</span><span class="dv">'+esc(r.action||'—')+'</span></div>';
   if(capa.verifiedBy){h+='<div class="dr"><span class="dk">Diverifikasi Oleh</span><span class="dv">'+esc(capa.verifiedBy)+(capa.verificationDate?' — '+fd(capa.verificationDate):'')+'</span></div>';}
   if(capa.evBefore||capa.evAfter){
     h+='<div class="m-sec-t">Evidence Before → After</div>';
@@ -1340,7 +1343,56 @@ function setConnUI(online){
 
 // ════ LOCAL DB ════
 function getLocal(){try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}}
-function saveLocal(a){localStorage.setItem(SK,JSON.stringify(a));}
+function saveLocal(a){
+  try{
+    localStorage.setItem(SK,JSON.stringify(a));
+  }catch(e){
+    // localStorage penuh (QuotaExceededError) — JANGAN gagal diam-diam.
+    // Coba bersihkan dulu foto dari laporan LAMA yang sudah tersync ke Firebase
+    // (data lengkapnya sudah aman di server, salinan lokal cuma perlu untuk
+    // riwayat ringkas), lalu coba simpan ulang sekali.
+    console.warn('[INSPECTA] localStorage penuh, mencoba bersihkan laporan lama yang sudah tersync...', e);
+    var pruned=pruneOldSyncedReports(a);
+    try{
+      localStorage.setItem(SK,JSON.stringify(pruned));
+      showToast('⚠️ Penyimpanan HP hampir penuh — foto laporan lama (yang sudah terkirim) dibersihkan otomatis untuk hemat ruang','warning');
+      return;
+    }catch(e2){
+      // Masih gagal setelah dibersihkan — sekarang BENAR-BENAR beri tahu user,
+      // jangan biarkan mereka mengira laporan tersimpan padahal tidak.
+      console.error('[INSPECTA] Gagal simpan meski sudah dibersihkan:',e2);
+      showToast('❌ PENYIMPANAN HP PENUH! Laporan mungkin TIDAK tersimpan. Hapus foto/aplikasi lain, atau hubungi admin SHE segera.','error');
+      alert('⚠️ PENTING: Penyimpanan HP penuh sehingga laporan berisiko TIDAK tersimpan.\n\nSegera:\n1. Screenshot layar ini sebagai bukti\n2. Hapus foto/file lain di HP untuk membuat ruang\n3. Coba submit ulang\n4. Kalau masih gagal, hubungi admin SHE');
+    }
+  }
+}
+// Bersihkan field FOTO (base64, paling berat) dari laporan yang SUDAH tersync
+// ke Firebase & berumur lebih dari 14 hari — data lengkap sudah aman di server,
+// salinan lokal cuma untuk tampilan riwayat ringkas jadi tidak perlu foto lagi.
+// Field non-foto (status, tanggal, temuan, dll) TETAP disimpan agar riwayat
+// masih bisa ditampilkan.
+function pruneOldSyncedReports(reports){
+  var cutoff=Date.now()-(14*24*60*60*1000); // 14 hari
+  var prunedCount=0;
+  var result=reports.map(function(r){
+    if(!r.synced)return r; // belum tersync -> JANGAN disentuh, data satu-satunya masih di sini
+    var ts=new Date(r.timestamp).getTime();
+    if(isNaN(ts)||ts>cutoff)return r; // masih baru -> biarkan utuh
+    if(r._pruned)return r; // sudah pernah dibersihkan sebelumnya
+    prunedCount++;
+    var copy=JSON.parse(JSON.stringify(r));
+    copy.photos=[];
+    if(copy.signature)copy.signature.data='';
+    if(copy.capa){copy.capa.evBefore='';copy.capa.evAfter='';}
+    if(copy.extra&&copy.extra.ngDetails){
+      copy.extra.ngDetails.forEach(function(ng){ng.photos=[];});
+    }
+    copy._pruned=true; // tandai supaya tidak diproses ulang tiap kali save
+    return copy;
+  });
+  if(prunedCount)console.log('[INSPECTA] '+prunedCount+' laporan lama dibersihkan fotonya untuk hemat ruang.');
+  return result;
+}
 function getPending(){try{return JSON.parse(localStorage.getItem(PK)||'[]');}catch(e){return[];}}
 function savePend(a){localStorage.setItem(PK,JSON.stringify(a));}
 
@@ -9005,7 +9057,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function ft(d){return new Date(d).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});}
 function fd(d){return new Date(d).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});}
 function showToast(m,type){var t=el('toast');t.textContent=m;t.className='toast '+(type||'');t.classList.add('on');setTimeout(function(){t.classList.remove('on');},3000);}
-function showLoad(m){el('ltxt').textContent=m||'Memproses...';el('lov').classList.add('on');}
+function showLoad(m){el('ltxt').innerHTML=m||'Memproses...';el('lov').classList.add('on');}
 function hideLoad(){el('lov').classList.remove('on');}
 
 // ════ INIT ════
@@ -9018,6 +9070,19 @@ window.onload=function(){
     }catch(e){localStorage.removeItem(UK);}
   }
   if(!IS_ONLINE) onOffline();
+  // Pembersihan proaktif: jangan tunggu sampai penyimpanan benar-benar penuh
+  // baru bertindak (reaktif di saveLocal() itu jaring pengaman terakhir).
+  // Tiap app dibuka, cek & bersihkan foto laporan lama yang sudah tersync,
+  // supaya ruang selalu longgar untuk laporan baru.
+  setTimeout(function(){
+    try{
+      var loc=getLocal();
+      var pruned=pruneOldSyncedReports(loc);
+      if(JSON.stringify(pruned)!==JSON.stringify(loc)){
+        localStorage.setItem(SK,JSON.stringify(pruned));
+      }
+    }catch(e){console.warn('[INSPECTA] Pembersihan proaktif gagal (tidak fatal):',e);}
+  },2000);
 };
 </script>
 
