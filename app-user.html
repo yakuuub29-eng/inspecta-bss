@@ -1211,7 +1211,7 @@ function saveCAPAFromReport(rep){
   }
   // Sync ke Firebase jika online — foto base64 langsung ke Realtime Database
   if(FB_OK&&fbdb&&IS_ONLINE){
-    fbdb.ref('capa/'+capaId).set(caps[capaId]).catch(function(){});
+    fbdb.ref('capa/'+capaId).set(fbSafe(caps[capaId])).catch(function(){});
   }
 }
 // Dashboard admin memakai 3 status: 'Open'/'In Progress'/'Closed' (+ 'Overdue' dihitung otomatis).
@@ -1431,6 +1431,21 @@ function pruneOldSyncedReports(reports){
 function getPending(){try{return JSON.parse(localStorage.getItem(PK)||'[]');}catch(e){return[];}}
 function savePend(a){localStorage.setItem(PK,JSON.stringify(a));}
 
+// ════ JARING PENGAMAN UNTUK FIREBASE ════
+// Firebase Realtime Database MENOLAK MENTAH-MENTAH (throw sinkron, bukan promise
+// reject) setiap data yang mengandung "undefined" di properti manapun, walau cuma
+// satu field kecil di dalam objek besar. Ini gampang sekali kebobolan lewat bug
+// kecil (field opsional yang tidak diisi/tidak ada di sumbernya) dan akibatnya
+// FATAL: seluruh laporan gagal terkirim tanpa bekas yang jelas ke user.
+// JSON.stringify secara otomatis MEMBUANG key bernilai undefined di object biasa
+// (dan mengubah undefined jadi null di dalam array) — jadi round-trip
+// JSON.parse(JSON.stringify(x)) adalah cara murah & aman untuk "membersihkan"
+// undefined sebelum data dikirim ke Firebase, tanpa perlu jalan manual satu-satu.
+function fbSafe(obj){
+  try{return JSON.parse(JSON.stringify(obj));}
+  catch(e){console.warn('[INSPECTA] fbSafe gagal membersihkan data, kirim apa adanya:',e);return obj;}
+}
+
 function addReport(rep){
   var loc=getLocal();
   var idx=loc.findIndex(function(r){return r.id===rep.id;});
@@ -1442,7 +1457,7 @@ function addReport(rep){
 function pushToFB(rep){
   if(!FB_OK||!fbdb)return;
   // Kirim langsung ke Realtime Database termasuk foto base64 (tidak pakai Storage)
-  fbdb.ref('reports/'+rep.id).set(rep)
+  fbdb.ref('reports/'+rep.id).set(fbSafe(rep))
     .then(function(){
       var loc=getLocal();loc=loc.map(function(r){if(r.id===rep.id)r.synced=true;return r;});saveLocal(loc);
       var p=getPending().filter(function(id){return id!==rep.id;});savePend(p);updPendUI();
@@ -1479,7 +1494,7 @@ function syncPending(){
     var rep=loc.find(function(r){return r.id===id;});
     if(!rep){done++;chkDone();return;}
     // Kirim langsung termasuk foto base64 (tidak pakai Storage)
-    fbdb.ref('reports/'+id).set(rep)
+    fbdb.ref('reports/'+id).set(fbSafe(rep))
       .then(function(){
         var l=getLocal();l=l.map(function(r){if(r.id===id)r.synced=true;return r;});saveLocal(l);
         var pp=getPending().filter(function(pid){return pid!==id;});savePend(pp);
@@ -7916,7 +7931,7 @@ function submitQuick(type){
         setTimeout(function(){goHome(null);},700);
       }catch(e){
         console.error('[INSPECTA] Error tak terduga saat submit Quick Report (laporan tetap tersimpan):',e);
-        showToast('⚠️ Laporan tersimpan, tapi error: '+(e&&e.message?e.message:e),'warning');
+        showToast('⚠️ Laporan tersimpan, tapi ada kendala tampilan ('+(e&&e.message?e.message:e)+'). Cek Riwayat untuk memastikan.','warning');
       }finally{
         hideLoad();btn.disabled=false;
       }
@@ -7957,10 +7972,16 @@ function submitForm(){
       // di sini (satu titik) supaya downstream tidak perlu diubah satu-satu.
       var isObjItem=(typeof item==='object'&&item!==null);
       var itemStr=isObjItem?item.text:item;
-      var itemRiskLv=isObjItem?item.risk:null;
-      var itemRegRef=isObjItem?item.reg:null;
-      var itemCriteria=isObjItem?item.criteria:null;
-      var itemRegDetail=isObjItem?item.regDetail:null;
+      // FIX AKAR PENYEBAB "set failed: value argument contains undefined":
+      // Item checklist yang TIDAK punya field risk/reg/criteria/regDetail (mis. item
+      // Low/Medium yang belum diberi regDetail) membuat item.regDetail dst bernilai
+      // undefined (bukan null) di JavaScript. undefined ini lolos ke objek laporan
+      // dan ditolak mentah-mentah oleh Firebase .set(), menyebabkan submit gagal
+      // total. Fix: pakai fallback eksplisit ke null untuk field yang tidak ada.
+      var itemRiskLv=(isObjItem&&item.risk!=null)?item.risk:null;
+      var itemRegRef=(isObjItem&&item.reg!=null)?item.reg:null;
+      var itemCriteria=(isObjItem&&item.criteria!=null)?item.criteria:null;
+      var itemRegDetail=(isObjItem&&item.regDetail!=null)?item.regDetail:null;
       itemsDetail.push({no:ii+1,item:itemStr,status:stLabel,risk:itemRiskLv,reg:itemRegRef,criteria:itemCriteria,regDetail:itemRegDetail});
       if(vv==='ok')ok++;else if(vv==='ng'){ng++;
         // Collect NG detail
@@ -8074,7 +8095,7 @@ function submitForm(){
         }
       }catch(e){
         console.error('[INSPECTA] Error tak terduga saat submit (laporan tetap tersimpan ke Firebase):',e);
-        showToast('⚠️ Laporan tersimpan, tapi error: '+(e&&e.message?e.message:e),'warning');
+        showToast('⚠️ Laporan tersimpan, tapi ada kendala tampilan ('+(e&&e.message?e.message:e)+'). Cek Riwayat untuk memastikan.','warning');
       }finally{
         hideLoad();btn.disabled=false;
       }
