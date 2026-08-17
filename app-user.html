@@ -7916,7 +7916,7 @@ function submitQuick(type){
         setTimeout(function(){goHome(null);},700);
       }catch(e){
         console.error('[INSPECTA] Error tak terduga saat submit Quick Report (laporan tetap tersimpan):',e);
-        showToast('⚠️ Laporan tersimpan, tapi ada kendala tampilan. Cek Riwayat untuk memastikan.','warning');
+        showToast('⚠️ Laporan tersimpan, tapi error: '+(e&&e.message?e.message:e),'warning');
       }finally{
         hideLoad();btn.disabled=false;
       }
@@ -8074,7 +8074,7 @@ function submitForm(){
         }
       }catch(e){
         console.error('[INSPECTA] Error tak terduga saat submit (laporan tetap tersimpan ke Firebase):',e);
-        showToast('⚠️ Laporan tersimpan, tapi ada kendala tampilan. Cek Riwayat untuk memastikan.','warning');
+        showToast('⚠️ Laporan tersimpan, tapi error: '+(e&&e.message?e.message:e),'warning');
       }finally{
         hideLoad();btn.disabled=false;
       }
