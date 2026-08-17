@@ -987,7 +987,24 @@ function genNoTemuanAsync(type,cb){
     +(('0'+(now.getMonth()+1)).slice(-2))
     +(('0'+now.getDate()).slice(-2));
   if(FB_OK&&fbdb&&IS_ONLINE){
+    // PENTING: transaction() Firebase TIDAK punya batas waktu bawaan. Di sinyal
+    // lemah/putus-nyambung (bukan offline total — IS_ONLINE masih true tapi request
+    // ke server menggantung), transaksi ini bisa tidak pernah selesai — dan karena
+    // pembuatan nomor laporan ini WAJIB kelar sebelum proses submit lanjut, seluruh
+    // layar "Mengirim laporan..." ikut macet selamanya tanpa pernah hideLoad().
+    // Fix: kasih timeout 6 detik, kalau transaksi belum selesai, langsung fallback
+    // ke nomor offline (sama seperti alur saat benar-benar offline) supaya submit
+    // tetap lanjut & laporan tidak pernah hilang cuma karena sinyal jelek.
+    var done=false;
+    var timeoutId=setTimeout(function(){
+      if(done)return;
+      done=true;
+      console.warn('[INSPECTA] genNoTemuanAsync timeout (sinyal lemah) — fallback ke nomor offline');
+      cb(genNoTemuanOffline(type,ymd,code));
+    },6000);
     fbdb.ref('counters/'+code+'/'+ymd).transaction(function(cur){return (cur||0)+1;}).then(function(result){
+      if(done)return; // timeout sudah lebih dulu jalan, jangan panggil cb() dua kali
+      done=true;clearTimeout(timeoutId);
       if(result.committed&&result.snapshot.val()){
         var n=result.snapshot.val();
         try{localStorage.setItem(_ntKey(type),JSON.stringify({date:ymd,count:n}));}catch(e){}
@@ -995,7 +1012,11 @@ function genNoTemuanAsync(type,cb){
       }else{
         cb(genNoTemuanOffline(type,ymd,code));
       }
-    }).catch(function(){cb(genNoTemuanOffline(type,ymd,code));});
+    }).catch(function(){
+      if(done)return;
+      done=true;clearTimeout(timeoutId);
+      cb(genNoTemuanOffline(type,ymd,code));
+    });
   }else{
     cb(genNoTemuanOffline(type,ymd,code));
   }
