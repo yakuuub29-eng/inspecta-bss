@@ -1194,7 +1194,21 @@ function saveCAPAFromReport(rep){
     createdAt:existing.createdAt||rep.timestamp,
     updatedAt:new Date().toISOString()
   };
-  localStorage.setItem(CAP_KEY,JSON.stringify(caps));
+  // PENTING — FIX BUG "layar Mengirim macet selamanya":
+  // localStorage.setItem di sini sebelumnya TANPA try/catch. Kalau penyimpanan HP
+  // penuh (QuotaExceededError, sering terjadi karena foto base64 pada temuan NC
+  // menumpuk di data CAPA), setItem melempar error dan MENGHENTIKAN eksekusi
+  // submitForm()/submitQuick() persis di titik ini — sehingga hideLoad() yang ada
+  // di baris-baris setelahnya tidak pernah terpanggil. Laporan sendiri sebenarnya
+  // SUDAH terkirim ke Firebase (pushToFB sudah dipanggil sebelum baris ini), jadi
+  // datanya aman — tapi user melihat layar "Mengirim laporan..." macet selamanya.
+  // Fix: bungkus dengan try/catch (pola sama seperti saveLocal()) supaya error di
+  // sini tidak pernah menggagalkan/memacetkan proses submit.
+  try{
+    localStorage.setItem(CAP_KEY,JSON.stringify(caps));
+  }catch(e){
+    console.warn('[INSPECTA] Gagal simpan CAPA lokal (penyimpanan penuh?), lanjut tanpa menghentikan submit:',e);
+  }
   // Sync ke Firebase jika online — foto base64 langsung ke Realtime Database
   if(FB_OK&&fbdb&&IS_ONLINE){
     fbdb.ref('capa/'+capaId).set(caps[capaId]).catch(function(){});
@@ -7890,12 +7904,22 @@ function submitQuick(type){
       userId:CU.empId,userName:CU.name,userDept:CU.dept,userShift:CU.shift,
       extra:{},synced:false
     };
-    setTimeout(function(){addReport(rep);saveCAPAFromReport(rep);
-      logAudit({action:'Membuat Quick Report',module:cfg.title,newValue:rep.noTemuan+' — '+rep.location,refId:rep.id});
-      hideLoad();btn.disabled=false;
-      if(IS_ONLINE&&FB_OK)showToast('✅ Laporan terkirim!','success');
-      else showToast('💾 Tersimpan offline','warning');
-      setTimeout(function(){goHome(null);},700);
+    setTimeout(function(){
+      // FIX: try/finally supaya hideLoad() PASTI terpanggil walau ada error tak
+      // terduga di addReport/saveCAPAFromReport/logAudit — laporan sudah lebih
+      // dulu terkirim ke Firebase di dalam addReport(), jadi datanya tetap aman.
+      try{
+        addReport(rep);saveCAPAFromReport(rep);
+        logAudit({action:'Membuat Quick Report',module:cfg.title,newValue:rep.noTemuan+' — '+rep.location,refId:rep.id});
+        if(IS_ONLINE&&FB_OK)showToast('✅ Laporan terkirim!','success');
+        else showToast('💾 Tersimpan offline','warning');
+        setTimeout(function(){goHome(null);},700);
+      }catch(e){
+        console.error('[INSPECTA] Error tak terduga saat submit Quick Report (laporan tetap tersimpan):',e);
+        showToast('⚠️ Laporan tersimpan, tapi ada kendala tampilan. Cek Riwayat untuk memastikan.','warning');
+      }finally{
+        hideLoad();btn.disabled=false;
+      }
     },800);
   });
 }
@@ -8023,25 +8047,36 @@ function submitForm(){
     };
 
     setTimeout(function(){
-      addReport(rep);
-      saveCAPAFromReport(rep);
-      logAudit({action:'Membuat Inspeksi ('+statusLabelUser(rep.status)+')',module:cfg.title,newValue:rep.noTemuan+' — '+rep.location,refId:rep.id});
-      hideLoad();btn.disabled=false;
-      if(IS_ONLINE&&FB_OK)showToast('✅ Laporan terkirim ke Firebase!','success');
-      else showToast('💾 Tersimpan offline — dikirim saat ada jaringan','warning');
-      // Fatigue: jangan kembali ke beranda, reset unit saja
-      if(CFT==='fatigue'){
-        FU=[{id:1}];CS={};NG_DATA={};PHOTOS=[];
-        // Kosongkan unit melintas, pertahankan pos pemantauan
-        var posVal=gv('fi0');
-        el('fcontent').innerHTML=buildForm('fatigue');
-        setTimeout(function(){
-          var pos=el('fi0');if(pos&&posVal)pos.value=posVal;
-          renderFU();setTimeout(getGPS,300);
-        },100);
-        btn.disabled=false;
-      } else {
-        setTimeout(function(){goHome(null);},700);
+      // FIX BUG "layar Mengirim laporan... macet selamanya": seluruh blok ini
+      // sebelumnya tanpa try/finally, jadi kalau ADA SATU SAJA baris di sini yang
+      // melempar error (mis. localStorage penuh saat saveCAPAFromReport), baris
+      // hideLoad() di bawahnya tidak pernah tereksekusi dan layar loading nyangkut
+      // selamanya — padahal laporan sendiri sudah terkirim ke Firebase duluan lewat
+      // addReport(). Dengan try/finally, hideLoad() PASTI jalan apapun yang terjadi.
+      try{
+        addReport(rep);
+        saveCAPAFromReport(rep);
+        logAudit({action:'Membuat Inspeksi ('+statusLabelUser(rep.status)+')',module:cfg.title,newValue:rep.noTemuan+' — '+rep.location,refId:rep.id});
+        if(IS_ONLINE&&FB_OK)showToast('✅ Laporan terkirim ke Firebase!','success');
+        else showToast('💾 Tersimpan offline — dikirim saat ada jaringan','warning');
+        // Fatigue: jangan kembali ke beranda, reset unit saja
+        if(CFT==='fatigue'){
+          FU=[{id:1}];CS={};NG_DATA={};PHOTOS=[];
+          // Kosongkan unit melintas, pertahankan pos pemantauan
+          var posVal=gv('fi0');
+          el('fcontent').innerHTML=buildForm('fatigue');
+          setTimeout(function(){
+            var pos=el('fi0');if(pos&&posVal)pos.value=posVal;
+            renderFU();setTimeout(getGPS,300);
+          },100);
+        } else {
+          setTimeout(function(){goHome(null);},700);
+        }
+      }catch(e){
+        console.error('[INSPECTA] Error tak terduga saat submit (laporan tetap tersimpan ke Firebase):',e);
+        showToast('⚠️ Laporan tersimpan, tapi ada kendala tampilan. Cek Riwayat untuk memastikan.','warning');
+      }finally{
+        hideLoad();btn.disabled=false;
       }
     },900);
   });
