@@ -1316,7 +1316,22 @@ function initFB(){
       clearTimeout(refreshTimer);
       refreshTimer=setTimeout(function(){
         var arr=Object.values(reportsById).sort(function(a,b){return new Date(b.timestamp)-new Date(a.timestamp);});
-        localStorage.setItem(SK,JSON.stringify(arr));
+        // LIVE_REPORTS diisi DULUAN, tidak peduli localStorage berhasil atau tidak —
+        // ini yang membuat dashboard tetap benar walau penyimpanan browser penuh.
+        LIVE_REPORTS=arr;
+        try{
+          localStorage.setItem(SK,JSON.stringify(arr));
+        }catch(e){
+          // Kuota localStorage penuh (biasanya karena banyak foto base64 menumpuk).
+          // Coba simpan versi ringan (tanpa foto) sebagai cache cadangan saja —
+          // kalau ini pun gagal, tidak apa, LIVE_REPORTS di memori tetap jadi sumber
+          // utama selama tab dashboard ini terbuka.
+          console.warn('[INSPECTA] localStorage penuh, pakai cache foto-terpangkas:',e);
+          try{
+            var lite=arr.map(function(r){var c=Object.assign({},r);delete c.photos;return c;});
+            localStorage.setItem(SK,JSON.stringify(lite));
+          }catch(e2){console.warn('[INSPECTA] Cache cadangan juga gagal disimpan (tidak masalah, data live tetap tampil):',e2);}
+        }
         refreshAll();
       },250);
     }
@@ -1464,7 +1479,22 @@ function changePW(){
 }
 
 // ════ DB ════
-function getReports(){try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}}
+// FIX BUG BESAR "laporan baru tidak muncul di dashboard walau sudah ada di Firebase":
+// Sebelumnya dashboard SELALU baca ulang dari localStorage tiap kali render. Karena
+// ratusan laporan (dengan foto base64) lama-lama total ukurannya melebihi kuota
+// localStorage browser (~5-10MB), localStorage.setItem() di bawah bisa gagal diam-diam
+// — dan begitu itu terjadi, refreshAll() tidak pernah kepanggil, jadi laporan baru
+// (walau sudah 100% sukses tersimpan di Firebase) TIDAK PERNAH muncul di dashboard,
+// bahkan setelah dashboard di-refresh/install ulang (karena localStorage penuh lagi).
+// Fix: simpan data live hasil sinkron Firebase di variabel memori (LIVE_REPORTS) yang
+// TIDAK tergantung localStorage sama sekali. localStorage tetap dicoba diisi sebagai
+// cache cadangan (supaya reload sebelum Firebase connect masih ada tampilan), tapi
+// kalau gagal, itu tidak lagi menghalangi dashboard menampilkan data yang sebenarnya.
+var LIVE_REPORTS=null;
+function getReports(){
+  if(LIVE_REPORTS)return LIVE_REPORTS;
+  try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}
+}
 function getCAPAs(){try{return JSON.parse(localStorage.getItem(CAP_KEY)||'{}');}catch(e){return{};}}
 function saveCAPAsLocal(d){localStorage.setItem(CAP_KEY,JSON.stringify(d));}
 function getCLs(){try{return JSON.parse(localStorage.getItem(CK)||'{}');}catch(e){return{};}}
