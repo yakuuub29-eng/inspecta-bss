@@ -1372,7 +1372,7 @@ function onOnline(){el('off-bar').classList.remove('show'); setConnUI(true); syn
 function onOffline(){el('off-bar').classList.add('show'); setConnUI(false);}
 function setConnUI(online){
   var dot=el('cdot'),txt=el('ctxt'),chip=el('conn-chip'); if(!dot)return;
-  if(online){dot.style.background='#2F855A';txt.textContent=FB_OK?'☁️ Terhubung Firebase':'✅ Online';chip.style.background='#C6F6D5';chip.style.color='#276749';}
+  if(online){dot.style.background='#2F855A';txt.textContent=FB_OK?'☁️ Terhubung Firebase ('+FB_CFG.projectId+')':'✅ Online';chip.style.background='#C6F6D5';chip.style.color='#276749';}
   else{dot.style.background='#E53E3E';txt.textContent='📵 Offline — laporan tersimpan lokal';chip.style.background='#FED7D7';chip.style.color='#C53030';}
 }
 

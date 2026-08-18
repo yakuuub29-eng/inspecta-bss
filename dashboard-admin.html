@@ -1296,7 +1296,7 @@ function initFB(){
       var connected=snap.val()===true;
       FB_OK=connected;
       setFBS(connected,
-        connected?'🟢 Firebase terhubung — data real-time':'🔴 Firebase offline — menunggu koneksi...'
+        connected?'🟢 Firebase ('+FB_CFG.projectId+') — data real-time':'🔴 Firebase offline — menunggu koneksi...'
       );
     });
     // Catatan penting (fix bug "data tidak sinkron"): SEBELUMNYA dashboard memakai
