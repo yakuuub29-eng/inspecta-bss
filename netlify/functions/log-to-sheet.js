@@ -14,27 +14,36 @@
 import crypto from 'node:crypto';
 
 // Nama tab per jenis laporan — urutan & label bebas diubah sesuai kebutuhan.
+// PENTING: key di sini HARUS sama persis dengan value `type` yang dikirim app-user.html
+// (lihat TYPE_CODE di app-user.html). Sejak migrasi "Master Area V1.0", semua tipe area
+// checklist pakai prefix "ma_" (ma_workshop, ma_tpslb3, dst) — sebelumnya di sini masih
+// pakai nama lama (workshop, port, pit, dst) yang sudah tidak pernah dikirim lagi oleh
+// app, jadi SEMUA laporan checklist nyasar ke tab "Lainnya - ma_xxx" alih-alih ke tab
+// yang seharusnya (mis. "Inspeksi Workshop"). Ini penyebab tab-tab utama terlihat kosong.
 const TYPE_SHEET = {
   hazard: 'Hazard Report',
   nearmiss: 'Near Miss',
   positive: 'Positive Behavior',
   stopwork: 'Stop Work Authority',
-  port: 'Inspeksi Port',
-  pit: 'Inspeksi Front Loading',
-  hauling: 'Inspeksi Jalan Hauling',
-  workshop: 'Inspeksi Workshop',
-  workshoptyre: 'Inspeksi Workshop Tyre',
-  tpslb3: 'Inspeksi TPS LB3',
-  p3k: 'Inspeksi Kotak P3K',
-  eyewash: 'Inspeksi Eyewash',
-  gabungan: 'Inspeksi Gabungan (Lama)',
   speedgun: 'Laporan Speedgun',
   fatigue: 'Laporan Fatigue Call',
-  ttworkshop: 'TT - Workshop',
-  ttpit: 'TT - Pit',
-  tttpslb3: 'TT - TPS LB3',
-  tthauling: 'TT - Jalan Hauling',
-  ttcatering: 'TT - Catering',
+  // 16 Area Master Area V1.0
+  ma_workshop: 'Inspeksi Workshop',
+  ma_tpslb3: 'Inspeksi TPS LB3',
+  ma_hauling: 'Inspeksi Hauling Road',
+  ma_fuel: 'Inspeksi Fuel Station',
+  ma_tyre: 'Inspeksi Tyre Bay',
+  ma_dumping: 'Inspeksi Dumping Point',
+  ma_port: 'Inspeksi Port / Jetty',
+  ma_loading: 'Inspeksi Loading Area',
+  ma_warehouse: 'Inspeksi Warehouse',
+  ma_genset: 'Inspeksi Genset Room',
+  ma_compressor: 'Inspeksi Compressor',
+  ma_office: 'Inspeksi Office',
+  ma_parking: 'Inspeksi Parking Area',
+  ma_firstaid: 'Inspeksi First Aid Room',
+  ma_catering: 'Inspeksi Katering',
+  ma_p3k: 'Inspeksi Kotak P3K',
 };
 
 const HEADER_ROW = [
@@ -153,6 +162,32 @@ export default async (req) => {
       const privateKey = Netlify.env.get('GOOGLE_SA_PRIVATE_KEY');
       if (!privateKey) {
         return new Response('❌ GAGAL: env var GOOGLE_SA_PRIVATE_KEY belum diset di Netlify.', { status: 200 });
+      }
+
+      // FIX diagnosa "1E08010C:DECODER routines::unsupported": error ini SELALU berarti
+      // format PEM private key rusak/tidak lengkap saat disalin (paling sering karena
+      // Notepad tanpa Word Wrap bikin baris super panjang gampang ke-potong saat select).
+      // Cek di sini SEBELUM dipakai, supaya pesannya persis apa yang salah, bukan cuma
+      // error mentah dari Node.js yang membingungkan.
+      const normalizedKey = privateKey.replace(/\\n/g, '\n');
+      const keyChecks = [];
+      if (!normalizedKey.includes('-----BEGIN PRIVATE KEY-----')) keyChecks.push('Tidak ditemukan baris "-----BEGIN PRIVATE KEY-----" — bagian awal key kemungkinan terpotong/tidak ikut ter-copy.');
+      if (!normalizedKey.includes('-----END PRIVATE KEY-----')) keyChecks.push('Tidak ditemukan baris "-----END PRIVATE KEY-----" — bagian akhir key kemungkinan terpotong/tidak ikut ter-copy.');
+      const beginCount = (normalizedKey.match(/-----BEGIN PRIVATE KEY-----/g) || []).length;
+      if (beginCount > 1) keyChecks.push('Key ter-paste LEBIH DARI SEKALI (dobel) — value-nya kelihatannya ke-copy 2x saat paste ke Netlify.');
+      if (normalizedKey.trim().length < 1000) keyChecks.push('Panjang key cuma ' + normalizedKey.trim().length + ' karakter — key asli biasanya 1600+ karakter, ini kependekan, kemungkinan besar terpotong saat di-copy dari Notepad.');
+      if (keyChecks.length) {
+        return new Response(
+          '❌ GAGAL: GOOGLE_SA_PRIVATE_KEY rusak/tidak lengkap.\n\nMasalah yang ditemukan:\n- ' +
+          keyChecks.join('\n- ') +
+          '\n\nSolusi: buka lagi file JSON Service Account di Notepad, aktifkan "Format > Word Wrap" ' +
+          'supaya baris private_key ikut melipat (tidak 1 baris panjang ke samping), lalu select ulang ' +
+          'dari karakter tepat setelah tanda kutip pembuka sampai tepat sebelum tanda kutip penutup ' +
+          '(seluruh isi -----BEGIN PRIVATE KEY----- ... -----END PRIVATE KEY-----\\n), copy, lalu ' +
+          'ganti (edit) value env var GOOGLE_SA_PRIVATE_KEY di Netlify dengan hasil copy yang baru ini. ' +
+          'Redeploy lagi setelah diganti.',
+          { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
+        );
       }
 
       const token = await getAccessToken();
