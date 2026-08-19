@@ -10,6 +10,10 @@
 //   GOOGLE_SHEET_ID        -> ID spreadsheet (dari URL: docs.google.com/spreadsheets/d/{ID}/edit)
 //
 // Spreadsheet-nya WAJIB di-share (Editor) ke email Service Account di atas.
+//
+// PENANDA VERSI (buat diagnosa cache CDN) — ganti angka ini tiap update supaya gampang
+// pastikan versi kode yang benar-benar live di server.
+const CODE_VERSION = 'v2-diag-2026-08-19';
 
 import crypto from 'node:crypto';
 
@@ -176,9 +180,26 @@ export default async (req) => {
       const beginCount = (normalizedKey.match(/-----BEGIN PRIVATE KEY-----/g) || []).length;
       if (beginCount > 1) keyChecks.push('Key ter-paste LEBIH DARI SEKALI (dobel) — value-nya kelihatannya ke-copy 2x saat paste ke Netlify.');
       if (normalizedKey.trim().length < 1000) keyChecks.push('Panjang key cuma ' + normalizedKey.trim().length + ' karakter — key asli biasanya 1600+ karakter, ini kependekan, kemungkinan besar terpotong saat di-copy dari Notepad.');
+      // Cek lebih dalam: coba benar-benar parse key-nya di sini (bukan cuma cek BEGIN/END),
+      // supaya kerusakan halus di TENGAH isi key (bukan di awal/akhir) ikut ketahuan sebelum
+      // masuk ke proses signing yang errornya kurang jelas.
+      let parseErr = null;
+      try { crypto.createPrivateKey(normalizedKey); } catch (pe) { parseErr = pe; }
+      if (parseErr) {
+        const lines = normalizedKey.trim().split('\n');
+        keyChecks.push(
+          'Key gagal di-parse Node.js meski format BEGIN/END terlihat benar. Detail teknis: ' + parseErr.message +
+          '. Jumlah baris terdeteksi: ' + lines.length + ' (baris pertama: "' + (lines[0]||'').slice(0,40) +
+          '", baris terakhir: "' + (lines[lines.length-1]||'').slice(0,40) + '"). ' +
+          'Ini biasanya berarti ADA KARAKTER YANG HILANG/BERUBAH DI TENGAH isi key saat proses copy-paste ' +
+          '(mis. sebagian baris base64 ter-skip, atau ada spasi/karakter tersisip). Solusi paling aman: ' +
+          'download ULANG file JSON key baru dari Google Cloud Console (Service Account → Keys → Add Key → ' +
+          'Create new key → JSON), lalu gunakan Notepad dengan Word Wrap aktif dan select ulang dari awal.'
+        );
+      }
       if (keyChecks.length) {
         return new Response(
-          '❌ GAGAL: GOOGLE_SA_PRIVATE_KEY rusak/tidak lengkap.\n\nMasalah yang ditemukan:\n- ' +
+          '❌ GAGAL [' + CODE_VERSION + ']: GOOGLE_SA_PRIVATE_KEY rusak/tidak lengkap.\n\nMasalah yang ditemukan:\n- ' +
           keyChecks.join('\n- ') +
           '\n\nSolusi: buka lagi file JSON Service Account di Notepad, aktifkan "Format > Word Wrap" ' +
           'supaya baris private_key ikut melipat (tidak 1 baris panjang ke samping), lalu select ulang ' +
@@ -198,14 +219,14 @@ export default async (req) => {
       ], token);
 
       return new Response(
-        '✅ BERHASIL! Cek Google Sheet Anda, harus ada tab baru bernama "TES KONEKSI" dengan 1 baris data.\n\n' +
+        '✅ BERHASIL [' + CODE_VERSION + ']! Cek Google Sheet Anda, harus ada tab baru bernama "TES KONEKSI" dengan 1 baris data.\n\n' +
         'Kalau ini muncul tapi laporan asli dari aplikasi tetap tidak masuk, berarti masalahnya ada di sisi ' +
         'aplikasi (app-user.html) — kemungkinan besar HP masih pakai versi cache lama.',
         { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
       );
     } catch (e) {
       return new Response(
-        '❌ GAGAL: ' + String((e && e.message) || e) +
+        '❌ GAGAL [' + CODE_VERSION + ']: ' + String((e && e.message) || e) +
         '\n\nPenyebab paling umum:\n' +
         '1. Spreadsheet belum di-share (Editor) ke email service account\n' +
         '2. Google Sheets API belum di-Enable di Google Cloud Console\n' +
