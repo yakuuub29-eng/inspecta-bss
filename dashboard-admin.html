@@ -614,7 +614,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
     <label class="inp-l">Password</label>
     <input class="inp" id="ap" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
     <button class="lbtn" onclick="doLogin()">Masuk Dashboard →</button>
-    <div class="lhint">Default: <code>admin</code> / <code>admin1234</code> (role Administrator)<br>Ganti password di menu Pengaturan, kelola akun tim di menu Kelola Akun &amp; Role<br><br>© 2025 INSPECTA · PT Bina Sarana Sukses</div>
+    <div class="lhint">Default: <code>admin</code> / <code>admin1234</code> (role Administrator)<br>Ganti password di menu Pengaturan, kelola akun tim di menu Kelola Akun &amp; Role<br><br>© 2026 INSPECTA · PT Bina Sarana Sukses</div>
   </div>
 </div>
 
@@ -948,7 +948,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
           <div class="set-row"><span class="set-k">Database</span><span class="set-v">Firebase Realtime DB</span></div>
           <div class="set-row"><span class="set-k">Standar Referensi</span><span class="set-v">SMKP Minerba · ISO 45001</span></div>
           <div class="set-row"><span class="set-k">Pengembang</span><span class="set-v">Tim SHE Pertambangan</span></div>
-          <div class="set-row"><span class="set-k">Tahun</span><span class="set-v">2025</span></div>
+          <div class="set-row"><span class="set-k">Tahun</span><span class="set-v">2026</span></div>
         </div>
         <div class="set-card">
           <div class="set-t">📤 Export Data</div>
@@ -4756,7 +4756,7 @@ function renderKPI(){
   // Form input
   html+='<div class="trend-card" style="margin-bottom:16px">'
     +'<div class="trend-card-t">➕ Input Data Periode</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">'
     +'<div><label class="fl" style="font-size:10px">Periode (Bulan/Tahun)</label><input type="month" class="fi" id="kpi-period" value="'+thisMonth+'"/></div>'
     +'<div><label class="fl" style="font-size:10px">Total Jam Kerja Orang</label><input type="number" class="fi" id="kpi-manhours" placeholder="cth: 45000"/></div>'
     +'<div><label class="fl" style="font-size:10px">Jumlah Kecelakaan (LTI)</label><input type="number" class="fi" id="kpi-lti" placeholder="0" value="0"/></div>'
@@ -4782,7 +4782,7 @@ function renderKPI(){
   var ytdLostDays=ytd.reduce(function(a,d){return a+d.lostDays;},0);
   var ytdFR=calcFR(ytdLTI,ytdManHours), ytdSR=calcSR(ytdLostDays,ytdManHours);
 
-  html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">'
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px">'
     +kpiCard('FR Bulan Terakhir ('+latest.period+')',latest.fr,latest.fr===0?'#276331':(latest.fr<5?'#B7791F':'#B42318'))
     +kpiCard('SR Bulan Terakhir ('+latest.period+')',latest.sr,latest.sr===0?'#276331':(latest.sr<50?'#B7791F':'#B42318'))
     +kpiCard('FR Year-to-Date '+thisYear,ytdFR,ytdFR===0?'#276331':(ytdFR<5?'#B7791F':'#B42318'))
@@ -5064,7 +5064,7 @@ function renderComplianceJadwal(){
   var avgPct=scheduled.length?Math.round(scheduled.reduce(function(a,r){return a+(r.pct||0);},0)/scheduled.length):null;
   var belowTarget=scheduled.filter(function(r){return (r.pct||0)<80;}).length;
 
-  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px">'
     +kpiCard('Rata-rata Compliance Rate',avgPct===null?'—':avgPct+'%',avgPct===null?'#718096':(avgPct>=80?'#276331':avgPct>=50?'#B7791F':'#B42318'))
     +kpiCard('Area Bermasalah (<80%)',belowTarget,belowTarget===0?'#276331':'#B42318')
     +kpiCard('Area Terjadwal',scheduled.length+' dari '+areas.length,'#1F3864')
@@ -5101,7 +5101,7 @@ function renderUserMgmt(){
   var users=getDashUsers();
   var html='<div class="trend-card" style="margin-bottom:16px">'
     +'<div class="trend-card-t">➕ Tambah Akun Baru</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">'
     +'<div><label class="fl" style="font-size:10px">Username</label><input class="fi" id="du-username" placeholder="mis. budi.she"/></div>'
     +'<div><label class="fl" style="font-size:10px">Nama Lengkap</label><input class="fi" id="du-name" placeholder="Budi Santoso"/></div>'
     +'<div><label class="fl" style="font-size:10px">Password</label><input class="fi" type="text" id="du-pw" placeholder="min. 6 karakter"/></div>'
