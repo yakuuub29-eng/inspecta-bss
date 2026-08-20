@@ -166,7 +166,8 @@ body{font-family:var(--f);background:var(--G1);color:var(--G9);min-height:100vh;
 
 /* TABLE */
 .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
-.tw{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+.tw{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden}
+.tw-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 .ttbar{padding:10px 14px;border-bottom:1px solid var(--G2);display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--G0)}
 .sinp{flex:1;min-width:140px;padding:8px 12px;border:1.5px solid var(--G2);border-radius:var(--rs);font-size:13px;font-family:var(--f);outline:none;transition:border-color .13s;background:var(--W)}
 .sinp:focus{border-color:var(--Y)}
@@ -1943,6 +1944,7 @@ function renderRP(name){
     +'<button class="exp-btn" onclick="exportCSV(\''+name+'\')">⬇ CSV</button>'
     +((name==='fatigue'||name==='speedgun')?admResumeControlsHTML(name,reps):'')
     +'</div>'
+    +'<div class="tw-scroll">'
     +'<table><thead><tr><th>#</th><th>Waktu</th><th>Jenis</th><th>Inspektor</th><th>Lokasi</th><th>Severity</th><th>Status</th><th>Sync</th><th></th></tr></thead><tbody>'
     +(paged.length?paged.map(function(r,i){return '<tr onclick="showDet(\''+r.id+'\')">'
       +'<td style="color:var(--G4);font-size:11px">'+(((curPage-1)*PAGE)+i+1)+'</td>'
@@ -1959,6 +1961,7 @@ function renderRP(name){
       +'</td>'
       +'</tr>';}).join(''):'<tr><td colspan="9" class="empty-row">Tidak ada data ditemukan</td></tr>')
     +'</tbody></table>'
+    +'</div>'
     +'<div class="pagi"><div class="pagi-info">'+Math.min((curPage-1)*PAGE+1,total||0)+'–'+Math.min(curPage*PAGE,total)+' dari '+total+'</div>'
     +'<div class="pagi-btns">'
     +'<button class="pb" onclick="curPage=Math.max(1,curPage-1);renderRP(\''+name+'\')" '+(curPage<=1?'disabled':'')+'>‹</button>'
@@ -2649,7 +2652,8 @@ function renderAuditTrail(){
   if(auditPage>pages)auditPage=pages;
   var paged=filtered.slice((auditPage-1)*AUDIT_PAGE,auditPage*AUDIT_PAGE);
   el('audit-body').innerHTML=
-    '<table><thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Modul</th><th>Sebelum</th><th>Sesudah</th><th>Device</th></tr></thead><tbody>'
+    '<div class="tw-scroll">'
+    +'<table><thead><tr><th>Waktu</th><th>User</th><th>Aksi</th><th>Modul</th><th>Sebelum</th><th>Sesudah</th><th>Device</th></tr></thead><tbody>'
     +(paged.length?paged.map(function(a){return '<tr onclick="showAuditDetail(\''+a.id+'\')">'
       +'<td style="font-size:11px">'+fd(a.timestamp)+'<br><span style="color:var(--G4)">'+ft(a.timestamp)+'</span></td>'
       +'<td><strong>'+esc(a.user||'—')+'</strong></td>'
@@ -2660,6 +2664,7 @@ function renderAuditTrail(){
       +'<td style="font-size:10px;color:var(--G4);white-space:nowrap">'+esc(a.device||'—')+'</td>'
       +'</tr>';}).join(''):'<tr><td colspan="7" class="empty-row">Belum ada aktivitas tercatat</td></tr>')
     +'</tbody></table>'
+    +'</div>'
     +'<div class="pagi"><div class="pagi-info">'+Math.min((auditPage-1)*AUDIT_PAGE+1,total||0)+'–'+Math.min(auditPage*AUDIT_PAGE,total)+' dari '+total+'</div>'
     +'<div class="pagi-btns">'
     +'<button class="pb" onclick="auditPage=Math.max(1,auditPage-1);renderAuditTrail()" '+(auditPage<=1?'disabled':'')+'>‹</button>'
