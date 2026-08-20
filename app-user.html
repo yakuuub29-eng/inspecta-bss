@@ -8485,7 +8485,7 @@ function downloadFatiguePDF(reportId,share){
     if(allUnits.length){
       doc.autoTable({
         startY:y,margin:{left:10,right:10},
-        head:[['No','Jam','No. Unit','Jenis','Pos Inspeksi','Operator','Respon','Tanda Kelelahan','Catatan']],
+        head:[['No','Jam','No. Unit','Jenis','Muatan','Pos Inspeksi','Operator','Respon','Tanda Kelelahan','Catatan']],
         body:allUnits.map(function(x,idx){
           var signs=Array.isArray(x.u.signs)?x.u.signs.join(', '):(x.u.signs||'—');
           return [
@@ -8493,6 +8493,7 @@ function downloadFatiguePDF(reportId,share){
             x.u.time||new Date(x.ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
             x.u.plate||'—',
             x.u.type||'—',
+            x.u.load||'—',
             x.pos,
             x.u.operator||'—',
             x.u.response||'—',
@@ -8505,17 +8506,22 @@ function downloadFatiguePDF(reportId,share){
         alternateRowStyles:{fillColor:[248,248,248]},
         columnStyles:{
           0:{cellWidth:7,halign:'center'},
-          1:{cellWidth:13},2:{cellWidth:17},3:{cellWidth:18},
-          4:{cellWidth:18},5:{cellWidth:20},6:{cellWidth:24},
-          7:{cellWidth:32},8:{cellWidth:'auto'},
+          1:{cellWidth:12},2:{cellWidth:16},3:{cellWidth:16},
+          4:{cellWidth:14},5:{cellWidth:16},6:{cellWidth:18},
+          7:{cellWidth:22},8:{cellWidth:28},9:{cellWidth:'auto'},
         },
         didParseCell:function(data){
-          if(data.section==='body'&&data.column.index===6){
+          if(data.section==='body'&&data.column.index===4){
+            var v=data.cell.raw||'';
+            if(v==='Muatan'){data.cell.styles.textColor=[221,107,32];data.cell.styles.fontStyle='bold';}
+            else if(v==='Kosong')data.cell.styles.textColor=[43,108,176];
+          }
+          if(data.section==='body'&&data.column.index===7){
             var v=data.cell.raw||'';
             if(v.indexOf('Kurang')>=0){data.cell.styles.textColor=[229,62,62];data.cell.styles.fontStyle='bold';}
             else if(v.indexOf('Baik')>=0)data.cell.styles.textColor=[47,133,90];
           }
-          if(data.section==='body'&&data.column.index===7){
+          if(data.section==='body'&&data.column.index===8){
             var v=data.cell.raw||'';
             if(v!=='—'&&v!==''&&v.indexOf('Tidak ada')<0){data.cell.styles.textColor=[221,107,32];data.cell.styles.fontStyle='bold';}
           }
