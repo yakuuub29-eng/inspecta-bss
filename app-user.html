@@ -1414,9 +1414,40 @@ function saveLocal(a){
           return;
         }catch(e3){lastErr=e3;/* masih belum cukup, lanjut buang entri berikutnya */}
       }
-      // Tier 3: sudah dibuang semua yang aman dibuang, TETAP tidak cukup —
-      // berarti laporan yang belum tersync sendiri sudah terlalu besar untuk
-      // muat di HP ini. Sekarang BENAR-BENAR beri tahu user, jangan biarkan
+      // Tier 3: sudah dibuang semua entri lama yang tersync, TETAP tidak cukup —
+      // berarti backlog laporan yang BELUM tersync (pending) sendiri sudah
+      // menumpuk banyak (mis. karena sinyal sempat jelek berhari-hari) dan
+      // terlalu besar untuk muat di HP ini. Sebagai upaya TERAKHIR sebelum
+      // menyerah: lepas foto dari laporan pending yang PALING LAMA (bukan yang
+      // baru saja diisi) — supaya laporan baru ini & sisanya tetap bisa
+      // tersimpan/dikirim. Foto yang dilepas di sini TIDAK hilang dari server
+      // kalau laporan itu sudah sempat berhasil terkirim sebelumnya; kalau
+      // belum, foto itu memang berisiko hilang — makanya ini benar-benar
+      // pilihan terakhir, bukan langkah normal.
+      console.warn('[INSPECTA] Masih penuh setelah buang entri tersync, coba lepas foto dari pending lama...', lastErr);
+      var pendOld=working.filter(function(r){return !r.synced&&(!a[0]||r.id!==a[0].id);}) // jangan sentuh laporan yg baru saja mau disimpan
+        .sort(function(x,y){return new Date(x.timestamp)-new Date(y.timestamp);});
+      var strippedCount=0;
+      for(var j=0;j<pendOld.length;j++){
+        working=working.map(function(r){
+          if(r.id===pendOld[j].id&&!r._photoStripped){
+            var c=JSON.parse(JSON.stringify(r));
+            c.photos=[]; if(c.signature)c.signature.data='';
+            if(c.extra&&c.extra.ngDetails)c.extra.ngDetails.forEach(function(ng){ng.photos=[];});
+            c._photoStripped=true;
+            return c;
+          }
+          return r;
+        });
+        strippedCount++;
+        try{
+          localStorage.setItem(SK,JSON.stringify(working));
+          showToast('⚠️ Penyimpanan HP sangat penuh — foto dari '+strippedCount+' laporan pending lama dilepas sementara (data laporan tetap tersimpan) untuk beri ruang','warning');
+          return;
+        }catch(e4){lastErr=e4;}
+      }
+      // Tier 4: sudah tidak ada lagi yang bisa dibuang/dikecilkan tapi TETAP
+      // tidak cukup — sekarang BENAR-BENAR beri tahu user, jangan biarkan
       // mereka mengira laporan tersimpan padahal tidak.
       console.error('[INSPECTA] Gagal simpan meski sudah dibersihkan & dibuang entri lama:',lastErr);
       showToast('❌ PENYIMPANAN HP PENUH! Laporan mungkin TIDAK tersimpan. Hapus foto/aplikasi lain, atau hubungi admin SHE segera.','error');
