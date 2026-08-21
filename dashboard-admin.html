@@ -449,7 +449,8 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
 .li-bar{height:6px;background:var(--G2);border-radius:3px;overflow:hidden}
 .li-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
 .li-good .li-bar-fill{background:var(--GR)}.li-warn .li-bar-fill{background:var(--OR)}.li-bad .li-bar-fill{background:var(--R)}
-.li-table{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
+.li-table{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden}
+.li-table-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 .li-table-hdr{background:var(--G9);padding:12px 16px;font-size:13px;font-weight:700;color:var(--Y);font-family:var(--fd)}
 .li-table table{width:100%;border-collapse:collapse}
 .li-table th{padding:9px 14px;font-size:10px;font-weight:700;color:var(--G5);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--G2);background:var(--G0);text-align:left}
@@ -490,9 +491,10 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
 
 
 /* PIC RESPONSIBILITY TABLE */
-.pic-table-wrap{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;margin-bottom:16px}
+.pic-table-wrap{background:var(--W);border-radius:var(--ra);box-shadow:var(--sh);overflow:hidden;margin-bottom:16px}
 .pic-table-hdr{background:var(--G9);padding:13px 18px;display:flex;align-items:center;justify-content:space-between}
 .pic-table-hdr-t{font-size:14px;font-weight:700;color:var(--Y);font-family:var(--fd)}
+.pic-table{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
 .pic-table table{width:100%;border-collapse:collapse}
 .pic-table th{padding:9px 14px;font-size:10px;font-weight:700;color:var(--G5);text-transform:uppercase;letter-spacing:.5px;border-bottom:1.5px solid var(--G2);background:var(--G0);text-align:left}
 .pic-table td{padding:10px 14px;font-size:12px;border-bottom:1px solid var(--G2);vertical-align:middle}
@@ -1868,7 +1870,8 @@ function renderOverview(){
 
   var rec=all.slice(0,10);
   el('recent-tbl').innerHTML=rec.length?
-    '<table><thead><tr><th>Waktu</th><th>Jenis</th><th>Inspektor</th><th>Lokasi</th><th>Severity</th><th>Status</th></tr></thead><tbody>'
+    '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">'
+    +'<table><thead><tr><th>Waktu</th><th>Jenis</th><th>Inspektor</th><th>Lokasi</th><th>Severity</th><th>Status</th></tr></thead><tbody>'
     +rec.map(function(r){return '<tr onclick="showDet(\''+r.id+'\')">'
       +'<td style="font-size:11px">'+fd(r.timestamp)+'<br><span style="color:var(--G4)">'+ft(r.timestamp)+'</span></td>'
       +'<td><span style="font-size:10px;font-weight:700;color:'+COLORS[r.type]+'">'+esc(r.typeName)+'</span></td>'
@@ -1876,7 +1879,7 @@ function renderOverview(){
       +'<td>'+esc(r.location||'—')+'</td>'
       +'<td>'+sevBadge(r.severity||'')+'</td>'
       +'<td><span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+statusLabel(r.status)+'</span></td>'
-      +'</tr>';}).join('')+'</tbody></table>'
+      +'</tr>';}).join('')+'</tbody></table></div>'
     :'<div style="text-align:center;padding:32px;color:var(--G4)">Belum ada laporan</div>';
 
   renderQuickReportStrip(all);
@@ -3869,6 +3872,7 @@ function renderSafetyScore(){
 
   // Summary table
   var tableHtml='<div class="li-table"><div class="li-table-hdr">📊 Detail Safety Score per Area</div>'
+    +'<div class="li-table-scroll">'
     +'<table><thead><tr><th>Rank</th><th>Area</th><th>Score</th><th>Label</th><th>Inspeksi</th><th>NC</th><th>CAPA</th></tr></thead><tbody>'
     +scores.map(function(s,i){
       var sc=s.data.score, col=scoreColor(sc);
@@ -3884,7 +3888,7 @@ function renderSafetyScore(){
         +'<td style="text-align:center">'+s.data.capas+'</td>'
         +'</tr>';
     }).join('')
-    +'</tbody></table></div>';
+    +'</tbody></table></div></div>';
 
   return (scores.length?cardsHtml+tableHtml:'<div style="text-align:center;padding:40px;color:var(--G4)">Belum ada data laporan inspeksi</div>');
 }
@@ -4263,8 +4267,9 @@ function renderLeading(){
   el('leading-body').innerHTML=kpiHtml
     +'<div class="li-table">'
     +'<div class="li-table-hdr">📊 Detail Compliance per Area Inspeksi</div>'
+    +'<div class="li-table-scroll">'
     +'<table><thead><tr><th>Area</th><th style="text-align:center">Total</th><th style="text-align:center">OK</th><th style="text-align:center">NC</th><th style="text-align:center">Compliance</th></tr></thead>'
-    +'<tbody>'+tableRows+'</tbody></table></div>';
+    +'<tbody>'+tableRows+'</tbody></table></div></div>';
 }
 
 // ════ TREND ANALYSIS ════
@@ -4586,6 +4591,7 @@ function renderRCA(){
     +'</div>';
 
   html+='<div class="li-table" style="margin-top:14px"><div class="li-table-hdr">📊 Tabel Pareto — Top 15 Temuan</div>'
+    +'<div class="li-table-scroll">'
     +'<table><thead><tr><th>#</th><th>Temuan</th><th>Kategori</th><th>Jumlah</th><th>% Kontribusi</th><th>% Kumulatif</th></tr></thead><tbody>'
     +paretoRows.map(function(r,i){
       return '<tr style="'+(r.vital?'background:var(--YP)':'')+'">'
@@ -4597,7 +4603,7 @@ function renderRCA(){
         +'<td style="font-weight:600;color:'+(r.cumPct<=80?'var(--R)':'var(--G5)')+'">'+r.cumPct+'%</td>'
         +'</tr>';
     }).join('')
-    +'</tbody></table></div>';
+    +'</tbody></table></div></div>';
 
   el('rca-body').innerHTML=html;
 }

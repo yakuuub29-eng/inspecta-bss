@@ -1383,9 +1383,9 @@ function saveLocal(a){
     localStorage.setItem(SK,JSON.stringify(a));
   }catch(e){
     // localStorage penuh (QuotaExceededError) — JANGAN gagal diam-diam.
-    // Coba bersihkan dulu foto dari laporan LAMA yang sudah tersync ke Firebase
+    // Tier 1: bersihkan foto dari laporan LAMA yang sudah tersync ke Firebase
     // (data lengkapnya sudah aman di server, salinan lokal cuma perlu untuk
-    // riwayat ringkas), lalu coba simpan ulang sekali.
+    // riwayat ringkas), lalu coba simpan ulang.
     console.warn('[INSPECTA] localStorage penuh, mencoba bersihkan laporan lama yang sudah tersync...', e);
     var pruned=pruneOldSyncedReports(a);
     try{
@@ -1393,9 +1393,32 @@ function saveLocal(a){
       showToast('⚠️ Penyimpanan HP hampir penuh — foto laporan lama (yang sudah terkirim) dibersihkan otomatis untuk hemat ruang','warning');
       return;
     }catch(e2){
-      // Masih gagal setelah dibersihkan — sekarang BENAR-BENAR beri tahu user,
-      // jangan biarkan mereka mengira laporan tersimpan padahal tidak.
-      console.error('[INSPECTA] Gagal simpan meski sudah dibersihkan:',e2);
+      // Tier 2: masih penuh setelah foto dibersihkan. Buang ENTRI laporan lama
+      // yang sudah tersync satu per satu (paling lama duluan) — datanya sudah
+      // aman di server/dashboard admin, salinan di HP ini cuma cadangan.
+      // Laporan yang BELUM tersync (pending) TIDAK PERNAH dibuang di sini,
+      // supaya laporan yang belum terkirim tidak sampai hilang.
+      console.warn('[INSPECTA] Masih penuh setelah bersih foto, coba buang entri lama yang sudah tersync...', e2);
+      var pend=getPending();
+      var synced=pruned.filter(function(r){return r.synced&&pend.indexOf(r.id)<0;})
+        .sort(function(x,y){return new Date(x.timestamp)-new Date(y.timestamp);}); // paling lama duluan
+      var working=pruned.slice();
+      var removedCount=0;
+      var lastErr=e2;
+      for(var i=0;i<synced.length;i++){
+        working=working.filter(function(r){return r.id!==synced[i].id;});
+        removedCount++;
+        try{
+          localStorage.setItem(SK,JSON.stringify(working));
+          showToast('⚠️ Penyimpanan HP penuh — '+removedCount+' laporan lama (sudah tersimpan aman di server) dihapus dari HP untuk beri ruang','warning');
+          return;
+        }catch(e3){lastErr=e3;/* masih belum cukup, lanjut buang entri berikutnya */}
+      }
+      // Tier 3: sudah dibuang semua yang aman dibuang, TETAP tidak cukup —
+      // berarti laporan yang belum tersync sendiri sudah terlalu besar untuk
+      // muat di HP ini. Sekarang BENAR-BENAR beri tahu user, jangan biarkan
+      // mereka mengira laporan tersimpan padahal tidak.
+      console.error('[INSPECTA] Gagal simpan meski sudah dibersihkan & dibuang entri lama:',lastErr);
       showToast('❌ PENYIMPANAN HP PENUH! Laporan mungkin TIDAK tersimpan. Hapus foto/aplikasi lain, atau hubungi admin SHE segera.','error');
       alert('⚠️ PENTING: Penyimpanan HP penuh sehingga laporan berisiko TIDAK tersimpan.\n\nSegera:\n1. Screenshot layar ini sebagai bukti\n2. Hapus foto/file lain di HP untuk membuat ruang\n3. Coba submit ulang\n4. Kalau masih gagal, hubungi admin SHE');
     }
@@ -1429,7 +1452,7 @@ function pruneOldSyncedReports(reports){
   return result;
 }
 function getPending(){try{return JSON.parse(localStorage.getItem(PK)||'[]');}catch(e){return[];}}
-function savePend(a){localStorage.setItem(PK,JSON.stringify(a));}
+function savePend(a){try{localStorage.setItem(PK,JSON.stringify(a));}catch(e){console.warn('[INSPECTA] savePend gagal (penyimpanan HP penuh):',e);}}
 
 // ════ JARING PENGAMAN UNTUK FIREBASE ════
 // Firebase Realtime Database MENOLAK MENTAH-MENTAH (throw sinkron, bukan promise
@@ -1462,7 +1485,15 @@ function pushToFB(rep){
       var loc=getLocal();loc=loc.map(function(r){if(r.id===rep.id)r.synced=true;return r;});saveLocal(loc);
       var p=getPending().filter(function(id){return id!==rep.id;});savePend(p);updPendUI();
       logToSheet(rep);
-    }).catch(function(e){console.warn('pushToFB:',e);});
+    }).catch(function(e){
+      console.warn('pushToFB:',e);
+      // Gagal kirim walau status "online" (mis. sinyal lemah, request timeout,
+      // dsb). SEBELUMNYA laporan hilang begitu saja di sini karena tidak ada
+      // fallback. Sekarang: masukkan ke antrean pending supaya polling
+      // auto-retry (tiap 20 detik, lihat setInterval syncPending di bawah)
+      // otomatis mencoba lagi begitu koneksi membaik — laporan tidak hilang.
+      var p=getPending();if(p.indexOf(rep.id)<0)p.push(rep.id);savePend(p);updPendUI();
+    });
 }
 // ════ AUTO-LIST KE GOOGLE SHEETS ════
 // Tiap laporan yang berhasil masuk Firebase juga dikirim (fire-and-forget) ke Netlify Function
@@ -8485,7 +8516,7 @@ function downloadFatiguePDF(reportId,share){
     if(allUnits.length){
       doc.autoTable({
         startY:y,margin:{left:10,right:10},
-        head:[['No','Jam','No. Unit','Jenis','Muatan','Pos Inspeksi','Operator','Respon','Tanda Kelelahan','Catatan']],
+        head:[['No','Jam','No. Unit','Jenis','Pos Inspeksi','Operator','Respon','Tanda Kelelahan','Catatan']],
         body:allUnits.map(function(x,idx){
           var signs=Array.isArray(x.u.signs)?x.u.signs.join(', '):(x.u.signs||'—');
           return [
@@ -8493,7 +8524,6 @@ function downloadFatiguePDF(reportId,share){
             x.u.time||new Date(x.ts).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
             x.u.plate||'—',
             x.u.type||'—',
-            x.u.load||'—',
             x.pos,
             x.u.operator||'—',
             x.u.response||'—',
@@ -8506,22 +8536,17 @@ function downloadFatiguePDF(reportId,share){
         alternateRowStyles:{fillColor:[248,248,248]},
         columnStyles:{
           0:{cellWidth:7,halign:'center'},
-          1:{cellWidth:12},2:{cellWidth:16},3:{cellWidth:16},
-          4:{cellWidth:14},5:{cellWidth:16},6:{cellWidth:18},
-          7:{cellWidth:22},8:{cellWidth:28},9:{cellWidth:'auto'},
+          1:{cellWidth:13},2:{cellWidth:17},3:{cellWidth:18},
+          4:{cellWidth:18},5:{cellWidth:20},6:{cellWidth:24},
+          7:{cellWidth:32},8:{cellWidth:'auto'},
         },
         didParseCell:function(data){
-          if(data.section==='body'&&data.column.index===4){
-            var v=data.cell.raw||'';
-            if(v==='Muatan'){data.cell.styles.textColor=[221,107,32];data.cell.styles.fontStyle='bold';}
-            else if(v==='Kosong')data.cell.styles.textColor=[43,108,176];
-          }
-          if(data.section==='body'&&data.column.index===7){
+          if(data.section==='body'&&data.column.index===6){
             var v=data.cell.raw||'';
             if(v.indexOf('Kurang')>=0){data.cell.styles.textColor=[229,62,62];data.cell.styles.fontStyle='bold';}
             else if(v.indexOf('Baik')>=0)data.cell.styles.textColor=[47,133,90];
           }
-          if(data.section==='body'&&data.column.index===8){
+          if(data.section==='body'&&data.column.index===7){
             var v=data.cell.raw||'';
             if(v!=='—'&&v!==''&&v.indexOf('Tidak ada')<0){data.cell.styles.textColor=[221,107,32];data.cell.styles.fontStyle='bold';}
           }
