@@ -9070,75 +9070,53 @@ function downloadInspeksiPDF(reportId,share){
   }
 
 
-  // Temuan NC
+  // Temuan NC — SATU kartu per temuan (uraian lengkap + PIC/Target + foto), TIDAK
+  // ADA LAGI tabel ringkasan terpisah di atasnya. Sebelumnya info yang sama muncul
+  // 2x: sekali di tabel ringkasan "TEMUAN NON-CONFORMANCE (NC)", sekali lagi di
+  // section "FOTO BUKTI TEMUAN NC" — membingungkan karena terlihat seperti dua hal
+  // yang terpisah padahal itu temuan yang sama. Sekarang digabung jadi satu kartu
+  // per temuan (teks lengkap + foto langsung menyatu), tidak diulang.
   if(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length){
-    if(y>200){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
+    if(y>190){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
     doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(229,62,62);
-    doc.text('TEMUAN NON-CONFORMANCE (NC) — '+r.extra.ngDetails.length+' item',10,y);y+=4;
+    doc.text('TEMUAN NON-CONFORMANCE (NC) — '+r.extra.ngDetails.length+' item',10,y);y+=6;
 
-    var ngRows=r.extra.ngDetails.map(function(ng,i){
-      return [i+1,ng.item||'—',ng.desc||'—',ng.immediateAction||'—',ng.action||'—',ng.pic||'—',ng.dueDate||'—'];
-    });
-    doc.autoTable({
-      startY:y,margin:{left:10,right:10},
-      head:[['#','Item Temuan','Uraian / Kondisi NC','Tindakan Sementara','Tindakan Perbaikan','PIC','Target']],
-      body:ngRows,
-      styles:{fontSize:7.5,cellPadding:2.2,font:'helvetica'},
-      headStyles:{fillColor:[197,48,48],textColor:[255,255,255],fontStyle:'bold'},
-      alternateRowStyles:{fillColor:[255,245,245]},
-      columnStyles:{
-        0:{cellWidth:7,halign:'center'},1:{cellWidth:28},
-        2:{cellWidth:'auto'},3:{cellWidth:'auto'},4:{cellWidth:'auto'},5:{cellWidth:20},6:{cellWidth:16},
-      },
-    });
-    y=doc.lastAutoTable.finalY+5;
+    r.extra.ngDetails.forEach(function(ng,i){
+      var hasPh=ng.photos&&ng.photos.length&&ng.photos[0];
+      var nPhotoRows=hasPh?Math.ceil(Math.min(ng.photos.length,3)/3):0;
 
-    // Foto per temuan NC
-    // FIX: sebelumnya foto ditaruh di section TERPISAH ("FOTO BUKTI TEMUAN NC")
-    // dengan page-break sendiri yang TIDAK terkait dengan tabel temuan di atas —
-    // akibatnya foto bisa "kabur" ke halaman lain, terpisah jauh dari uraian
-    // temuannya, dan labelnya dipotong ke 60 karakter (mis. "...dilakukan secara
-    // berkala u" terputus). Sekarang tiap temuan NC dirender sebagai BLOK UTUH
-    // (judul lengkap + uraian kondisi + PIC/Target + foto) sehingga tidak perlu
-    // bolak-balik halaman untuk mencocokkan foto dengan temuannya, dan blok
-    // dijaga tidak terpotong di tengah oleh page-break.
-    var hasPhotos=r.extra.ngDetails.some(function(ng){return ng.photos&&ng.photos.length&&ng.photos[0];});
-    if(hasPhotos){
-      if(y>190){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
-      doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);
-      doc.text('FOTO BUKTI TEMUAN NC',10,y);y+=6;
+      // Semua teks dibungkus multi-baris penuh (TIDAK dipotong) supaya tidak ada
+      // lagi caption terpotong seperti "...dilakukan secara berkala u".
+      doc.setFontSize(8);doc.setFont('helvetica','bold');
+      var titleLines=doc.splitTextToSize('#'+(i+1)+' '+(ng.item||'Temuan'),W-20);
+      doc.setFontSize(7.5);doc.setFont('helvetica','normal');
+      var descLines=ng.desc?doc.splitTextToSize('Kondisi: '+ng.desc,W-20):[];
+      var immLines=ng.immediateAction?doc.splitTextToSize('Tindakan Sementara: '+ng.immediateAction,W-20):[];
+      var actLines=ng.action?doc.splitTextToSize('Tindakan Perbaikan: '+ng.action,W-20):[];
+      var infoLine='PIC: '+(ng.pic||'—')+'   |   Target: '+(ng.dueDate||'—');
 
-      r.extra.ngDetails.forEach(function(ng,i){
-        if(!ng.photos||!ng.photos.length||!ng.photos[0]) return;
-        var nPhotoRows=Math.ceil(Math.min(ng.photos.length,3)/3);
+      // Estimasi total tinggi kartu ini supaya page-break dicek SEKALI di awal
+      // kartu (bukan di tengah teks/foto), sehingga kartu tidak pernah terpotong.
+      var estH=(titleLines.length*3.6)+(descLines.length*3.2)+(immLines.length*3.2)+(actLines.length*3.2)+5+(nPhotoRows*50)+6;
+      if(y+estH>280){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
 
-        // Judul temuan TANPA dipotong — dibungkus multi-baris kalau panjang
-        doc.setFontSize(8);doc.setFont('helvetica','bold');
-        var titleLines=doc.splitTextToSize('#'+(i+1)+' '+(ng.item||'Temuan'),W-20);
-        // Uraian kondisi NC (kalau ada) juga ditampilkan penuh, dibungkus multi-baris
-        doc.setFontSize(7.5);doc.setFont('helvetica','normal');
-        var descLines=ng.desc?doc.splitTextToSize('Kondisi: '+ng.desc,W-20):[];
-        var infoLine='PIC: '+(ng.pic||'—')+'   |   Target: '+(ng.dueDate||'—');
+      // Kartu dengan garis kiri merah tipis (penanda visual "temuan NC") membungkus
+      // seluruh info + foto jadi terlihat satu kesatuan, bukan dua bagian terpisah.
+      var cardStartY=y;
+      doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(197,48,48);
+      titleLines.forEach(function(ln){doc.text(ln,13,y);y+=3.6;});
+      doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+      descLines.forEach(function(ln){doc.text(ln,13,y);y+=3.2;});
+      immLines.forEach(function(ln){doc.text(ln,13,y);y+=3.2;});
+      actLines.forEach(function(ln){doc.text(ln,13,y);y+=3.2;});
+      doc.setFontSize(7);doc.setTextColor(120,120,120);
+      doc.text(infoLine,13,y);y+=4.5;
 
-        // Estimasi total tinggi blok ini (judul + uraian + info + baris foto) supaya
-        // page-break dicek SEKALI di awal blok, bukan di tengah-tengah foto.
-        var estH=4+(titleLines.length*3.6)+(descLines.length*3.4)+4+(nPhotoRows*50)+4;
-        if(y+estH>280){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
-
-        doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(197,48,48);
-        titleLines.forEach(function(ln){doc.text(ln,10,y);y+=3.6;});
-        if(descLines.length){
-          doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
-          descLines.forEach(function(ln){doc.text(ln,10,y);y+=3.4;});
-        }
-        doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(120,120,120);
-        doc.text(infoLine,10,y);y+=4.5;
-
-        // Hingga 3 foto per temuan, langsung di bawah uraian temuan ini
-        var xPos=10;
+      if(hasPh){
+        var xPos=13;
         ng.photos.slice(0,3).forEach(function(ph,pi){
           if(!ph) return;
-          if(xPos+58>W-10){y+=50;xPos=10;}
+          if(xPos+58>W-10){y+=50;xPos=13;}
           try{
             if(ph.startsWith('data:')){
               var fmt=ph.indexOf('image/png')>0?'PNG':'JPEG';
@@ -9151,9 +9129,13 @@ function downloadInspeksiPDF(reportId,share){
           xPos+=58;
         });
         y+=50;
-      });
-      y+=3;
-    }
+      }
+      // Garis pembatas kiri sepanjang kartu (menyatukan teks+foto secara visual)
+      doc.setDrawColor(229,62,62);doc.setLineWidth(0.8);
+      doc.line(10,cardStartY-3,10,y-4);
+      y+=4;
+    });
+    y+=1;
   }
 
   // Foto laporan umum (quick report / non-checklist)
