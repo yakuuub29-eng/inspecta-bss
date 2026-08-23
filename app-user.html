@@ -7817,6 +7817,23 @@ function getSev(){
   return SEV_MAP[SEV_L+'-'+SEV_C]||'';
 }
 
+// FIX: Severity di header laporan checklist (Hauling Road, dsb) sebelumnya SELALU
+// "—" karena mengandalkan form Severity global yang sudah dihapus per keputusan
+// standarisasi. Sekarang dihitung otomatis dari level risiko TERTINGGI di antara
+// temuan NC — pakai riskCategory hasil penilaian Likelihood×Consequence per temuan
+// kalau diisi, kalau tidak fallback ke risk level bawaan item checklist (regDetail).
+var CL_SEV_ORDER={Extreme:4,High:3,Medium:2,Low:1};
+function computeChecklistSeverity(ngList){
+  if(!ngList||!ngList.length)return '';
+  var best='',bestScore=0;
+  ngList.forEach(function(n){
+    var cat=n.riskCategory||n.risk;
+    var score=CL_SEV_ORDER[cat]||0;
+    if(score>bestScore){bestScore=score;best=cat;}
+  });
+  return best;
+}
+
 // Tampilkan/sembunyikan section severity dan CAPA berdasarkan ada tidaknya temuan NC
 function updSevVisibility(){
   var hasNG=Object.keys(CS).some(function(k){return CS[k]==='ng';});
@@ -8293,7 +8310,7 @@ function submitForm(){
     var rep={
       id:Date.now().toString(),noTemuan:noTemuan,type:CFT,typeName:cfg.title,
       reporter:reporter,location:location,status:status,
-      severity:getSev(),
+      severity:computeChecklistSeverity(NG_DETAILS),
       notes:gv('notes'),action:gv('action'),
       gps:GPS_DATA,
       photos:PHOTOS.slice(0,5),
@@ -8344,8 +8361,8 @@ function submitForm(){
 var TYPE_COLORS={hazard:'#C53030',nearmiss:'#DD6B20',positive:'#2F855A',stopwork:'#1A1A1A'};
 function sevPill(sev){
   if(!sev)return '';
-  var cls={Low:'sev-pill-low',Medium:'sev-pill-medium',High:'sev-pill-high',Critical:'sev-pill-critical'}[sev]||'';
-  var ico={Low:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#2F855A"/></svg>',Medium:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#F2C94C"/></svg>',High:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#ED8936"/></svg>',Critical:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#E53E3E"/></svg>'}[sev]||'';
+  var cls={Low:'sev-pill-low',Medium:'sev-pill-medium',High:'sev-pill-high',Critical:'sev-pill-critical',Extreme:'sev-pill-critical'}[sev]||'';
+  var ico={Low:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#2F855A"/></svg>',Medium:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#F2C94C"/></svg>',High:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#ED8936"/></svg>',Critical:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#E53E3E"/></svg>',Extreme:'<svg viewBox="0 0 24 24" width="0.7em" height="0.7em" style="vertical-align:-0.05em"><circle cx="12" cy="12" r="9" fill="#C53030"/></svg>'}[sev]||'';
   return '<span class="pill '+cls+'">'+ico+' '+sev+'</span>';
 }
 function renderHist(){
@@ -9077,24 +9094,51 @@ function downloadInspeksiPDF(reportId,share){
     y=doc.lastAutoTable.finalY+5;
 
     // Foto per temuan NC
+    // FIX: sebelumnya foto ditaruh di section TERPISAH ("FOTO BUKTI TEMUAN NC")
+    // dengan page-break sendiri yang TIDAK terkait dengan tabel temuan di atas —
+    // akibatnya foto bisa "kabur" ke halaman lain, terpisah jauh dari uraian
+    // temuannya, dan labelnya dipotong ke 60 karakter (mis. "...dilakukan secara
+    // berkala u" terputus). Sekarang tiap temuan NC dirender sebagai BLOK UTUH
+    // (judul lengkap + uraian kondisi + PIC/Target + foto) sehingga tidak perlu
+    // bolak-balik halaman untuk mencocokkan foto dengan temuannya, dan blok
+    // dijaga tidak terpotong di tengah oleh page-break.
     var hasPhotos=r.extra.ngDetails.some(function(ng){return ng.photos&&ng.photos.length&&ng.photos[0];});
     if(hasPhotos){
-      if(y>200){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
+      if(y>190){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
       doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);
-      doc.text('FOTO BUKTI TEMUAN NC',10,y);y+=5;
+      doc.text('FOTO BUKTI TEMUAN NC',10,y);y+=6;
 
       r.extra.ngDetails.forEach(function(ng,i){
-        if(!ng.photos||!ng.photos.length) return;
-        // Label temuan
+        if(!ng.photos||!ng.photos.length||!ng.photos[0]) return;
+        var nPhotoRows=Math.ceil(Math.min(ng.photos.length,3)/3);
+
+        // Judul temuan TANPA dipotong — dibungkus multi-baris kalau panjang
+        doc.setFontSize(8);doc.setFont('helvetica','bold');
+        var titleLines=doc.splitTextToSize('#'+(i+1)+' '+(ng.item||'Temuan'),W-20);
+        // Uraian kondisi NC (kalau ada) juga ditampilkan penuh, dibungkus multi-baris
+        doc.setFontSize(7.5);doc.setFont('helvetica','normal');
+        var descLines=ng.desc?doc.splitTextToSize('Kondisi: '+ng.desc,W-20):[];
+        var infoLine='PIC: '+(ng.pic||'—')+'   |   Target: '+(ng.dueDate||'—');
+
+        // Estimasi total tinggi blok ini (judul + uraian + info + baris foto) supaya
+        // page-break dicek SEKALI di awal blok, bukan di tengah-tengah foto.
+        var estH=4+(titleLines.length*3.6)+(descLines.length*3.4)+4+(nPhotoRows*50)+4;
+        if(y+estH>280){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
+
         doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(197,48,48);
-        var label='#'+(i+1)+' '+(ng.item||'').substring(0,60);
-        doc.text(label,10,y);y+=4;
-        // Tampilkan hingga 3 foto per temuan
+        titleLines.forEach(function(ln){doc.text(ln,10,y);y+=3.6;});
+        if(descLines.length){
+          doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+          descLines.forEach(function(ln){doc.text(ln,10,y);y+=3.4;});
+        }
+        doc.setFontSize(7);doc.setFont('helvetica','normal');doc.setTextColor(120,120,120);
+        doc.text(infoLine,10,y);y+=4.5;
+
+        // Hingga 3 foto per temuan, langsung di bawah uraian temuan ini
         var xPos=10;
         ng.photos.slice(0,3).forEach(function(ph,pi){
           if(!ph) return;
-          if(xPos+58>W-10){y+=55;xPos=10;}
-          if(y>230){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
+          if(xPos+58>W-10){y+=50;xPos=10;}
           try{
             if(ph.startsWith('data:')){
               var fmt=ph.indexOf('image/png')>0?'PNG':'JPEG';

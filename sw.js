@@ -1,24 +1,38 @@
-// INSPECTA Service Worker v1.3
+// INSPECTA Service Worker v1.4
 // PT Bina Sarana Sukses — SHE Department
 //
-// PERBAIKAN v1.3: Tambah TIMEOUT pada strategi network-first untuk app shell (HTML).
-// Masalah yang diperbaiki: v1.2 network-first TIDAK punya batas waktu — di lokasi
-// sinyal lemah tambang (bukan offline total, tapi lambat/putus-nyambung), fetch()
-// bisa menggantung lama menunggu respons server sebelum akhirnya gagal & fallback
-// ke cache. Selama menunggu itu, inspector cuma lihat layar putih/loading — padahal
-// versi cache sudah ADA dan siap dipakai instan.
+// PERBAIKAN v1.4: Naikkan versi cache (app-user.html sudah banyak berubah sejak
+// v1.3 — fix severity checklist, 482 regDetail checklist, dll — tanpa menaikkan
+// versi ini, HP yang sudah pernah buka app akan terus memakai file HTML LAMA dari
+// cache tanpa pernah tahu ada versi baru, karena strategi network-first di bawah
+// baru mengganti cache SETELAH fetch jaringan berhasil — kalau baris ini tidak
+// diubah, browser menganggap tidak ada Service Worker baru sama sekali (isi file
+// dianggap identik) sehingga event install/activate tidak pernah terpicu ulang.
 //
-// Sekarang: kalau jaringan tidak merespons dalam 4 detik, LANGSUNG pakai cache dulu
-// (app tetap terasa instan), sambil tetap coba ambil versi terbaru di belakang layar
-// untuk cache berikutnya. Kalau jaringan cepat (sinyal bagus), perilaku sama seperti
-// v1.2 — selalu dapat versi terbaru begitu online.
+// PERBAIKAN v1.3 (referensi): Tambah TIMEOUT pada strategi network-first untuk app
+// shell (HTML). Masalah yang diperbaiki: v1.2 network-first TIDAK punya batas waktu
+// — di lokasi sinyal lemah tambang (bukan offline total, tapi lambat/putus-nyambung),
+// fetch() bisa menggantung lama menunggu respons server sebelum akhirnya gagal &
+// fallback ke cache. Selama menunggu itu, inspector cuma lihat layar putih/loading —
+// padahal versi cache sudah ADA dan siap dipakai instan.
+//
+// CATATAN PENTING (baca sebelum lapor "loading masih lama"): perbaikan timeout di
+// sini HANYA membantu kunjungan KE-2 dan seterusnya (setelah Service Worker berhasil
+// terpasang & app shell tersimpan di cache). Kunjungan PERTAMA KALI di HP tertentu
+// (belum ada Service Worker & belum ada cache sama sekali) TIDAK bisa dipercepat dari
+// sisi kode ini — itu murni waktu download file HTML utuh oleh browser, dibatasi oleh
+// kecepatan sinyal saat itu. Untuk kunjungan pertama, satu-satunya solusi nyata adalah
+// memperkecil ukuran file app-user.html itu sendiri (mis. memecah data checklist besar
+// ke file terpisah yang di-lazy-load) — ini perubahan arsitektur lebih besar, di luar
+// cakupan perbaikan Service Worker ini.
 //
 // CATATAN UNTUK UPDATE SELANJUTNYA: naikkan angka versi di CACHE_NAME setiap kali
-// sw.js sendiri diubah, supaya browser mendeteksi ada Service Worker baru dan proses
-// install/activate (yang membersihkan cache lama) benar-benar berjalan.
+// app-user.html/dashboard-admin.html/sw.js sendiri diubah, supaya browser mendeteksi
+// ada Service Worker baru dan proses install/activate (yang membersihkan cache lama
+// & mengambil versi terbaru) benar-benar berjalan.
 
-const CACHE_NAME = 'inspecta-v1.3';
-const NETWORK_TIMEOUT_MS = 4000; // batas tunggu jaringan sebelum fallback ke cache
+const CACHE_NAME = 'inspecta-v1.4';
+const NETWORK_TIMEOUT_MS = 3000; // dipersingkat dari 4000ms — fallback ke cache lebih cepat terasa instan di sinyal lemah, tanpa terlalu agresif memotong request yang sebenarnya hampir selesai
 const STATIC_FILES = [
   './app-user.html',
   './dashboard-admin.html',
