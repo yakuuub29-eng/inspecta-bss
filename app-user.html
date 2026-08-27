@@ -7871,6 +7871,11 @@ function setCk(si,ii,val,btn){
 // Menggantikan severity umum form-level. Setiap temuan NC dinilai sendiri:
 // Nilai Risiko = Likelihood(1-5) × Consequence(1-5), lalu dikategorikan otomatis.
 var RISK_CAT_COLOR={Low:{bg:'#E7F5EA',fg:'#276331'},Medium:{bg:'#FEF7DC',fg:'#93720B'},High:{bg:'#FEF0E1',fg:'#B54708'},Extreme:{bg:'#FDE8E8',fg:'#B42318'}};
+// Dipakai untuk gambar badge severity berwarna di PDF (jsPDF butuh RGB, bukan hex)
+function hexToRgb(hex){
+  var h=hex.replace('#','');
+  return [parseInt(h.substring(0,2),16),parseInt(h.substring(2,4),16),parseInt(h.substring(4,6),16)];
+}
 var RISK_CAT_DUE={Extreme:1,High:3,Medium:7,Low:14}; // hari, dipakai auto-isi Target Selesai
 function riskCategoryFromValue(v){
   if(v>=16)return 'Extreme';
@@ -9077,18 +9082,29 @@ function downloadInspeksiPDF(reportId,share){
   // yang terpisah padahal itu temuan yang sama. Sekarang digabung jadi satu kartu
   // per temuan (teks lengkap + foto langsung menyatu), tidak diulang.
   if(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length){
-    if(y>190){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
-    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(229,62,62);
-    doc.text('TEMUAN NON-CONFORMANCE (NC) — '+r.extra.ngDetails.length+' item',10,y);y+=6;
+    if(y>185){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
+    // Header section dirapikan: pita merah solid dengan judul putih (bukan cuma
+    // teks merah polos) supaya section ini jelas terlihat sebagai satu blok utuh
+    // yang membungkus seluruh kartu temuan di bawahnya.
+    doc.setFillColor(229,62,62);
+    doc.rect(10,y-4,W-20,7,'F');
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(255,255,255);
+    doc.text('TEMUAN NON-CONFORMANCE (NC) — '+r.extra.ngDetails.length+' item',13,y);
+    y+=8;
 
     r.extra.ngDetails.forEach(function(ng,i){
       var hasPh=ng.photos&&ng.photos.length&&ng.photos[0];
       var nPhotoRows=hasPh?Math.ceil(Math.min(ng.photos.length,3)/3):0;
+      // Severity per temuan ini spesifik (bukan severity keseluruhan laporan) —
+      // pakai riskCategory hasil L×C kalau inspektor mengisi form penilaian
+      // risiko, kalau tidak fallback ke risk level bawaan item checklist.
+      var sevCat=ng.riskCategory||ng.risk||'';
+      var sevColor=RISK_CAT_COLOR[sevCat];
 
       // Semua teks dibungkus multi-baris penuh (TIDAK dipotong) supaya tidak ada
       // lagi caption terpotong seperti "...dilakukan secara berkala u".
       doc.setFontSize(8);doc.setFont('helvetica','bold');
-      var titleLines=doc.splitTextToSize('#'+(i+1)+' '+(ng.item||'Temuan'),W-20);
+      var titleLines=doc.splitTextToSize('#'+(i+1)+' '+(ng.item||'Temuan'),W-20-(sevColor?26:0));
       doc.setFontSize(7.5);doc.setFont('helvetica','normal');
       var descLines=ng.desc?doc.splitTextToSize('Kondisi: '+ng.desc,W-20):[];
       var immLines=ng.immediateAction?doc.splitTextToSize('Tindakan Sementara: '+ng.immediateAction,W-20):[];
@@ -9104,7 +9120,20 @@ function downloadInspeksiPDF(reportId,share){
       // seluruh info + foto jadi terlihat satu kesatuan, bukan dua bagian terpisah.
       var cardStartY=y;
       doc.setFontSize(8);doc.setFont('helvetica','bold');doc.setTextColor(197,48,48);
-      titleLines.forEach(function(ln){doc.text(ln,13,y);y+=3.6;});
+      titleLines.forEach(function(ln,li){
+        doc.text(ln,13,y);
+        // Badge severity ditaruh di baris pertama judul, rata kanan
+        if(li===0&&sevColor){
+          var rgb=hexToRgb(sevColor.bg),fgRgb=hexToRgb(sevColor.fg);
+          var bw=doc.getTextWidth(sevCat)+5;
+          doc.setFillColor(rgb[0],rgb[1],rgb[2]);
+          doc.roundedRect(W-10-bw,y-3.3,bw,4.3,1,1,'F');
+          doc.setFontSize(6.5);doc.setTextColor(fgRgb[0],fgRgb[1],fgRgb[2]);doc.setFont('helvetica','bold');
+          doc.text(sevCat.toUpperCase(),W-10-bw+2.5,y-0.4);
+          doc.setFontSize(8);doc.setTextColor(197,48,48);doc.setFont('helvetica','bold');
+        }
+        y+=3.6;
+      });
       doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
       descLines.forEach(function(ln){doc.text(ln,13,y);y+=3.2;});
       immLines.forEach(function(ln){doc.text(ln,13,y);y+=3.2;});
