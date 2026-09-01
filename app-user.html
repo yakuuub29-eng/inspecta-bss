@@ -952,7 +952,7 @@ function updShiftAuto(){
   if(el2)el2.innerHTML=shiftLabel;
   // Simpan ke CU untuk dipakai saat submit
   if(CU){CU.shift=isDS?'DS (06:00–18:00)':'NS (18:00–06:00)';
-    localStorage.setItem(UK,JSON.stringify(CU));}
+    try{localStorage.setItem(UK,JSON.stringify(CU));}catch(e){console.warn('[INSPECTA] Gagal simpan shift (penyimpanan penuh):',e);}}
 }
 
 
@@ -1235,21 +1235,21 @@ function initFB(){
     fbdb.ref('checklists').on('value',function(snap){
       clearTimeout(fbTimeout);
       var d=snap.val();
-      if(d) localStorage.setItem(CK,JSON.stringify(d));
+      if(d) {try{localStorage.setItem(CK,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache checklists (penyimpanan penuh):',e);}}
     }, function(err){
       clearTimeout(fbTimeout);
       console.warn('[INSPECTA] Firebase checklists error:',err);
     });
     fbdb.ref('masterPic').on('value',function(snap){
       var d=snap.val();
-      if(d&&d.length) localStorage.setItem(MPIC_KEY,JSON.stringify(d));
+      if(d&&d.length) {try{localStorage.setItem(MPIC_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache masterPic (penyimpanan penuh):',e);}}
     }, function(err){console.warn('[INSPECTA] Firebase masterPic error:',err);});
     // Sinkron status CAPA hidup — supaya inspektur lihat update terbaru (Assigned/In
     // Progress/Waiting Verification/Closed) begitu admin ubah status di dashboard,
     // bukan cuma status beku saat laporan pertama kali dikirim.
     fbdb.ref('capa').on('value',function(snap){
       var d=snap.val();
-      if(d) localStorage.setItem(CAP_KEY,JSON.stringify(d));
+      if(d) {try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache capa (penyimpanan penuh):',e);}}
       var tlScr=el('s-tl');
       if(tlScr&&tlScr.classList.contains('on')){renderTL();renderTLList();}
     }, function(err){console.warn('[INSPECTA] Firebase capa error:',err);});
@@ -7293,7 +7293,15 @@ function doSetup(){
   if(pin.length!==4||isNaN(pin)){err.textContent='⚠️ PIN harus 4 angka!';err.classList.add('show');return;}
   err.classList.remove('show');
   CU={name:n,empId:id,dept:d,shift:'',pin:pin,setupAt:new Date().toISOString()};
-  localStorage.setItem(UK,JSON.stringify(CU));
+  try{
+    localStorage.setItem(UK,JSON.stringify(CU));
+  }catch(e){
+    // KRITIS: kalau ini gagal & tidak ditangani, user TIDAK BISA masuk ke app
+    // sama sekali (macet di layar setup profil). Tetap lanjut ke startApp() —
+    // CU sudah ada di memori untuk sesi ini, walau tidak tersimpan permanen.
+    console.warn('[INSPECTA] Gagal simpan profil ke penyimpanan HP (penuh?):',e);
+    showToast('⚠️ Penyimpanan HP penuh — profil belum tersimpan permanen, tapi tetap bisa lanjut pakai app','warning');
+  }
   startApp();
 }
 
@@ -7326,7 +7334,7 @@ function startApp(){
     var sh=CU.shift;
     if(sh==='Shift 1'||sh.indexOf('07')>=0||sh.indexOf('1 (')>=0) CU.shift='DS (06:00–18:00)';
     else if(sh==='Shift 2'||sh.indexOf('19')>=0||sh.indexOf('2 (')>=0) CU.shift='NS (18:00–06:00)';
-    localStorage.setItem(UK,JSON.stringify(CU));
+    try{localStorage.setItem(UK,JSON.stringify(CU));}catch(e){console.warn('[INSPECTA] Gagal simpan migrasi shift (penyimpanan penuh):',e);}
   }
   updShiftAuto();
   el('login').style.display='none';el('pin-screen').style.display='none';
@@ -7387,7 +7395,7 @@ function toggleSec(key){
   var st=getSecState();
   var open=!st[key];
   st[key]=open;
-  localStorage.setItem(SEC_KEY,JSON.stringify(st));
+  try{localStorage.setItem(SEC_KEY,JSON.stringify(st));}catch(e){/* state buka/tutup section, aman diabaikan kalau gagal */}
   setSecUI(key,open);
 }
 function initSecStates(){
@@ -8623,11 +8631,24 @@ function pdfAddSignature(doc, r, y){
   // inspektur pengisi bisa dari SHE/Produksi/Plant, dsb.)
   doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);doc.setFontSize(8);
   doc.text('DIKETAHUI ATASAN', W/2+2, y+5);
-  doc.setDrawColor(180,180,180);doc.setLineWidth(0.3);
-  doc.line(W/2+2,y+23,W-14,y+23);
+  var asigY=y+7;
+  // Kalau atasan sudah menyetujui & tanda tangan digital dari dashboard-admin.html,
+  // datanya tersinkron balik lewat Firebase (report.approverSig) — tampilkan di sini,
+  // kalau belum, tetap sediakan garis kosong untuk tanda tangan basah.
+  if(r.approverSig&&r.approverSig.data&&r.approverSig.data.startsWith('data:')){
+    try{doc.addImage(r.approverSig.data,'PNG',W/2+2,asigY,50,16,'','FAST');}catch(e){}
+  } else {
+    doc.setDrawColor(180,180,180);doc.setLineWidth(0.3);
+    doc.line(W/2+2,asigY+16,W-14,asigY+16);
+  }
   doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
-  doc.text('Atasan Langsung — BSS', W/2+2, y+26);
-  doc.text('Tanggal: ________________', W/2+2, y+29.5);
+  if(r.approverSig&&r.approverSig.name){
+    doc.text(r.approverSig.name, W/2+2, y+26);
+    doc.text('Disetujui: '+(r.approverSig.signedAt?new Date(r.approverSig.signedAt).toLocaleDateString('id-ID'):'—'), W/2+2, y+29.5);
+  } else {
+    doc.text('Atasan Langsung — BSS', W/2+2, y+26);
+    doc.text('Tanggal: ________________', W/2+2, y+29.5);
+  }
   return y+36;
 }
 
@@ -8650,7 +8671,25 @@ function shiftKeyOf(ts){
   var dateStr=shiftDate.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
   return{dateStr:dateStr,shift:shift,key:dateStr+'__'+shift};
 }
-function downloadFatiguePDF(reportId,share){
+function downloadFatiguePDF(reportId,share,_synced){
+  // Sama seperti downloadInspeksiPDF: cek dulu approverSig terbaru dari Firebase
+  // (kalau atasan sudah setuju & ttd lewat dashboard) sebelum bikin PDF, dengan
+  // timeout supaya tidak macet kalau sinyal lemah/offline.
+  if(reportId&&!_synced&&FB_OK&&fbdb&&IS_ONLINE){
+    var _done=false;
+    var _to=setTimeout(function(){if(_done)return;_done=true;downloadFatiguePDF(reportId,share,true);},2500);
+    fbdb.ref('reports/'+reportId+'/approverSig').once('value').then(function(snap){
+      if(_done)return;_done=true;clearTimeout(_to);
+      var v=snap.val();
+      if(v){
+        var list=getLocal();
+        var idx=list.findIndex(function(x){return x.id===reportId;});
+        if(idx>-1){list[idx].approverSig=v;saveLocal(list);}
+      }
+      downloadFatiguePDF(reportId,share,true);
+    }).catch(function(){if(_done)return;_done=true;clearTimeout(_to);downloadFatiguePDF(reportId,share,true);});
+    return;
+  }
   var jsPDF=getPDF();
   if(!jsPDF){showToast('⚠️ Library PDF sedang dimuat, coba lagi...','warning');return;}
   var reports=getMine().filter(function(r){return r.type==='fatigue';});
@@ -8933,7 +8972,26 @@ function downloadSpeedgunPDF(reportId,share){
 // INSPEKSI UMUM — PDF per laporan
 // (checklist + temuan NC + foto + tanda tangan + geotag)
 // ═══════════════════════════════════════════
-function downloadInspeksiPDF(reportId,share){
+function downloadInspeksiPDF(reportId,share,_synced){
+  // Sebelum bikin PDF, cek dulu ke Firebase apakah atasan sudah menyetujui & tanda
+  // tangan digital laporan ini dari dashboard-admin.html (report.approverSig). Kalau
+  // online, tunggu maks 2.5 detik; kalau offline/timeout, lanjut pakai data lokal
+  // apa adanya (garis kosong utk ttd basah) supaya export PDF tidak pernah macet.
+  if(!_synced&&FB_OK&&fbdb&&IS_ONLINE){
+    var _done=false;
+    var _to=setTimeout(function(){if(_done)return;_done=true;downloadInspeksiPDF(reportId,share,true);},2500);
+    fbdb.ref('reports/'+reportId+'/approverSig').once('value').then(function(snap){
+      if(_done)return;_done=true;clearTimeout(_to);
+      var v=snap.val();
+      if(v){
+        var list=getLocal();
+        var idx=list.findIndex(function(x){return x.id===reportId;});
+        if(idx>-1){list[idx].approverSig=v;saveLocal(list);}
+      }
+      downloadInspeksiPDF(reportId,share,true);
+    }).catch(function(){if(_done)return;_done=true;clearTimeout(_to);downloadInspeksiPDF(reportId,share,true);});
+    return;
+  }
   var jsPDF=getPDF();
   if(!jsPDF){showToast('⚠️ Library PDF sedang dimuat...','warning');return;}
   var r=getLocal().find(function(x){return x.id===reportId;});
@@ -8974,9 +9032,9 @@ function downloadInspeksiPDF(reportId,share){
     styles:{fontSize:8.5,cellPadding:2.2,font:'helvetica'},
     columnStyles:{
       0:{fontStyle:'bold',fillColor:[245,245,245],cellWidth:28},
-      1:{cellWidth:'auto'},
+      1:{cellWidth:'auto',minCellWidth:32},
       2:{fontStyle:'bold',fillColor:[245,245,245],cellWidth:22},
-      3:{cellWidth:'auto'},
+      3:{cellWidth:'auto',minCellWidth:32}, // minCellWidth cegah tanggal/nilai terpotong mid-string (mis. "2026-09-0" / "3" terpisah) akibat kolom terlalu sempit
     },
     theme:'grid',
   });
@@ -8995,9 +9053,9 @@ function downloadInspeksiPDF(reportId,share){
       styles:{fontSize:8.5,cellPadding:2.2,font:'helvetica'},
       columnStyles:{
         0:{fontStyle:'bold',fillColor:[245,245,245],cellWidth:28},
-        1:{cellWidth:'auto'},
+        1:{cellWidth:'auto',minCellWidth:32},
         2:{fontStyle:'bold',fillColor:[245,245,245],cellWidth:22},
-        3:{cellWidth:'auto'},
+        3:{cellWidth:'auto',minCellWidth:32}, // minCellWidth cegah tanggal/nilai terpotong mid-string akibat kolom terlalu sempit
       },
       theme:'grid',
     });
@@ -9214,21 +9272,35 @@ function downloadInspeksiPDF(reportId,share){
 
   // CAPA info — pakai status CAPA terbaru (live), bukan snapshot beku saat submit,
   // supaya PDF yang didownload ulang dari riwayat tetap menampilkan status terkini.
+  //
+  // FIX: sebelumnya PIC & Due Date di sini SELALU diambil dari temuan NC PERTAMA
+  // saja (lihat capaPIC=NG_DETAILS[0].pic saat submit) — kalau laporan punya lebih
+  // dari 1 temuan dengan PIC/Target BERBEDA, tabel ini menyesatkan karena seolah
+  // cuma ada satu PIC untuk seluruh laporan. Sekarang: kalau semua temuan memang
+  // sama PIC & Target-nya, tampil seperti biasa (ringkas). Kalau berbeda-beda,
+  // PIC/Due Date diganti keterangan "Lihat detail per temuan" — Status CAPA (info
+  // live yang tidak ada di tempat lain) tetap selalu ditampilkan apa adanya.
   var liveCapaForPdf=getLiveCapa(r);
-  if(liveCapaForPdf&&(liveCapaForPdf.pic||liveCapaForPdf.dueDate)){
+  if(liveCapaForPdf&&(liveCapaForPdf.pic||liveCapaForPdf.dueDate||liveCapaForPdf.status)){
+    var ngList=(r.extra&&r.extra.ngDetails)||[];
+    var uniqPics=ngList.length?Array.from(new Set(ngList.map(function(n){return n.pic||'—';}))):[];
+    var uniqDues=ngList.length?Array.from(new Set(ngList.map(function(n){return n.dueDate||'—';}))):[];
+    var picDisplay=uniqPics.length>1?'Beragam — lihat detail per temuan':(liveCapaForPdf.pic||'—');
+    var dueDisplay=uniqDues.length>1?'Beragam — lihat detail per temuan':(liveCapaForPdf.dueDate||'—');
+
     if(y>240){doc.addPage();pdfAddHeaderFooter(doc,r.typeName,r.noTemuan,2,totalPagesEst);y=26;}
     doc.autoTable({
       startY:y,margin:{left:10,right:10},
       body:[
-        ['CAPA PIC',liveCapaForPdf.pic||'—','Due Date',liveCapaForPdf.dueDate||'—'],
+        ['CAPA PIC',picDisplay,'Due Date',dueDisplay],
         ['Status CAPA',(liveCapaForPdf.status||'—').toUpperCase(),'',''],
       ],
       styles:{fontSize:8.5,cellPadding:2,font:'helvetica'},
       columnStyles:{
         0:{fontStyle:'bold',fillColor:[245,245,245],cellWidth:28},
-        1:{cellWidth:'auto'},
+        1:{cellWidth:'auto',minCellWidth:32},
         2:{fontStyle:'bold',fillColor:[245,245,245],cellWidth:22},
-        3:{cellWidth:'auto'},
+        3:{cellWidth:'auto',minCellWidth:32}, // minCellWidth cegah tanggal/nilai terpotong mid-string akibat kolom terlalu sempit
       },
       theme:'grid',
     });

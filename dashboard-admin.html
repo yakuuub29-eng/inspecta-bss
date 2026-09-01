@@ -315,6 +315,8 @@ tr{cursor:pointer;transition:background .1s}
 .mbox-t{font-size:17px;font-weight:700;letter-spacing:-.2px}
 .mbox-s{font-size:12px;color:var(--G5);margin-top:2px}
 .mbox-x{width:30px;height:30px;background:var(--G1);border:none;border-radius:50%;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.adm-sig-canvas{width:100%;height:130px;border:2px dashed var(--G3);border-radius:var(--rs);touch-action:none;cursor:crosshair;background:var(--G1);display:block}
+.adm-sig-canvas.has-sig{border-color:var(--Y);background:#fff}
 .mbox-x:hover{background:var(--G2)}
 .mbox-body{padding:20px 24px 28px}
 .m-sec-t{font-size:10px;font-weight:700;color:var(--G4);text-transform:uppercase;letter-spacing:.8px;padding:12px 0 6px;margin-top:4px;border-top:1px solid var(--G2)}
@@ -1096,11 +1098,31 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
     <div class="mbox-hdr">
       <div><div class="mbox-t" id="m-t">Detail Laporan</div><div class="mbox-s" id="m-s"></div></div>
       <div style="display:flex;align-items:center;gap:8px">
+        <button id="m-asig-btn" onclick="if(window._curReportId)asigOpenMod(window._curReportId)" style="display:none;padding:6px 14px;background:var(--GR);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--f)">✍️ Setujui &amp; TTD</button>
         <button id="m-pdf-dl" onclick="if(window._curReportId)adminDownloadReportPDF(window._curReportId)" style="display:none;padding:6px 14px;background:var(--R);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--f)">📄 Download PDF</button>
         <button class="mbox-x" onclick="closeMod()">✕</button>
       </div>
     </div>
     <div class="mbox-body" id="m-b"></div>
+  </div>
+</div>
+
+<!-- APPROVER SIGNATURE MODAL -->
+<div class="mov" id="asig-mov" onclick="if(event.target===this)asigCloseMod()">
+  <div class="mbox">
+    <div class="mbox-hdr">
+      <div><div class="mbox-t">✍️ Setujui &amp; Tanda Tangan</div><div class="mbox-s">Sebagai atasan/PJO yang mengetahui laporan ini</div></div>
+      <button class="mbox-x" onclick="asigCloseMod()">✕</button>
+    </div>
+    <div class="mbox-body">
+      <canvas id="asig-canvas" class="adm-sig-canvas" width="600" height="260"></canvas>
+      <button class="cc-btn" style="width:100%;margin-top:8px" onclick="asigClear()">🗑 Hapus &amp; Ulangi</button>
+      <div class="fg" style="margin-top:12px"><label class="fl">Nama Atasan/PJO</label><input class="fi" id="asig-name" placeholder="Nama lengkap..."/></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn-save" style="flex:1;padding:12px" onclick="asigSave()">✅ Setujui &amp; Simpan Tanda Tangan</button>
+        <button class="btn-reset" style="padding:12px 20px" onclick="asigCloseMod()">Batal</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1349,27 +1371,27 @@ function initFB(){
       var r=snap.val();if(r&&r.id)delete reportsById[r.id];scheduleRefresh();
     });
     fbdb.ref('checklists').on('value',function(snap){
-      var d=snap.val();if(d)localStorage.setItem(CK,JSON.stringify(d));
+      var d=snap.val();if(d){try{localStorage.setItem(CK,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache checklists (penyimpanan penuh):',e);}}
     },function(err){console.warn('[INSPECTA] Firebase checklists error:',err);});
     fbdb.ref('capa').on('value',function(snap){
       var d=snap.val();
-      if(d){localStorage.setItem(CAP_KEY,JSON.stringify(d));if(curP==='capa')renderCAPA();}
+      if(d){try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache capa (penyimpanan penuh):',e);}if(curP==='capa')renderCAPA();}
     },function(err){console.warn('[INSPECTA] Firebase capa error:',err);});
     fbdb.ref('masterPic').on('value',function(snap){
       var d=snap.val();
-      if(d&&d.length){localStorage.setItem(MPIC_KEY,JSON.stringify(d));if(curP==='settings')renderMasterPIC();}
+      if(d&&d.length){try{localStorage.setItem(MPIC_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache masterPic (penyimpanan penuh):',e);}if(curP==='settings')renderMasterPIC();}
     },function(err){console.warn('[INSPECTA] Firebase masterPic error:',err);});
     fbdb.ref('indicators').on('value',function(snap){
       var d=snap.val();
-      if(d){localStorage.setItem(KPI_KEY,JSON.stringify(d));if(curP==='kpi')renderKPI();}
+      if(d){try{localStorage.setItem(KPI_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache indicators (penyimpanan penuh):',e);}if(curP==='kpi')renderKPI();}
     },function(err){console.warn('[INSPECTA] Firebase indicators error:',err);});
     fbdb.ref('schedule').on('value',function(snap){
       var d=snap.val();
-      if(d){localStorage.setItem(SCHED_KEY,JSON.stringify(d));if(curP==='compliance-jadwal')renderComplianceJadwal();if(curP==='settings')renderScheduleSettings();}
+      if(d){try{localStorage.setItem(SCHED_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache schedule (penyimpanan penuh):',e);}if(curP==='compliance-jadwal')renderComplianceJadwal();if(curP==='settings')renderScheduleSettings();}
     },function(err){console.warn('[INSPECTA] Firebase schedule error:',err);});
     fbdb.ref('dashUsers').on('value',function(snap){
       var d=snap.val();
-      if(d&&d.length){localStorage.setItem(DUSR_KEY,JSON.stringify(d));if(curP==='users-mgmt')renderUserMgmt();}
+      if(d&&d.length){try{localStorage.setItem(DUSR_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache dashUsers (penyimpanan penuh):',e);}if(curP==='users-mgmt')renderUserMgmt();}
     },function(err){console.warn('[INSPECTA] Firebase dashUsers error:',err);});
   }catch(e){FB_OK=false;setFBS(false,'Firebase error');console.warn(e);}
 }
@@ -1414,7 +1436,7 @@ function getDashUsers(){
   return [{username:'admin',name:'Administrator',pw:getPW(),role:'admin'}];
 }
 function saveDashUsers(d){
-  localStorage.setItem(DUSR_KEY,JSON.stringify(d));
+  try{localStorage.setItem(DUSR_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal simpan dashUsers lokal (penyimpanan penuh):',e);}
   if(FB_OK&&fbdb){fbdb.ref('dashUsers').set(d).catch(function(){});}
 }
 
@@ -1427,7 +1449,7 @@ function doLogin(){
   if(match){
     err.classList.remove('show');
     CUR_USER={username:match.username,name:match.name,role:match.role};
-    localStorage.setItem(ADM_KEY,JSON.stringify({user:match.name,username:match.username,role:match.role,at:new Date().toISOString()}));
+    try{localStorage.setItem(ADM_KEY,JSON.stringify({user:match.name,username:match.username,role:match.role,at:new Date().toISOString()}));}catch(e){console.warn('[INSPECTA] Gagal simpan sesi login (penyimpanan penuh):',e);}
     logAudit({user:match.name,action:'Login ke Dashboard Admin ('+(ROLE_LABEL[match.role]||match.role)+')',module:'Sistem'});
     startDash();
   }else{err.classList.add('show');el('ap').value='';el('ap').focus();}
@@ -1500,9 +1522,9 @@ function getReports(){
   try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}
 }
 function getCAPAs(){try{return JSON.parse(localStorage.getItem(CAP_KEY)||'{}');}catch(e){return{};}}
-function saveCAPAsLocal(d){localStorage.setItem(CAP_KEY,JSON.stringify(d));}
+function saveCAPAsLocal(d){try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal simpan CAPA lokal (penyimpanan penuh):',e);}}
 function getCLs(){try{return JSON.parse(localStorage.getItem(CK)||'{}');}catch(e){return{};}}
-function saveCLs(d){localStorage.setItem(CK,JSON.stringify(d));}
+function saveCLs(d){try{localStorage.setItem(CK,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal simpan checklist lokal (penyimpanan penuh):',e);}}
 
 // ════ MASTER DATA PIC ════
 // Dikelola dari Pengaturan → Master PIC. Disinkronkan via Firebase supaya App User (inspektur
@@ -1516,7 +1538,7 @@ function getMasterPIC(){
   }catch(e){return DEFAULT_MASTER_PIC;}
 }
 function saveMasterPIC(list){
-  localStorage.setItem(MPIC_KEY,JSON.stringify(list));
+  try{localStorage.setItem(MPIC_KEY,JSON.stringify(list));}catch(e){console.warn('[INSPECTA] Gagal simpan masterPic lokal (penyimpanan penuh):',e);}
   if(FB_OK&&fbdb){fbdb.ref('masterPic').set(list).catch(function(){});}
 }
 function addMasterPIC(){
@@ -1575,7 +1597,7 @@ function getPicValue(idBase){
 }
 function getCL(t){var cl=getCLs();return cl[t]||null;}
 function getNotifs(){try{return JSON.parse(localStorage.getItem(NOTIF_KEY)||'[]');}catch(e){return[];}}
-function saveNotifs(d){localStorage.setItem(NOTIF_KEY,JSON.stringify(d));}
+function saveNotifs(d){try{localStorage.setItem(NOTIF_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal simpan notifikasi lokal (penyimpanan penuh):',e);}}
 
 // ════ AUDIT TRAIL ════
 // Log tercatat di localStorage (kunci sama dengan App User: 'k3_audit_log') supaya aktivitas dari
@@ -2515,8 +2537,13 @@ function showDet(id){
 
   // Tanda tangan
   if(r.signature&&r.signature.data&&r.signature.data.startsWith('data:')){
-    h+='<div class="m-sec-t">✍️ Tanda Tangan ('+esc(r.signature.name||'—')+')</div>';
+    h+='<div class="m-sec-t">✍️ Tanda Tangan Inspektor ('+esc(r.signature.name||'—')+')</div>';
     h+='<img src="'+r.signature.data+'" style="width:100%;max-height:80px;object-fit:contain;border:1px solid var(--G2);border-radius:6px;background:var(--G1);margin-top:4px"/>';
+  }
+  if(r.approverSig&&r.approverSig.data&&r.approverSig.data.startsWith('data:')){
+    h+='<div class="m-sec-t">✅ Disetujui Atasan ('+esc(r.approverSig.name||'—')+')</div>';
+    h+='<img src="'+r.approverSig.data+'" style="width:100%;max-height:80px;object-fit:contain;border:1px solid var(--GL);border-radius:6px;background:#fff;margin-top:4px"/>';
+    h+='<div style="font-size:11px;color:var(--G5);margin-top:2px">'+(r.approverSig.signedAt?fd(r.approverSig.signedAt):'—')+'</div>';
   }
 
   // Render SEMUA section sekaligus di sini — sebelumnya el('m-b').innerHTML=h dipanggil terlalu awal
@@ -2528,12 +2555,76 @@ function showDet(id){
   window._curReportId = r.id;
   var pdfBtn = el('m-pdf-dl');
   if(pdfBtn) pdfBtn.style.display = 'block';
+  var asigBtn = el('m-asig-btn');
+  if(asigBtn) asigBtn.style.display = hasPerm('capaVerify')?'block':'none';
 }
 function closeMod(){
   el('mov').classList.remove('on');
   window._curReportId = null;
   var pdfBtn = el('m-pdf-dl');
   if(pdfBtn) pdfBtn.style.display = 'none';
+  var asigBtn = el('m-asig-btn');
+  if(asigBtn) asigBtn.style.display = 'none';
+}
+
+// ════ TANDA TANGAN DIGITAL ATASAN (persetujuan laporan Inspeksi/Fatigue Call) ════
+var ASIG_DRAWING=false, ASIG_CTX=null, ASIG_HAS=false, ASIG_REPORT_ID=null, ASIG_INITED=false;
+function asigInit(){
+  if(ASIG_INITED)return; // hanya pasang event listener sekali, canvas-nya cukup dibersihkan tiap buka
+  var canvas=el('asig-canvas');if(!canvas)return;
+  ASIG_CTX=canvas.getContext('2d');
+  ASIG_CTX.strokeStyle='#1A1A1A';ASIG_CTX.lineWidth=2.5;ASIG_CTX.lineCap='round';ASIG_CTX.lineJoin='round';
+  function getPos(e){
+    var r=canvas.getBoundingClientRect();
+    var scaleX=canvas.width/r.width, scaleY=canvas.height/r.height;
+    if(e.touches){return{x:(e.touches[0].clientX-r.left)*scaleX,y:(e.touches[0].clientY-r.top)*scaleY};}
+    return{x:(e.clientX-r.left)*scaleX,y:(e.clientY-r.top)*scaleY};
+  }
+  function start(e){e.preventDefault();ASIG_DRAWING=true;var p=getPos(e);ASIG_CTX.beginPath();ASIG_CTX.moveTo(p.x,p.y);}
+  function draw(e){e.preventDefault();if(!ASIG_DRAWING)return;var p=getPos(e);ASIG_CTX.lineTo(p.x,p.y);ASIG_CTX.stroke();ASIG_HAS=true;canvas.classList.add('has-sig');}
+  function stop(e){ASIG_DRAWING=false;}
+  canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',draw);canvas.addEventListener('mouseup',stop);
+  canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',draw,{passive:false});canvas.addEventListener('touchend',stop);
+  ASIG_INITED=true;
+}
+function asigClear(){
+  var canvas=el('asig-canvas');if(!canvas||!ASIG_CTX)return;
+  ASIG_CTX.clearRect(0,0,canvas.width,canvas.height);
+  ASIG_HAS=false;canvas.classList.remove('has-sig');
+}
+function asigOpenMod(reportId){
+  if(!hasPerm('capaVerify')){showToast('⛔ Role kamu tidak diizinkan menyetujui laporan.','error');return;}
+  ASIG_REPORT_ID=reportId;
+  var nameInp=el('asig-name');if(nameInp)nameInp.value=CUR_USER&&CUR_USER.name?CUR_USER.name:'';
+  el('asig-mov').classList.add('on');
+  // init/bersihkan canvas setelah modal tampil supaya ukurannya kebaca benar oleh browser
+  setTimeout(function(){asigInit();asigClear();},50);
+}
+function asigCloseMod(){
+  el('asig-mov').classList.remove('on');
+  ASIG_REPORT_ID=null;
+}
+function asigSave(){
+  if(!ASIG_REPORT_ID){showToast('⚠️ Laporan tidak ditemukan.','error');return;}
+  if(!ASIG_HAS){showToast('⚠️ Tanda tangan belum diisi. Silakan tanda tangan di kotak dulu.','warning');return;}
+  var name=(el('asig-name').value||'').trim();
+  if(!name){showToast('⚠️ Nama atasan/PJO wajib diisi!','warning');return;}
+  var canvas=el('asig-canvas');
+  var data=canvas.toDataURL('image/png');
+  var approverSig={data:data,name:name,role:CUR_USER&&CUR_USER.role?CUR_USER.role:'—',signedAt:new Date().toISOString()};
+  // Simpan ke Firebase supaya tersinkron balik ke app-user.html (PDF yang didownload
+  // inspektur juga akan menampilkan tanda tangan atasan ini, bukan cuma dari dashboard)
+  if(FB_OK&&fbdb){
+    fbdb.ref('reports/'+ASIG_REPORT_ID+'/approverSig').set(approverSig).then(function(){
+      showToast('✅ Laporan disetujui & tanda tangan tersimpan.','success');
+      logAudit({action:'Menyetujui & Tanda Tangan Laporan',module:'Laporan',refId:ASIG_REPORT_ID,newValue:'Disetujui oleh '+name});
+      asigCloseMod();
+    }).catch(function(err){
+      showToast('❌ Gagal menyimpan tanda tangan: '+(err&&err.message?err.message:'cek koneksi'),'error');
+    });
+  } else {
+    showToast('⚠️ Firebase tidak aktif, tanda tangan tidak bisa disimpan sekarang.','error');
+  }
 }
 
 // ════ NOTIFICATIONS ════
@@ -3017,10 +3108,20 @@ function admPdfSignature(doc,r,y){
   doc.text((r.userDept||'—')+'  •  '+new Date(r.timestamp).toLocaleDateString('id-ID'),14,y+29.5);
   doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);doc.setFontSize(8);
   doc.text('DIKETAHUI ATASAN',W/2+2,y+5);
-  doc.setDrawColor(180,180,180);doc.setLineWidth(0.3);doc.line(W/2+2,y+23,W-14,y+23);
+  var asigY=y+7;
+  if(r.approverSig&&r.approverSig.data&&r.approverSig.data.startsWith('data:')){
+    try{doc.addImage(r.approverSig.data,'PNG',W/2+2,asigY,50,16,'','FAST');}catch(e){}
+  } else {
+    doc.setDrawColor(180,180,180);doc.setLineWidth(0.3);doc.line(W/2+2,asigY+16,W-14,asigY+16);
+  }
   doc.setFontSize(7.5);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
-  doc.text('Atasan Langsung — BSS',W/2+2,y+26);
-  doc.text('Tanggal: ________________',W/2+2,y+29.5);
+  if(r.approverSig&&r.approverSig.name){
+    doc.text(r.approverSig.name,W/2+2,y+26);
+    doc.text('Disetujui: '+(r.approverSig.signedAt?new Date(r.approverSig.signedAt).toLocaleDateString('id-ID'):'—'),W/2+2,y+29.5);
+  } else {
+    doc.text('Atasan Langsung — BSS',W/2+2,y+26);
+    doc.text('Tanggal: ________________',W/2+2,y+29.5);
+  }
   return y+36;
 }
 
@@ -4713,7 +4814,7 @@ function renderPredict(){
 // ════════════════════════════════════════════════════════════════
 function getKPIData(){try{return JSON.parse(localStorage.getItem(KPI_KEY)||'[]');}catch(e){return[];}}
 function saveKPIData(d){
-  localStorage.setItem(KPI_KEY,JSON.stringify(d));
+  try{localStorage.setItem(KPI_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal simpan indikator K3 lokal (penyimpanan penuh):',e);}
   if(FB_OK&&fbdb){fbdb.ref('indicators').set(d).catch(function(){});}
 }
 function calcFR(lti,manHours){return manHours>0?Math.round((lti*1000000/manHours)*100)/100:0;}
@@ -5013,7 +5114,7 @@ var FREQ_LABEL={harian:'Harian',mingguan:'Mingguan',bulanan:'Bulanan',triwulanan
 var WORKDAYS_PER_MONTH=26;
 function getSchedule(){try{return JSON.parse(localStorage.getItem(SCHED_KEY)||'{}');}catch(e){return{};}}
 function saveSchedule(d){
-  localStorage.setItem(SCHED_KEY,JSON.stringify(d));
+  try{localStorage.setItem(SCHED_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal simpan jadwal lokal (penyimpanan penuh):',e);}
   if(FB_OK&&fbdb){fbdb.ref('schedule').set(d).catch(function(){});}
 }
 function setAreaFreq(area,freq){
