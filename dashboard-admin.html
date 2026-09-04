@@ -599,7 +599,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
   <div class="ll">
     <div class="ll-logo"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M20 4L4 20"/></svg></div>
     <div class="ll-tag">INSPECTA System</div>
-    <div class="ll-h">Dashboard<br>SHE &amp;<br><span>Monitoring</span></div>
+    <div class="ll-h">Dashboard<br>HSE &amp;<br><span>Monitoring</span></div>
     <div class="ll-d">Platform manajemen K3 terintegrasi untuk tambang batubara. Real-time, offline-capable, audit-ready.</div>
     <div class="ll-feat">
       <div class="ll-fi"><div class="ll-fi-ico">📊</div>Executive & Operational Dashboard</div>
@@ -611,7 +611,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
   </div>
   <div class="lr">
     <div class="lr-t">🔐 Login Dashboard</div>
-    <div class="lr-s">Akses untuk SHE Officer, Supervisor, dan Management.</div>
+    <div class="lr-s">Akses untuk HSE Officer, Supervisor, dan Management.</div>
     <div class="lerr" id="lerr">❌ Username atau password salah!</div>
     <label class="inp-l">Username</label>
     <input class="inp" id="au" placeholder="admin" onkeydown="if(event.key==='Enter')el('ap').focus()"/>
@@ -951,7 +951,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
           <div class="set-row"><span class="set-k">Platform</span><span class="set-v">Web / Android (PWA)</span></div>
           <div class="set-row"><span class="set-k">Database</span><span class="set-v">Firebase Realtime DB</span></div>
           <div class="set-row"><span class="set-k">Standar Referensi</span><span class="set-v">SMKP Minerba · ISO 45001</span></div>
-          <div class="set-row"><span class="set-k">Pengembang</span><span class="set-v">Tim SHE Pertambangan</span></div>
+          <div class="set-row"><span class="set-k">Pengembang</span><span class="set-v">Tim HSE Pertambangan</span></div>
           <div class="set-row"><span class="set-k">Tahun</span><span class="set-v">2026</span></div>
         </div>
         <div class="set-card">
@@ -1056,7 +1056,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
       <div class="panel" id="p-kpi">
         <div class="panel-hdr">
           <div class="panel-title">📐 Indikator K3 — Frequency Rate &amp; Severity Rate</div>
-          <div class="panel-sub">Indikator standar K3 per periode (per 1.000.000 jam kerja) — data jam kerja &amp; kecelakaan diinput manual oleh SHE, dihitung otomatis sesuai rumus standar</div>
+          <div class="panel-sub">Indikator standar K3 per periode (per 1.000.000 jam kerja) — data jam kerja &amp; kecelakaan diinput manual oleh HSE, dihitung otomatis sesuai rumus standar</div>
         </div>
         <div id="kpi-body" style="padding:0 18px 18px"></div>
       </div>
@@ -1153,7 +1153,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
     <div class="mbox-body">
       <div style="display:flex;flex-direction:column;gap:14px">
         <div class="fg">
-          <label class="inp-l">Nama Verifier / SHE Officer *</label>
+          <label class="inp-l">Nama Verifier / HSE Officer *</label>
           <input class="inp" id="ev-verifier" placeholder="Nama yang memverifikasi & menutup CAPA ini..." style="margin-bottom:0"/>
         </div>
         <div class="fg">
@@ -1415,7 +1415,7 @@ function setFBS(ok,msg){
 // yang benar-benar kuat, pembatasan HARUS juga diterapkan di Firebase
 // Security Rules server-side, bukan cuma di JS ini.
 // ════════════════════════════════════════════════════════════════
-var ROLE_LABEL={admin:'Administrator',she_manager:'SHE Manager',supervisor:'Supervisor / PJO',auditor:'Auditor (Read-Only)'};
+var ROLE_LABEL={admin:'Administrator',she_manager:'HSE Manager',supervisor:'Supervisor / PJO',auditor:'Auditor (Read-Only)'};
 var ROLE_PERMS={
   admin:       {dashboards:true, capaWrite:true, capaVerify:true, capaDelete:true, checklistEdit:true, settings:true, userMgmt:true, auditView:true},
   she_manager: {dashboards:true, capaWrite:true, capaVerify:true, capaDelete:true, checklistEdit:true, settings:false, userMgmt:false, auditView:true},
@@ -1530,7 +1530,7 @@ function saveCLs(d){try{localStorage.setItem(CK,JSON.stringify(d));}catch(e){con
 // Dikelola dari Pengaturan → Master PIC. Disinkronkan via Firebase supaya App User (inspektur
 // di lapangan) memilih PIC dari dropdown yang sama, bukan mengetik manual — menghindari salah
 // tulis nama/peran & memudahkan rekap kinerja PIC per dashboard.
-var DEFAULT_MASTER_PIC=['SHE','PLANT','PRODUKSI','ICGS','SM','COMEX','ROADMAINT'];
+var DEFAULT_MASTER_PIC=['HSE','PLANT','PRODUKSI','ICGS','SM','COMEX','ROADMAINT'];
 function getMasterPIC(){
   try{
     var d=JSON.parse(localStorage.getItem(MPIC_KEY)||'[]');
@@ -3064,7 +3064,7 @@ function admPdfHeader(doc,title,noLaporan,pageNum,total){
   doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);
   doc.text('PT Bina Sarana Sukses',37,9);
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(50,50,50);
-  doc.text('SHE Department  |  '+title,37,14);
+  doc.text('HSE Department  |  '+title,37,14);
   doc.setFontSize(7);doc.setFont('helvetica','italic');doc.setTextColor(60,60,60);
   doc.text('INSPECTA — Sistem Inspeksi K3 Pertambangan',37,19);
   if(noLaporan){
@@ -3077,7 +3077,7 @@ function admPdfHeader(doc,title,noLaporan,pageNum,total){
   // Footer
   doc.setFillColor(26,26,26);doc.rect(0,H-10,W,10,'F');
   doc.setFontSize(7);doc.setTextColor(200,200,200);doc.setFont('helvetica','normal');
-  doc.text('Dokumen Internal SHE — PT Bina Sarana Sukses | INSPECTA v2.0',10,H-3.5);
+  doc.text('Dokumen Internal HSE — PT Bina Sarana Sukses | INSPECTA v2.0',10,H-3.5);
   doc.text('Hal '+pageNum+' / '+total,W-10,H-3.5,{align:'right'});
   doc.setTextColor(0,0,0);
 }
@@ -3258,7 +3258,7 @@ function adminDownloadResumePDF(type){
     doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(60,60,60);
     doc.text(grp.date+'   |   '+grp.shift,W/2,y,{align:'center'});y+=4;
     doc.setFontSize(8);doc.setTextColor(80,80,80);
-    var siapa=showInspector?('Jumlah Inspektor: '+Array.from(new Set(grp.reports.map(function(r){return r.userName||r.reporter||'—';}))).length):('Inspektor: '+(firstRep.userName||firstRep.reporter||'—')+'   Departemen: '+(firstRep.userDept||'SHE'));
+    var siapa=showInspector?('Jumlah Inspektor: '+Array.from(new Set(grp.reports.map(function(r){return r.userName||r.reporter||'—';}))).length):('Inspektor: '+(firstRep.userName||firstRep.reporter||'—')+'   Departemen: '+(firstRep.userDept||'HSE'));
     doc.text(siapa,W/2,y,{align:'center'});y+=4;
     if(!showInspector){
       var geo=admPdfGeo(firstRep.gps);
@@ -3312,7 +3312,7 @@ function adminDownloadReportPDF(reportId){
   var geo=admPdfGeo(r.gps);
   var rows=[
     ['Inspektor',r.userName||r.reporter||'—','Tanggal',d.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})],
-    ['Departemen',r.userDept||'SHE','Jam',d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})],
+    ['Departemen',r.userDept||'HSE','Jam',d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})],
     ['Lokasi',r.location||'—','Shift',r.userShift||'—'],
     ['Status',r.status||'—','Severity',r.severity||'—'],
   ];
@@ -3570,7 +3570,7 @@ function adminDownloadPICAPDF(reportId){
     startY:y,margin:{left:10,right:10},
     body:[
       ['Inspektor',r.userName||r.reporter||'—','Tanggal',d.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})],
-      ['Departemen',r.userDept||'SHE','Jam',d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})],
+      ['Departemen',r.userDept||'HSE','Jam',d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})],
       ['Lokasi',r.location||'—','Shift',r.userShift||'—'],
       ['Jumlah Temuan',(r.extra&&r.extra.ngDetails?r.extra.ngDetails.length:0)+' item','Status Laporan',r.status||'—'],
       geoStr?['Geotag',{content:geoStr,colSpan:3,styles:{textColor:[43,108,176]}}]:null,
@@ -3792,7 +3792,7 @@ function exportDashboardPDF(){
   var pH=doc.internal.pageSize.getHeight();
   doc.setFillColor(26,26,26);doc.rect(0,pH-10,W,10,'F');
   doc.setFontSize(7.5);doc.setTextColor(200,200,200);
-  doc.text('INSPECTA v1.0  |  PT Bina Sarana Sukses — Dept. SHE  |  Dicetak: '+new Date().toLocaleString('id-ID'),W/2,pH-3.5,{align:'center'});
+  doc.text('INSPECTA v1.0  |  PT Bina Sarana Sukses — Dept. HSE  |  Dicetak: '+new Date().toLocaleString('id-ID'),W/2,pH-3.5,{align:'center'});
 
   var fn='INSPECTA_Dashboard_'+new Date().toISOString().split('T')[0]+'.pdf';
   doc.save(fn);
@@ -4659,11 +4659,11 @@ function renderRCA(){
         +'<div style="height:8px;background:var(--G2);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+Math.max(pct,3)+'%;background:'+col+'"></div></div>'
         +'</div>';
     }).join('')
-    +'<div style="font-size:10px;color:var(--G4);margin-top:8px">Kategori ditentukan otomatis dari kata kunci pada nama temuan (rule-based), bersifat indikatif — verifikasi tetap diperlukan oleh tim SHE.</div>'
+    +'<div style="font-size:10px;color:var(--G4);margin-top:8px">Kategori ditentukan otomatis dari kata kunci pada nama temuan (rule-based), bersifat indikatif — verifikasi tetap diperlukan oleh tim HSE.</div>'
     +'</div>';
 
   // ── Root Cause Analysis MANUAL (dari data verifikasi closing CAPA — bukan tebakan
-  // keyword, tapi hasil pilihan SHE Officer/verifier saat menutup CAPA secara resmi) ──
+  // keyword, tapi hasil pilihan HSE Officer/verifier saat menutup CAPA secara resmi) ──
   var rcaCatColor={Human:'#E53E3E',Equipment:'#DD6B20',Method:'#2B6CB0',Material:'#B7791F',Environment:'#2F855A',Management:'#6B46C1'};
   var rcaCatLabel={Human:'Human — Faktor Manusia',Equipment:'Equipment — Peralatan/Alat',Method:'Method — Metode/Prosedur',Material:'Material — Bahan/Material',Environment:'Environment — Lingkungan Kerja',Management:'Management — Sistem Manajemen'};
   var manualRCA={};
@@ -4810,7 +4810,7 @@ function renderPredict(){
 //   FR = (Jumlah Kecelakaan Kerja × 1.000.000) / Jumlah Jam Kerja
 //   SR = (Jumlah Hari Kerja Hilang × 1.000.000) / Jumlah Jam Kerja
 // Data jam kerja & kecelakaan TIDAK bisa diturunkan otomatis dari temuan
-// NC checklist (NC ≠ kecelakaan), jadi diinput manual oleh SHE per periode.
+// NC checklist (NC ≠ kecelakaan), jadi diinput manual oleh HSE per periode.
 // ════════════════════════════════════════════════════════════════
 function getKPIData(){try{return JSON.parse(localStorage.getItem(KPI_KEY)||'[]');}catch(e){return[];}}
 function saveKPIData(d){
@@ -5231,7 +5231,7 @@ function renderUserMgmt(){
     +'</tbody></table></div>'
     +'<div style="font-size:10px;color:var(--G5);margin-top:10px">'
     +'<b>Administrator</b>: akses penuh semua fitur. '
-    +'<b>SHE Manager</b>: semua fitur kecuali Pengaturan &amp; Kelola Akun. '
+    +'<b>HSE Manager</b>: semua fitur kecuali Pengaturan &amp; Kelola Akun. '
     +'<b>Supervisor/PJO</b>: lihat semua dashboard + bisa verifikasi/tutup CAPA, tidak bisa hapus CAPA/ubah checklist. '
     +'<b>Auditor</b>: read-only murni, tidak ada aksi tulis sama sekali.'
     +'</div></div>'

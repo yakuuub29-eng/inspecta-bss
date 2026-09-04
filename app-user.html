@@ -420,7 +420,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
     <div><label class="ll">ID Karyawan / NIK</label><input class="li" id="lid" placeholder="Contoh: EMP-001"/></div>
     <div><label class="ll">Departemen</label>
       <select class="li" id="ldept"><option value="">— Pilih Departemen —</option>
-        <option>SHE</option><option>PRODUKSI</option><option>PLANT</option>
+        <option>HSE</option><option>PRODUKSI</option><option>PLANT</option>
         <option>LOGISTIK</option><option>COMEX</option><option>ICGS</option>
       </select></div>
 
@@ -969,7 +969,7 @@ var TYPE_CODE={
 };
 var NT_KEY_PFX='inspecta_nt_';   // prefix, tiap jenis punya key sendiri
 
-function _ntKey(type){return NT_KEY_PFX+(TYPE_CODE[type]||'SHE');}
+function _ntKey(type){return NT_KEY_PFX+(TYPE_CODE[type]||'HSE');}
 
 // PENTING — perbaikan nomor laporan dobel:
 // Sebelumnya nomor laporan (BSS-XXX-tanggal-0001) dihasilkan dari counter yang tersimpan di
@@ -981,7 +981,7 @@ function _ntKey(type){return NT_KEY_PFX+(TYPE_CODE[type]||'SHE');}
 // tanpa tabrakan). localStorage tetap dipakai HANYA sebagai fallback saat offline/Firebase tidak
 // tersedia, dengan tambahan suffix ID pegawai supaya risiko tabrakan antar-user tetap minim.
 function genNoTemuanAsync(type,cb){
-  var code=TYPE_CODE[type]||'SHE';
+  var code=TYPE_CODE[type]||'HSE';
   var now=new Date();
   var ymd=now.getFullYear().toString()
     +(('0'+(now.getMonth()+1)).slice(-2))
@@ -1032,7 +1032,7 @@ function genNoTemuanOffline(type,ymd,code){
 }
 
 function peekNoTemuan(type){
-  var code=TYPE_CODE[type]||'SHE';
+  var code=TYPE_CODE[type]||'HSE';
   var now=new Date();
   var ymd=now.getFullYear().toString()
     +(('0'+(now.getMonth()+1)).slice(-2))
@@ -1079,7 +1079,7 @@ function resizeImage(file, callback){
       var now = new Date();
       var stamp = now.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'})
         +' '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-      var line1 = 'BSS-SHE | '+stamp;
+      var line1 = 'BSS-HSE | '+stamp;
       var line2 = (typeof GPS_DATA!=='undefined'&&GPS_DATA)?('📍 '+GPS_DATA.lat+', '+GPS_DATA.lng+' (±'+GPS_DATA.acc+'m)'):'';
       var fontSize = Math.max(10, Math.round(w * 0.022));
       ctx.font = 'bold '+fontSize+'px Arial';
@@ -1260,7 +1260,7 @@ function initFB(){
 // Daftar peran/PIC dikelola admin dari Dashboard (Pengaturan → Master PIC) dan disinkronkan
 // via Firebase supaya inspektur di lapangan memilih dari dropdown, bukan mengetik manual
 // (menghindari salah tulis nama/peran & memudahkan rekap kinerja PIC).
-var DEFAULT_MASTER_PIC=['SHE','PLANT','PRODUKSI','ICGS','SM','COMEX','ROADMAINT'];
+var DEFAULT_MASTER_PIC=['HSE','PLANT','PRODUKSI','ICGS','SM','COMEX','ROADMAINT'];
 function getMasterPIC(){
   try{
     var d=JSON.parse(localStorage.getItem(MPIC_KEY)||'[]');
@@ -1450,8 +1450,8 @@ function saveLocal(a){
       // tidak cukup — sekarang BENAR-BENAR beri tahu user, jangan biarkan
       // mereka mengira laporan tersimpan padahal tidak.
       console.error('[INSPECTA] Gagal simpan meski sudah dibersihkan & dibuang entri lama:',lastErr);
-      showToast('❌ PENYIMPANAN HP PENUH! Laporan mungkin TIDAK tersimpan. Hapus foto/aplikasi lain, atau hubungi admin SHE segera.','error');
-      alert('⚠️ PENTING: Penyimpanan HP penuh sehingga laporan berisiko TIDAK tersimpan.\n\nSegera:\n1. Screenshot layar ini sebagai bukti\n2. Hapus foto/file lain di HP untuk membuat ruang\n3. Coba submit ulang\n4. Kalau masih gagal, hubungi admin SHE');
+      showToast('❌ PENYIMPANAN HP PENUH! Laporan mungkin TIDAK tersimpan. Hapus foto/aplikasi lain, atau hubungi admin HSE segera.','error');
+      alert('⚠️ PENTING: Penyimpanan HP penuh sehingga laporan berisiko TIDAK tersimpan.\n\nSegera:\n1. Screenshot layar ini sebagai bukti\n2. Hapus foto/file lain di HP untuk membuat ruang\n3. Coba submit ulang\n4. Kalau masih gagal, hubungi admin HSE');
     }
   }
 }
@@ -8573,7 +8573,7 @@ function pdfAddHeaderFooter(doc,title,noLaporan,pageNum,total){
   doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);
   doc.text('PT Bina Sarana Sukses',37,9);
   doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(50,50,50);
-  doc.text('SHE Department  |  '+title,37,14);
+  doc.text('HSE Department  |  '+title,37,14);
   doc.setFontSize(7);doc.setFont('helvetica','italic');doc.setTextColor(60,60,60);
   doc.text('INSPECTA — Sistem Inspeksi K3 Pertambangan',37,19);
 
@@ -8591,7 +8591,7 @@ function pdfAddHeaderFooter(doc,title,noLaporan,pageNum,total){
   // Footer
   doc.setFillColor(26,26,26);doc.rect(0,H-10,W,10,'F');
   doc.setFontSize(7);doc.setTextColor(200,200,200);doc.setFont('helvetica','normal');
-  doc.text('Dokumen Internal SHE — PT Bina Sarana Sukses | INSPECTA v2.0',10,H-3.5);
+  doc.text('Dokumen Internal HSE — PT Bina Sarana Sukses | INSPECTA v2.0',10,H-3.5);
   doc.text('Hal '+pageNum+' / '+total,W-10,H-3.5,{align:'right'});
   doc.setTextColor(0,0,0);
 }
@@ -8628,7 +8628,7 @@ function pdfAddSignature(doc, r, y){
 
   // Kolom kanan: Atasan / Supervisor yang mengetahui laporan ini
   // (generik — tidak dihardcode ke satu jabatan/departemen tertentu karena
-  // inspektur pengisi bisa dari SHE/Produksi/Plant, dsb.)
+  // inspektur pengisi bisa dari HSE/Produksi/Plant, dsb.)
   doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);doc.setFontSize(8);
   doc.text('DIKETAHUI ATASAN', W/2+2, y+5);
   var asigY=y+7;
@@ -8748,7 +8748,7 @@ function downloadFatiguePDF(reportId,share,_synced){
 
     // Inspektor info
     doc.setFontSize(8);doc.setTextColor(80,80,80);
-    doc.text('Inspektor: '+(firstRep.userName||firstRep.reporter||'—')+'   Departemen: '+(firstRep.userDept||'SHE'),W/2,y,{align:'center'});y+=4;
+    doc.text('Inspektor: '+(firstRep.userName||firstRep.reporter||'—')+'   Departemen: '+(firstRep.userDept||'HSE'),W/2,y,{align:'center'});y+=4;
 
     // Geotag
     var geo=pdfGeoStr(firstRep.gps);
@@ -9024,7 +9024,7 @@ function downloadInspeksiPDF(reportId,share,_synced){
     startY:y,margin:{left:10,right:10},
     body:[
       ['Inspektor',r.userName||r.reporter||'—','Tanggal',d.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})],
-      ['Departemen',r.userDept||'SHE','Jam',d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})],
+      ['Departemen',r.userDept||'HSE','Jam',d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})],
       ['Lokasi',r.location||'—','Shift',r.userShift||'—'],
       ['Status',r.status||'—','Severity',r.severity||'—'],
       geoStr?['Geotag',{content:geoStr,colSpan:3,styles:{textColor:[43,108,176]}}]:null,
@@ -9342,7 +9342,7 @@ function downloadPICAPDF(reportId,share){
     startY:y,margin:{left:10,right:10},
     body:[
       ['Inspektor',r.userName||r.reporter||'—','Tanggal',d.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})],
-      ['Departemen',r.userDept||'SHE','Jam',d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})],
+      ['Departemen',r.userDept||'HSE','Jam',d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})],
       ['Lokasi',r.location||'—','Shift',r.userShift||'—'],
       ['Jumlah Temuan',(r.extra&&r.extra.ngDetails?r.extra.ngDetails.length:0)+' item','Status Laporan',r.status||'—'],
       geoStr?['Geotag',{content:geoStr,colSpan:3,styles:{textColor:[43,108,176]}}]:null,
