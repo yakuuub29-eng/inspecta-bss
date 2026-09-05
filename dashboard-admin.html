@@ -2447,7 +2447,13 @@ function showDet(id){
    ['Lokasi',r.location||'—'],['Tanggal & Jam',fd(r.timestamp)+' '+ft(r.timestamp)],
    ['Severity',sevBadge(r.severity||'')],
    ['Status','<span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+statusLabel(r.status)+'</span>'],
-   ['Firebase',r.synced?'<span style="color:var(--GR);font-weight:700">☁️ Terkirim</span>':'<span style="color:var(--OR)">⏳ Pending</span>']
+   // Baris ini SELALU tampil "Terkirim" — kalau laporan ini bisa dibuka sama
+   // sekali di dashboard, itu artinya datanya memang sudah ada di Firebase
+   // (dashboard cuma baca dari sana). Field r.synced TIDAK dipakai lagi di sini
+   // karena itu status ANTREAN OFFLINE di sisi HP inspektur, bukan status
+   // "apakah data ada di server" — sebelumnya ini bikin laporan lama tetap
+   // kelihatan "Pending" selamanya walau datanya sudah 100% sampai.
+   ['Firebase','<span style="color:var(--GR);font-weight:700">☁️ Terkirim</span>']
   ].forEach(function(row){h+='<div class="di"><div class="dk">'+row[0]+'</div><div class="dv">'+row[1]+'</div></div>';});
   h+='<div class="di full"><div class="dk">Temuan & Catatan</div><div class="dv">'+(r.notes||'—')+'</div></div>';
   h+='<div class="di full"><div class="dk">Tindakan Perbaikan</div><div class="dv">'+(r.action||'—')+'</div></div>';

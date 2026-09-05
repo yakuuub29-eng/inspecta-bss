@@ -1514,6 +1514,11 @@ function pushToFB(rep){
   fbdb.ref('reports/'+rep.id).set(fbSafe(rep))
     .then(function(){
       var loc=getLocal();loc=loc.map(function(r){if(r.id===rep.id)r.synced=true;return r;});saveLocal(loc);
+      // PENTING: field 'synced' yang barusan dikirim di dalam rep masih bernilai
+      // false (nilai saat laporan dibuat, sebelum push ini sukses) — kalau tidak
+      // di-patch balik, Firebase/dashboard akan SELAMANYA menganggap laporan ini
+      // "Pending" walau datanya sendiri sudah 100% sampai & terlihat di dashboard.
+      fbdb.ref('reports/'+rep.id+'/synced').set(true).catch(function(){});
       var p=getPending().filter(function(id){return id!==rep.id;});savePend(p);updPendUI();
       logToSheet(rep);
     }).catch(function(e){
@@ -1559,6 +1564,9 @@ function syncPending(){
     fbdb.ref('reports/'+id).set(fbSafe(rep))
       .then(function(){
         var l=getLocal();l=l.map(function(r){if(r.id===id)r.synced=true;return r;});saveLocal(l);
+        // Sama seperti di pushToFB(): patch balik field 'synced' di server supaya
+        // dashboard tidak terus-terusan menampilkan "Pending" walau data sudah sampai.
+        fbdb.ref('reports/'+id+'/synced').set(true).catch(function(){});
         var pp=getPending().filter(function(pid){return pid!==id;});savePend(pp);
         logToSheet(rep);
         done++;chkDone();
