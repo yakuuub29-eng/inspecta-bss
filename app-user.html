@@ -114,8 +114,9 @@ select.li{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .pend-strip.show{display:flex}
 .stitle{font-size:10px;font-weight:700;color:var(--G5);text-transform:uppercase;letter-spacing:1px;padding:14px 16px 8px}
 .mgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 16px 16px}
-.sec-hd{display:flex;align-items:center;justify-content:space-between;margin:-6px 16px 10px;padding:8px 12px;background:var(--G1);border-radius:8px;cursor:pointer;font-size:11.5px;font-weight:700;color:var(--YD,#8a6d00)}
-.sec-arr{font-size:12px;transition:transform .2s}
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin:-2px 16px 12px;padding:12px 16px;background:linear-gradient(135deg,#FFF8DC,#FFF3B0);border:1.5px solid var(--Y,#F5C400);border-radius:12px;cursor:pointer;font-size:13.5px;font-weight:800;color:#7A5C00;box-shadow:0 2px 6px rgba(245,196,0,.18);transition:box-shadow .15s}
+.sec-hd:active{box-shadow:0 1px 2px rgba(245,196,0,.18)}
+.sec-arr{display:flex;align-items:center;justify-content:center;width:26px;height:26px;background:var(--Y,#F5C400);color:#3a2c00;border-radius:50%;font-size:13px;font-weight:900;transition:transform .2s;flex-shrink:0}
 .sec-arr.open{transform:rotate(180deg)}
 .sec-body{max-height:none;overflow:hidden}
 .sec-body.collapsed{display:none}
@@ -509,7 +510,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
          (CLD.port, CLD.workshop, dst) SENGAJA tidak dihapus dari kode — supaya laporan
          lama yang sudah tersimpan di Firebase tetap bisa dibuka & ditampilkan di dashboard-admin. -->
     <div class="stitle" style="color:#B8894D"><svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px;margin-right:3px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l2-2 4 4L19 4l2 2"/><path d="M3 19h18"/></svg>Master Area V1.0 (Baru — Standarisasi)</div>
-    <div class="sec-hd" onclick="toggleSec('ma')"><span id="sec-lbl-ma">Tampilkan area inspeksi</span><span class="sec-arr" id="sec-arr-ma">▾</span></div>
+    <div class="sec-hd" onclick="toggleSec('ma')"><span id="sec-lbl-ma">📂 Tampilkan area inspeksi</span><span class="sec-arr" id="sec-arr-ma">▾</span></div>
     <div class="mgrid sec-body" id="sec-ma" style="padding-top:0">
       <div class="mc" onclick="openForm('ma_workshop')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg></div><div class="mn">Workshop</div><div class="mc-cnt" id="c-ma_workshop">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('ma_tpslb3')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 8h12M6 14h12"/></svg></div><div class="mn">TPS Limbah B3</div><div class="mc-cnt" id="c-ma_tpslb3">0 laporan</div><div class="marr">›</div></div>
@@ -529,7 +530,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
       <div class="mc" onclick="openForm('ma_p3k')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M9 6V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1"/><path d="M12 10v6M9 13h6"/></svg></div><div class="mn">Kotak P3K</div><div class="mc-cnt" id="c-ma_p3k">0 laporan</div><div class="marr">›</div></div>
     </div>
     <div class="stitle"><svg viewBox="0 0 24 24" width="12" height="12" style="vertical-align:-1px;margin-right:3px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg>Laporan</div>
-    <div class="sec-hd" onclick="toggleSec('laporan')"><span id="sec-lbl-laporan">Tampilkan poin laporan</span><span class="sec-arr" id="sec-arr-laporan">▾</span></div>
+    <div class="sec-hd" onclick="toggleSec('laporan')"><span id="sec-lbl-laporan">📋 Tampilkan poin laporan</span><span class="sec-arr" id="sec-arr-laporan">▾</span></div>
     <div class="mgrid sec-body" id="sec-laporan" style="padding-top:0">
       <div class="mc" onclick="openForm('fatigue')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></div><div class="mn">Laporan Fatigue Call</div><div class="mc-cnt" id="c-fatigue">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('speedgun')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/></svg></div><div class="mn">Laporan Kegiatan Speedgun</div><div class="mc-cnt" id="c-speedgun">0 laporan</div><div class="marr">›</div></div>
@@ -7393,11 +7394,13 @@ function goHome(btn){setScr('s-home');nvAct(btn||el('nv-home'));updStats();updCo
 var SEC_KEY='k3_sec_state';
 var SEC_LABEL={harian:'poin inspeksi',tt:'poin inspeksi',ma:'area inspeksi',laporan:'poin laporan'};
 function getSecState(){try{return JSON.parse(localStorage.getItem(SEC_KEY)||'{}');}catch(e){return{};}}
+var SEC_ICON={harian:'📋',tt:'📋',ma:'📂',laporan:'📋'};
 function setSecUI(key,open){
   var body=el('sec-'+key), arr=el('sec-arr-'+key), lbl=el('sec-lbl-'+key);
   if(!body)return;
-  if(open){body.classList.remove('collapsed');if(arr)arr.classList.add('open');if(lbl)lbl.textContent='Sembunyikan '+SEC_LABEL[key];}
-  else{body.classList.add('collapsed');if(arr)arr.classList.remove('open');if(lbl)lbl.textContent='Tampilkan '+SEC_LABEL[key];}
+  var ic=SEC_ICON[key]||'📂';
+  if(open){body.classList.remove('collapsed');if(arr)arr.classList.add('open');if(lbl)lbl.textContent=ic+' Sembunyikan '+SEC_LABEL[key];}
+  else{body.classList.add('collapsed');if(arr)arr.classList.remove('open');if(lbl)lbl.textContent=ic+' Tampilkan '+SEC_LABEL[key];}
 }
 function toggleSec(key){
   var st=getSecState();
@@ -7409,7 +7412,12 @@ function toggleSec(key){
 function initSecStates(){
   var st=getSecState();
   ['ma','laporan'].forEach(function(key){
-    setSecUI(key,!!st[key]); // default false (tersembunyi) kalau belum pernah diset
+    // Default TERBUKA kalau user belum pernah menyimpan preferensi (key===undefined) —
+    // sebelumnya default tertutup, tapi ini bikin org baru/pertama kali pakai app
+    // tidak sadar ada daftar area inspeksi & laporan yang tersembunyi di baliknya.
+    // Kalau user SUDAH PERNAH menutupnya sendiri (tersimpan false), preferensinya tetap dihormati.
+    var open = (st[key]===undefined) ? true : !!st[key];
+    setSecUI(key,open);
   });
 }
 function goHist(btn){setScr('s-hist');nvAct(btn||el('nv-hist'));setConnUI(IS_ONLINE);renderHist();}
