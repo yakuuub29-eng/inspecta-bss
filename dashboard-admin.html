@@ -2110,8 +2110,7 @@ function renderCAPA(){
     var daysOverdue=isOverdue?calcOverdueDays(c.dueDate,today):0;
     var dueClass='ok';
     if(c.dueDate){dueClass=c.dueDate<today?'overdue':c.dueDate===today?'today':'ok';}
-    return '<div class="capa-card '+sev+(isClosed?' closed':'')
-      +'"'+(isEscalated?' style="border-left-color:#8B0000;border-left-width:6px;background:#FFF5F5"':isOverdue?' style="border-left-color:var(--R);border-left-width:5px"':'')+' >'
+    return '<div class="capa-card '+sev+(isClosed?' closed':'')+'" id="capa-card-'+c.id+'"'+(isEscalated?' style="border-left-color:#8B0000;border-left-width:6px;background:#FFF5F5"':isOverdue?' style="border-left-color:var(--R);border-left-width:5px"':'')+' >'
       +'<div class="cc-top">'
       +'<div class="cc-title">'+(isEscalated?'🚨 ESKALASI — ':isOverdue?'⏰ ':'')+esc(c.title||'CAPA #'+c.id)+'</div>'
       +sevBadge(c.severity||'')
@@ -2669,11 +2668,11 @@ function checkNotifs(){
     var key=urgency+'-'+c.id+'-'+today;
     if(existing.indexOf(key)>=0)return;
     if(urgency==='due-soon'){
-      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'warn',title:'🟡 CAPA Jatuh Tempo Sebentar Lagi',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') jatuh tempo '+c.dueDate,time:new Date().toISOString(),read:false,refId:key});
+      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'warn',title:'🟡 CAPA Jatuh Tempo Sebentar Lagi',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') jatuh tempo '+c.dueDate,time:new Date().toISOString(),read:false,refId:key,capaId:c.id});
     }else if(urgency==='overdue'){
-      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'warn',title:'🔴 CAPA Overdue',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') sudah melewati due date '+c.dueDate+'!',time:new Date().toISOString(),read:false,refId:key});
+      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'warn',title:'🔴 CAPA Overdue',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') sudah melewati due date '+c.dueDate+'!',time:new Date().toISOString(),read:false,refId:key,capaId:c.id});
     }else if(urgency==='escalated'){
-      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'crit',title:'🚨 ESKALASI: CAPA Overdue >7 Hari',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') overdue >7 hari sejak '+c.dueDate+' — perlu perhatian Supervisor/Manager!',time:new Date().toISOString(),read:false,refId:key});
+      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'crit',title:'🚨 ESKALASI: CAPA Overdue >7 Hari',sub:'CAPA "'+c.title+'" (PIC: '+(c.pic||'—')+') overdue >7 hari sejak '+c.dueDate+' — perlu perhatian Supervisor/Manager!',time:new Date().toISOString(),read:false,refId:key,capaId:c.id});
     }
   });
 
@@ -2682,7 +2681,7 @@ function checkNotifs(){
     var key='nc-'+r.id;
     var hasCapa=capas.some(function(c){return c.reportId===r.id;});
     if(!hasCapa&&existing.indexOf(key)<0){
-      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'info',title:'📋 NC Belum Ada CAPA',sub:'Laporan '+r.typeName+' di '+r.location+' belum memiliki CAPA',time:new Date().toISOString(),read:false,refId:key});
+      ns.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),type:'info',title:'📋 NC Belum Ada CAPA',sub:'Laporan '+r.typeName+' di '+r.location+' belum memiliki CAPA',time:new Date().toISOString(),read:false,refId:key,reportId:r.id});
     }
   });
 
@@ -2696,13 +2695,41 @@ function renderNotifs(){
   el('notif-dot').classList.toggle('show',unread>0);
   var ico={crit:'🔴',warn:'🟡',info:'🔵'};
   el('notif-list').innerHTML=ns.length?ns.map(function(n){
-    return '<div class="notif-item'+(n.read?'':' unread')+'" onclick="readNotif(\''+n.id+'\')">'
+    return '<div class="notif-item'+(n.read?'':' unread')+'" onclick="openNotifTarget(\''+n.id+'\')">'
       +'<div class="notif-ico '+(n.type==='crit'?'crit':n.type==='warn'?'warn':'info')+'">'+(ico[n.type]||'ℹ️')+'</div>'
       +'<div class="notif-body"><div class="notif-title">'+esc(n.title)+'</div><div class="notif-sub">'+esc(n.sub)+'</div><div class="notif-time">'+ft(n.time)+'</div></div>'
       +'</div>';
   }).join(''):'<div class="notif-empty">✅ Tidak ada notifikasi</div>';
 }
 function readNotif(id){var ns=getNotifs();ns.forEach(function(n){if(n.id===id)n.read=true;});saveNotifs(ns);renderNotifs();}
+// Klik notifikasi langsung ANTAR ke laporan/CAPA terkait — supaya admin tidak perlu
+// cari manual lagi. Notif "NC Belum Ada CAPA" → buka modal detail laporannya.
+// Notif CAPA (due-soon/overdue/eskalasi) → pindah ke halaman CAPA Tracking lalu
+// scroll & sorot kartu CAPA yang dimaksud selama beberapa detik.
+function openNotifTarget(id){
+  var ns=getNotifs();
+  var n=ns.find(function(x){return x.id===id;});
+  if(!n)return;
+  n.read=true;saveNotifs(ns);renderNotifs();
+  var p=el('notif-panel');if(p)p.classList.remove('show');
+  if(n.reportId){
+    showDet(n.reportId);
+  }else if(n.capaId){
+    showP('capa',null);
+    setTimeout(function(){
+      var card=el('capa-card-'+n.capaId);
+      if(card){
+        card.scrollIntoView({behavior:'smooth',block:'center'});
+        card.style.transition='box-shadow .3s, outline .3s';
+        card.style.outline='3px solid var(--Y)';
+        card.style.boxShadow='0 0 0 6px rgba(245,196,0,.25)';
+        setTimeout(function(){card.style.outline='none';card.style.boxShadow='';},3200);
+      }else{
+        showToast('⚠️ CAPA sudah tidak ditemukan (mungkin sudah dihapus/berubah).','warning');
+      }
+    },350);
+  }
+}
 function clearNotifs(){saveNotifs([]);renderNotifs();}
 function toggleNotif(){
   var p=el('notif-panel');p.classList.toggle('show');
