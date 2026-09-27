@@ -1615,13 +1615,13 @@ function getLiveCL(type){
 // Seluruh data checklist "Inspeksi Harian" & "Inspeksi Tidak Terencana" (port, pit,
 // hauling, workshop, workshoptyre, tpslb3, p3k, eyewash, gabungan, sop, tt*) SUDAH
 // DIHAPUS TOTAL sesuai keputusan standarisasi. Satu-satunya sumber checklist sekarang
-// adalah MASTER_AREAS (14 area, 482 item) yang digabung ke CLD di bawah.
+// adalah MASTER_AREAS (13 area, 486 item — termasuk 4 item baru: kebisingan & fit-to-work) yang digabung ke CLD di bawah.
 var CLD={};
 
 // ════ MASTER AREA CHECKLIST V1.0 (baru, non-destruktif — digabung ke CLD) ════
 // ════════════════════════════════════════════════════════════════
 // MASTER AREA CHECKLIST — INSPECTA V1.0
-// Auto-generated dari Master Checklist Excel (14 area, 482 item)
+// Auto-generated dari Master Checklist Excel (13 area, 486 item, sudah termasuk penambahan manual)
 // Struktur item: {text, criteria, reg, risk, evidence, action, freq}
 // risk: 'Extreme'|'High'|'Medium'|'Low' — dipakai untuk badge warna & auto due-date CAPA
 // ════════════════════════════════════════════════════════════════
@@ -2335,6 +2335,16 @@ var MASTER_AREAS = {
     {
       "t": "APD & Lingkungan Kerja",
       "items": [
+        {
+          "text": "Tingkat kebisingan area kerja diukur berkala & APD pendengaran tersedia di zona bising (>85 dB)",
+          "criteria": "Hasil pengukuran kebisingan terdokumentasi, ear plug/ear muff tersedia & dipakai di zona yang melebihi NAB",
+          "reg": "Permenaker 5/2018 (K3 Lingkungan Kerja)",
+          "risk": "Medium",
+          "evidence": "Foto & Dokumen",
+          "action": "Lakukan pengukuran kebisingan, sediakan & wajibkan APD pendengaran di zona bising",
+          "freq": "6 Bulan",
+          "regDetail": "Permenaker No. 5/2018 menetapkan Nilai Ambang Batas (NAB) kebisingan di tempat kerja sebesar 85 dB(A) untuk pajanan 8 jam/hari — area workshop dengan mesin perkakas/gerinda/las berpotensi melebihi NAB ini sehingga wajib dilakukan pengukuran berkala & penyediaan APD pendengaran (ear plug/ear muff) bagi pekerja yang terpapar."
+        },
         {
           "text": "Pekerja workshop menggunakan APD wajib (safety shoes, kacamata, sarung tangan)",
           "criteria": "APD sesuai jenis pekerjaan digunakan dengan benar oleh seluruh pekerja",
@@ -3179,6 +3189,16 @@ var MASTER_AREAS = {
     {
       "t": "Manajemen Kelelahan Operator",
       "items": [
+        {
+          "text": "Tes alkohol/fit-to-work dilakukan terhadap operator sebelum memulai shift",
+          "criteria": "Hasil tes alkohol (breathalyzer) & pemeriksaan kelayakan fisik terdokumentasi sebelum operator diizinkan bertugas",
+          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
+          "risk": "Extreme",
+          "evidence": "Dokumen/Log Tes",
+          "action": "Tunda penugasan operator yang tidak lolos tes, laporkan ke supervisor",
+          "freq": "Setiap Awal Shift",
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mewajibkan penerapan program manajemen kelelahan (fatigue management) yang mencakup pemeriksaan kelayakan bekerja (fit-to-work) termasuk tes alkohol sebelum operator unit hauling memulai shift, mengingat tingginya risiko fatal akibat operator yang tidak fit mengoperasikan unit berat."
+        },
         {
           "text": "Jam kerja operator hauling sesuai batas maksimal shift yang ditetapkan",
           "criteria": "Log jam kerja tidak melebihi durasi maksimal per shift sesuai SOP fatigue management",
@@ -5744,6 +5764,16 @@ var MASTER_AREAS = {
       "t": "Unit Genset & Mesin",
       "items": [
         {
+          "text": "Tingkat kebisingan ruang genset diukur berkala & APD pendengaran tersedia bagi petugas",
+          "criteria": "Hasil pengukuran kebisingan terdokumentasi, ear plug/ear muff wajib dipakai saat berada di ruang genset yang beroperasi",
+          "reg": "Permenaker 5/2018 (K3 Lingkungan Kerja)",
+          "risk": "Medium",
+          "evidence": "Foto & Dokumen",
+          "action": "Lakukan pengukuran kebisingan & wajibkan APD pendengaran bagi petugas yang masuk ruang genset",
+          "freq": "6 Bulan",
+          "regDetail": "Permenaker No. 5/2018 menetapkan NAB kebisingan 85 dB(A) untuk pajanan 8 jam/hari — ruang genset dengan mesin diesel kapasitas besar umumnya jauh melebihi NAB ini, sehingga pengukuran berkala & kewajiban APD pendengaran bagi petugas yang beraktivitas di dalamnya bersifat wajib."
+        },
+        {
           "text": "Genset memiliki name plate & spesifikasi teknis yang terbaca jelas",
           "criteria": "Name plate (kapasitas, tahun buat) terpasang & tidak pudar",
           "reg": "Permenaker 38/2016 (K3 Pesawat Tenaga & Produksi - Genset/Diesel Engine)",
@@ -6095,6 +6125,16 @@ var MASTER_AREAS = {
     {
       "t": "Kebakaran & Lingkungan Kerja",
       "items": [
+        {
+          "text": "Tingkat kebisingan ruang kompresor diukur berkala & APD pendengaran tersedia bagi petugas",
+          "criteria": "Hasil pengukuran kebisingan terdokumentasi, ear plug/ear muff wajib dipakai saat berada di ruang kompresor yang beroperasi",
+          "reg": "Permenaker 5/2018 (K3 Lingkungan Kerja)",
+          "risk": "Medium",
+          "evidence": "Foto & Dokumen",
+          "action": "Lakukan pengukuran kebisingan & wajibkan APD pendengaran bagi petugas yang masuk ruang kompresor",
+          "freq": "6 Bulan",
+          "regDetail": "Permenaker No. 5/2018 menetapkan NAB kebisingan 85 dB(A) untuk pajanan 8 jam/hari — ruang kompresor bertekanan tinggi umumnya menghasilkan kebisingan yang melebihi NAB ini, sehingga pengukuran berkala & kewajiban APD pendengaran bagi petugas yang beraktivitas di dalamnya bersifat wajib."
+        },
         {
           "text": "APAR tersedia sesuai jenis & jumlah di ruang kompresor",
           "criteria": "APAR jenis dry chemical/CO2 tersedia sesuai jarak jangkau standar",
