@@ -699,6 +699,7 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
       <button class="sbi" onclick="showP('kpi',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/></svg></span>Indikator K3 (FR/SR)</button>
       <button class="sbi" onclick="showP('periodic',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M4 9h16M8 2v4M16 2v4"/><path d="M8 14h3M8 17h3"/></svg></span>Laporan Periodik</button>
       <button class="sbi" onclick="showP('compliance-jadwal',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4M16 2v4"/><path d="M8 15l2 2 4-4"/></svg></span>Compliance Jadwal</button>
+      <button class="sbi" onclick="showP('weekly',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/><path d="M7 14h2M11 14h2M15 14h2M7 18h2M11 18h2"/></svg></span>Monitoring Pengawas</button>
 
       <div class="sb-sec">Manajemen</div>
       <button class="sbi" id="nav-edit-checklist" data-perm="checklistEdit" onclick="showP('edit',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></span>Edit Checklist</button>
@@ -1061,6 +1062,15 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
         <div id="kpi-body" style="padding:0 18px 18px"></div>
       </div>
 
+      <!-- MONITORING PENGAWAS MINGGUAN -->
+      <div class="panel" id="p-weekly">
+        <div class="panel-hdr">
+          <div class="panel-title">📅 Monitoring Pengawas Mingguan</div>
+          <div class="panel-sub">Siapa yang sudah &amp; belum membuat laporan per minggu (Senin–Minggu) — rekap otomatis dari laporan yang masuk</div>
+        </div>
+        <div id="weekly-body" style="padding:0 18px 18px"></div>
+      </div>
+
       <!-- LAPORAN PERIODIK SIAP-AUDIT -->
       <div class="panel" id="p-periodic">
         <div class="panel-hdr">
@@ -1393,6 +1403,10 @@ function initFB(){
       var d=snap.val();
       if(d&&d.length){try{localStorage.setItem(DUSR_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache dashUsers (penyimpanan penuh):',e);}if(curP==='users-mgmt')renderUserMgmt();}
     },function(err){console.warn('[INSPECTA] Firebase dashUsers error:',err);});
+    fbdb.ref('pengawasRoster').on('value',function(snap){
+      var d=snap.val();
+      if(d){try{localStorage.setItem(ROSTER_KEY,JSON.stringify({list:d.list||[],hidden:d.hidden||[]}));}catch(e){console.warn('[INSPECTA] Gagal cache roster pengawas:',e);}if(curP==='weekly')renderWeekly();}
+    },function(err){console.warn('[INSPECTA] Firebase pengawasRoster error:',err);});
   }catch(e){FB_OK=false;setFBS(false,'Firebase error');console.warn(e);}
 }
 function setFBS(ok,msg){
@@ -1652,7 +1666,7 @@ function showP(name,btn){
   if(btn)btn.classList.add('on');
   curP=name;curPage=1;srch='';filtSt='all';filtSev='all';
   closeSidebar();
-  if(!['exec','overview','edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict','audit','kpi','periodic','compliance-jadwal','users-mgmt'].includes(name))renderRP(name);
+  if(!['exec','overview','edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict','audit','kpi','periodic','compliance-jadwal','users-mgmt','weekly'].includes(name))renderRP(name);
   if(name==='users')renderUsers();
   if(name==='capa')renderCAPA();
   if(name==='compliance')renderCompliance();
@@ -1673,6 +1687,7 @@ function showP(name,btn){
   if(name==='periodic')renderPeriodic();
   if(name==='compliance-jadwal')renderComplianceJadwal();
   if(name==='users-mgmt')renderUserMgmt();
+  if(name==='weekly')renderWeekly();
   el('notif-panel').classList.remove('show');
 }
 
@@ -1683,7 +1698,7 @@ function refreshAll(){
   checkNotifs();
   if(curP==='exec')renderExec();
   else if(curP==='overview')renderOverview();
-  else if(!['edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict','audit','kpi','periodic','compliance-jadwal','users-mgmt'].includes(curP))renderRP(curP);
+  else if(!['edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict','audit','kpi','periodic','compliance-jadwal','users-mgmt','weekly'].includes(curP))renderRP(curP);
   else if(curP==='risk')renderRiskMatrix();
   else if(curP==='leading')renderLeading();
   else if(curP==='trend')renderTrend();
@@ -1694,6 +1709,7 @@ function refreshAll(){
   else if(curP==='rca')renderRCA();
   else if(curP==='predict')renderPredict();
   else if(curP==='audit')renderAuditTrail();
+  else if(curP==='weekly')renderWeekly();
 }
 
 function updSB(all){
@@ -2763,6 +2779,215 @@ function renderUsers(){
     }).join('')+'</div>'
     :'<div style="text-align:center;padding:48px;color:var(--G4)">Belum ada inspektor terdaftar</div>';
 }
+
+// ════ MONITORING PENGAWAS MINGGUAN ════
+// Rekap per minggu (Senin–Minggu): pengawas mana yang sudah/belum membuat laporan.
+// Daftar pengawas = daftar manual (Firebase 'pengawasRoster') + siapa pun yang pernah
+// mengirim laporan (otomatis terdeteksi dari userId/nama). Pengawas yang tidak aktif lagi
+// bisa disembunyikan supaya tidak terus terhitung "belum lapor".
+var ROSTER_KEY='k3_pengawas_roster';
+var WK_OFFSET=0, WK_FILTER='all', WK_TARGET=1, WK_PEOPLE=[], WK_HIDDEN_LIST=[];
+try{var _wt=parseInt(localStorage.getItem('k3_wk_target'),10);if(_wt>0)WK_TARGET=_wt;}catch(e){}
+function getRosterData(){
+  try{var d=JSON.parse(localStorage.getItem(ROSTER_KEY)||'null');if(d&&typeof d==='object')return {list:d.list||[],hidden:d.hidden||[]};}catch(e){}
+  return {list:[],hidden:[]};
+}
+function saveRosterData(d){
+  try{localStorage.setItem(ROSTER_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal simpan roster lokal:',e);}
+  if(FB_OK&&fbdb){fbdb.ref('pengawasRoster').set({list:d.list||[],hidden:d.hidden||[]}).catch(function(){});}
+}
+function wkRange(off){
+  var now=new Date();var day=(now.getDay()+6)%7;
+  var s=new Date(now.getFullYear(),now.getMonth(),now.getDate()-day+off*7);
+  var e=new Date(s.getFullYear(),s.getMonth(),s.getDate()+7);
+  return {s:s,e:e};
+}
+function wkLbl(off){
+  var r=wkRange(off);var last=new Date(r.e.getTime()-86400000);
+  var M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return r.s.getDate()+(r.s.getMonth()!==last.getMonth()?' '+M[r.s.getMonth()]:'')+'–'+last.getDate()+' '+M[last.getMonth()];
+}
+function wkMatch(r){
+  var t=r.type||'';
+  if(WK_FILTER==='inspeksi')return /^ma_/.test(t);
+  if(WK_FILTER==='fatigue')return t==='fatigue';
+  if(WK_FILTER==='speedgun')return t==='speedgun';
+  if(WK_FILTER==='quick')return !!QUICK_TYPES[t];
+  return true;
+}
+function wkBuildPeople(all){
+  var people=[];
+  function find(id,nm){
+    id=String(id||'').trim().toLowerCase();nm=String(nm||'').trim().toLowerCase();
+    for(var i=0;i<people.length;i++){
+      var p=people[i];
+      if(id&&p.idl&&p.idl===id)return p;
+      if(nm&&p.nml===nm)return p;
+    }
+    return null;
+  }
+  getRosterData().list.forEach(function(x){
+    people.push({name:x.name||'',id:x.id||'',idl:String(x.id||'').trim().toLowerCase(),nml:String(x.name||'').trim().toLowerCase(),manual:true,reports:[]});
+  });
+  all.forEach(function(r){
+    var nm=r.userName||r.reporter||'';
+    if(!nm&&!r.userId)return;
+    var p=find(r.userId,nm);
+    if(!p){people.push(p={name:nm,id:r.userId||'',idl:String(r.userId||'').trim().toLowerCase(),nml:String(nm).trim().toLowerCase(),manual:false,reports:[]});}
+    else if(!p.idl&&r.userId){p.idl=String(r.userId).trim().toLowerCase();if(!p.id)p.id=r.userId;}
+    p.reports.push(r);
+  });
+  people.forEach(function(p){p.key=p.idl?('id:'+p.idl):('n:'+p.nml);});
+  return people;
+}
+function wkCount(p,rg){
+  return p.reports.filter(function(r){var t=new Date(r.timestamp);return t>=rg.s&&t<rg.e&&wkMatch(r);});
+}
+function renderWeekly(){
+  var body=el('weekly-body');if(!body)return;
+  var all=getReports();
+  var hidden=getRosterData().hidden;
+  var allPeople=wkBuildPeople(all);
+  WK_PEOPLE=allPeople.filter(function(p){return hidden.indexOf(p.key)<0;});
+  WK_HIDDEN_LIST=allPeople.filter(function(p){return hidden.indexOf(p.key)>=0;});
+  var canEdit=hasPerm('checklistEdit');
+  var rg=wkRange(WK_OFFSET);
+  var DN=['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+
+  var rows=WK_PEOPLE.map(function(p,i){
+    var rs=wkCount(p,rg);
+    var perDay=[0,0,0,0,0,0,0];
+    rs.forEach(function(r){var d=(new Date(r.timestamp).getDay()+6)%7;perDay[d]++;});
+    var last=p.reports.map(function(r){return new Date(r.timestamp).getTime();}).sort(function(a,b){return b-a;})[0];
+    return {i:i,p:p,n:rs.length,perDay:perDay,last:last,ok:rs.length>=WK_TARGET};
+  });
+  rows.sort(function(a,b){if(a.ok!==b.ok)return a.ok?1:-1;return (a.p.name||'').localeCompare(b.p.name||'');});
+  var total=rows.length, done=rows.filter(function(x){return x.ok;}).length, notDone=total-done;
+  var pct=total?Math.round(done/total*100):0;
+
+  // 8 minggu terakhir (berakhir di minggu terpilih)
+  var wk=[];
+  for(var k=7;k>=0;k--){
+    var off=WK_OFFSET-k;var r2=wkRange(off);
+    var d2=WK_PEOPLE.filter(function(p){return wkCount(p,r2).length>=WK_TARGET;}).length;
+    wk.push({off:off,done:d2,not:WK_PEOPLE.length-d2,pct:WK_PEOPLE.length?Math.round(d2/WK_PEOPLE.length*100):0});
+  }
+  var bars=wk.map(function(w){
+    var sel=(w.off===WK_OFFSET);
+    var hDone=Math.round(w.pct*1.0), hNot=100-hDone;
+    return '<div onclick="wkJump('+w.off+')" style="flex:1;min-width:0;cursor:pointer;text-align:center" title="'+wkLbl(w.off)+': '+w.done+' sudah, '+w.not+' belum">'
+      +'<div style="font-size:11px;font-weight:700;color:'+(w.pct>=80?'var(--GR)':w.pct>=50?'var(--OR)':'var(--R)')+'">'+w.pct+'%</div>'
+      +'<div style="height:110px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:6px;overflow:hidden;background:var(--G1);margin:3px 3px 0;'+(sel?'outline:2px solid var(--Y);':'')+'">'
+      +(WK_PEOPLE.length?'<div style="height:'+hNot+'%;background:#E53E3E55"></div><div style="height:'+hDone+'%;background:#2F855A"></div>':'')
+      +'</div>'
+      +'<div style="font-size:9px;color:var(--G5);margin-top:4px;'+(sel?'font-weight:700;color:var(--B)':'')+'">'+wkLbl(w.off)+'</div>'
+      +'<div style="font-size:9px;color:var(--G4)">'+w.done+'/'+WK_PEOPLE.length+'</div>'
+      +'</div>';
+  }).join('');
+
+  var html='';
+  // kontrol
+  html+='<div class="trend-card" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">'
+    +'<button class="cc-btn" onclick="wkNav(-1)">◀ Minggu lalu</button>'
+    +'<div style="font-weight:700;font-size:14px;min-width:150px;text-align:center">'+wkLbl(WK_OFFSET)+(WK_OFFSET===0?' <span style="font-size:10px;color:var(--GR)">(minggu ini)</span>':'')+'</div>'
+    +'<button class="cc-btn" onclick="wkNav(1)"'+(WK_OFFSET>=0?' disabled style="opacity:.4"':'')+'>Minggu depan ▶</button>'
+    +(WK_OFFSET!==0?'<button class="cc-btn" onclick="wkJump(0)">Ke minggu ini</button>':'')
+    +'<span style="flex:1"></span>'
+    +'<label style="font-size:11px;color:var(--G5)">Jenis laporan <select class="fsel" style="font-size:11px" onchange="wkSetFilter(this.value)">'
+    +[['all','Semua laporan'],['inspeksi','Inspeksi area saja'],['fatigue','Fatigue Call saja'],['speedgun','Speedgun saja'],['quick','Quick Report (Hazard/NM/SWA/Positif)']].map(function(o){return '<option value="'+o[0]+'"'+(o[0]===WK_FILTER?' selected':'')+'>'+o[1]+'</option>';}).join('')
+    +'</select></label>'
+    +'<label style="font-size:11px;color:var(--G5)">Target min./minggu <input class="fi" type="number" min="1" max="50" value="'+WK_TARGET+'" style="width:60px;padding:4px 6px;font-size:12px" onchange="wkSetTarget(this.value)"/></label>'
+    +'<button class="cc-btn" onclick="wkCsv()">⬇️ CSV</button>'
+    +'</div>';
+  // ringkasan
+  html+='<div class="trend-card"><div class="trend-summary-row">'
+    +'<div class="trend-stat"><div class="trend-stat-val">'+total+'</div><div class="trend-stat-lbl">Total Pengawas</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-val" style="color:var(--GR)">'+done+'</div><div class="trend-stat-lbl">Sudah Lapor</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-val" style="color:'+(notDone?'var(--R)':'var(--GR)')+'">'+notDone+'</div><div class="trend-stat-lbl">Belum Lapor</div></div>'
+    +'<div class="trend-stat"><div class="trend-stat-val" style="color:'+(pct>=80?'var(--GR)':pct>=50?'var(--OR)':'var(--R)')+'">'+pct+'%</div><div class="trend-stat-lbl">Kepatuhan</div></div>'
+    +'</div></div>';
+  // grafik
+  html+='<div class="trend-card"><div class="trend-card-t">📊 Kepatuhan Lapor — 8 Minggu Terakhir <span style="font-size:12px;color:var(--G4);font-weight:400">(hijau = sudah lapor, merah muda = belum · klik batang untuk lihat minggunya)</span></div>'
+    +'<div style="display:flex;gap:2px;align-items:flex-end;padding-top:6px">'+bars+'</div></div>';
+  // tabel
+  html+='<div class="trend-card"><div class="trend-card-t">👷 Rincian per Pengawas — '+wkLbl(WK_OFFSET)+'</div>'
+    +(rows.length?'<div class="tbl-scroll"><table class="cl-tbl" style="min-width:640px"><thead><tr><th>Nama</th><th>ID</th><th style="text-align:center">Jumlah</th>'
+    +DN.map(function(d){return '<th style="text-align:center;width:34px">'+d+'</th>';}).join('')
+    +'<th>Laporan Terakhir</th><th style="text-align:center">Status</th>'+(canEdit?'<th></th>':'')+'</tr></thead><tbody>'
+    +rows.map(function(x){
+      return '<tr style="'+(x.ok?'':'background:#FFF5F5')+'">'
+        +'<td><b>'+esc(x.p.name||'—')+'</b>'+(x.p.manual?'':' <span style="font-size:9px;color:var(--G4)" title="Terdeteksi otomatis dari laporan">auto</span>')+'</td>'
+        +'<td style="font-size:11px;color:var(--G5)">'+esc(x.p.id||'—')+'</td>'
+        +'<td style="text-align:center;font-weight:700">'+x.n+'<span style="font-size:10px;color:var(--G4);font-weight:400">/'+WK_TARGET+'</span></td>'
+        +x.perDay.map(function(c){return '<td style="text-align:center;font-size:11px;'+(c?'color:#fff;background:#2F855A;font-weight:700':'color:var(--G3)')+'">'+(c||'·')+'</td>';}).join('')
+        +'<td style="font-size:11px">'+(x.last?fd(x.last):'<span style="color:var(--R)">Belum pernah</span>')+'</td>'
+        +'<td style="text-align:center">'+(x.ok?'<span style="color:var(--GR);font-weight:700">✅ Sudah</span>':'<span style="color:var(--R);font-weight:700">❌ Belum</span>')+'</td>'
+        +(canEdit?'<td><button class="cc-btn" style="padding:2px 7px;font-size:10px" title="Sembunyikan (mis. sudah tidak aktif)" onclick="wkHide('+x.i+')">🙈</button></td>':'')
+        +'</tr>';
+    }).join('')+'</tbody></table></div>'
+    :'<div style="text-align:center;padding:32px;color:var(--G4)">Belum ada data pengawas. Tambahkan nama di bawah, atau tunggu laporan pertama masuk.</div>')
+    +'</div>';
+  // daftar pengawas
+  var rl=getRosterData().list;
+  html+='<div class="trend-card"><div class="trend-card-t">➕ Daftar Pengawas <span style="font-size:12px;color:var(--G4);font-weight:400">— tambahkan yang belum pernah lapor supaya ikut terpantau</span></div>';
+  if(canEdit){
+    html+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">'
+      +'<input class="fi" id="wk-new-name" placeholder="Nama pengawas" style="flex:2;min-width:150px"/>'
+      +'<input class="fi" id="wk-new-id" placeholder="ID/NIK (opsional, sama dengan di app)" style="flex:2;min-width:150px"/>'
+      +'<button class="btn-save" onclick="wkAddRoster()">Tambah</button></div>';
+  }
+  html+=(rl.length?'<div style="display:flex;flex-wrap:wrap;gap:6px">'+rl.map(function(x,i){
+      return '<span style="background:var(--G1);border:1px solid var(--G2);border-radius:14px;padding:3px 10px;font-size:11px">'+esc(x.name)+(x.id?' · '+esc(x.id):'')
+        +(canEdit?' <a href="#" onclick="wkDelRoster('+i+');return false" style="color:var(--R);text-decoration:none" title="Hapus">✕</a>':'')+'</span>';
+    }).join('')+'</div>':'<div style="font-size:12px;color:var(--G4)">Belum ada nama manual — saat ini hanya pengawas yang pernah mengirim laporan yang terpantau.</div>');
+  if(WK_HIDDEN_LIST.length&&canEdit){
+    html+='<div style="margin-top:12px;font-size:11px;color:var(--G5)">Disembunyikan: '+WK_HIDDEN_LIST.map(function(p,i){
+      return esc(p.name||p.id)+' <a href="#" onclick="wkUnhide('+i+');return false" style="color:var(--B)">tampilkan</a>';
+    }).join(' · ')+'</div>';
+  }
+  html+='</div>';
+  body.innerHTML=html;
+}
+function wkNav(d){if(WK_OFFSET+d>0)return;WK_OFFSET+=d;renderWeekly();}
+function wkJump(o){WK_OFFSET=Math.min(0,o);renderWeekly();}
+function wkSetFilter(v){WK_FILTER=v;renderWeekly();}
+function wkSetTarget(v){var n=parseInt(v,10);if(!(n>0))n=1;WK_TARGET=n;try{localStorage.setItem('k3_wk_target',String(n));}catch(e){}renderWeekly();}
+function wkAddRoster(){
+  if(!hasPerm('checklistEdit'))return;
+  var nm=(el('wk-new-name').value||'').trim(), id=(el('wk-new-id').value||'').trim();
+  if(!nm){showToast('⚠️ Nama pengawas wajib diisi','warning');return;}
+  var d=getRosterData();
+  if(d.list.some(function(x){return (x.name||'').toLowerCase()===nm.toLowerCase();})){showToast('⚠️ Nama sudah ada di daftar','warning');return;}
+  d.list.push({name:nm,id:id});saveRosterData(d);renderWeekly();showToast('✅ Pengawas ditambahkan','success');
+}
+function wkDelRoster(i){
+  if(!hasPerm('checklistEdit'))return;
+  var d=getRosterData();d.list.splice(i,1);saveRosterData(d);renderWeekly();
+}
+function wkHide(i){
+  if(!hasPerm('checklistEdit'))return;
+  var p=WK_PEOPLE[i];if(!p)return;
+  var d=getRosterData();if(d.hidden.indexOf(p.key)<0)d.hidden.push(p.key);saveRosterData(d);renderWeekly();
+}
+function wkUnhide(i){
+  if(!hasPerm('checklistEdit'))return;
+  var p=WK_HIDDEN_LIST[i];if(!p)return;
+  var d=getRosterData();d.hidden=d.hidden.filter(function(k){return k!==p.key;});saveRosterData(d);renderWeekly();
+}
+function wkCsv(){
+  var rg=wkRange(WK_OFFSET);
+  var lines=[['Minggu','Nama','ID','Jumlah Laporan','Target','Status']];
+  WK_PEOPLE.forEach(function(p){
+    var n=wkCount(p,rg).length;
+    lines.push([wkLbl(WK_OFFSET),p.name,p.id,n,WK_TARGET,n>=WK_TARGET?'Sudah':'Belum']);
+  });
+  var csv=lines.map(function(r){return r.map(function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='Rekap_Pengawas_'+rg.s.toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+
 
 // ════ AUDIT TRAIL ════
 var auditPage=1, AUDIT_PAGE=20;

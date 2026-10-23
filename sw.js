@@ -1,7 +1,10 @@
-// INSPECTA Service Worker v1.5
+// INSPECTA Service Worker v1.6
 // PT Bina Sarana Sukses — HSE Department
 //
-// PERBAIKAN v1.5: Naikkan versi cache lagi — app-user.html & dashboard-admin.html
+// PERBAIKAN v1.6: Naikkan versi cache — dashboard-admin.html bertambah halaman
+// "Monitoring Pengawas Mingguan" (rekap sudah/belum lapor per minggu + grafik 8 minggu).
+//
+// PERBAIKAN v1.5 (referensi): Naikkan versi cache lagi — app-user.html & dashboard-admin.html
 // berubah signifikan sejak v1.4: fitur tanda tangan digital persetujuan atasan
 // (Inspeksi/Fatigue Call/PICA), redesain tabel temuan NC + kolom foto sejajar,
 // dan penggantian penyebutan SHE→HSE Department di seluruh UI/PDF. Tanpa
@@ -40,7 +43,7 @@
 // ada Service Worker baru dan proses install/activate (yang membersihkan cache lama
 // & mengambil versi terbaru) benar-benar berjalan.
 
-const CACHE_NAME = 'inspecta-v1.5';
+const CACHE_NAME = 'inspecta-v1.6';
 const NETWORK_TIMEOUT_MS = 3000; // dipersingkat dari 4000ms — fallback ke cache lebih cepat terasa instan di sinyal lemah, tanpa terlalu agresif memotong request yang sebenarnya hampir selesai
 const STATIC_FILES = [
   './app-user.html',
