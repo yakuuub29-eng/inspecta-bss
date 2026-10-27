@@ -517,7 +517,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
       <div class="mc" onclick="openForm('ma_hauling')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="9" rx="1"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></div><div class="mn">Hauling Road</div><div class="mc-cnt" id="c-ma_hauling">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('ma_fuel')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22V7l6-4 6 4v15"/><path d="M14 10h2a2 2 0 0 1 2 2v3a1.5 1.5 0 0 0 3 0V9l-3-3"/></svg></div><div class="mn">Fuel Station</div><div class="mc-cnt" id="c-ma_fuel">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('ma_tyre')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg></div><div class="mn">Tyre Bay</div><div class="mc-cnt" id="c-ma_tyre">0 laporan</div><div class="marr">›</div></div>
-      <div class="mc" onclick="openForm('ma_dumping')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v14"/><path d="M6 11l6 6 6-6"/><path d="M3 21h18"/></svg></div><div class="mn">Dumping Point</div><div class="mc-cnt" id="c-ma_dumping">0 laporan</div><div class="marr">›</div></div>
+      <div class="mc" onclick="openForm('ma_dumping')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v14"/><path d="M6 11l6 6 6-6"/><path d="M3 21h18"/></svg></div><div class="mn">Dumping Crusher / Stock ROM</div><div class="mc-cnt" id="c-ma_dumping">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('ma_port')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21V9l5-5 5 5v12"/><path d="M4 21h16"/><path d="M10 21v-6h4v6"/></svg></div><div class="mn">Port / Jetty</div><div class="mc-cnt" id="c-ma_port">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('ma_loading')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"/><path d="M20 4L4 20"/></svg></div><div class="mn">Loading Area</div><div class="mc-cnt" id="c-ma_loading">0 laporan</div><div class="marr">›</div></div>
       <div class="mc" onclick="openForm('ma_warehouse')"><div class="mi"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg></div><div class="mn">Warehouse</div><div class="mc-cnt" id="c-ma_warehouse">0 laporan</div><div class="marr">›</div></div>
@@ -832,7 +832,14 @@ function setTLTab(tab,btn){
 function getLiveCapa(r){
   var caps=getCAPAsLocal();
   var live=caps['CAPA-'+r.id];
-  if(live) return live;
+  if(live){
+    // Salinan CAPA dari Firebase tidak lagi membawa foto bukti (dipisah supaya ringan);
+    // ambil dari laporan lokal milik inspektur ini bila ada.
+    if(r.capa&&((!live.evBefore&&r.capa.evBefore)||(!live.evAfter&&r.capa.evAfter))){
+      live=Object.assign({},live,{evBefore:live.evBefore||r.capa.evBefore||'',evAfter:live.evAfter||r.capa.evAfter||''});
+    }
+    return live;
+  }
   if(!r.capa) return null;
   var oldMap={'open':'Open','in-progress':'In Progress','pending-verification':'Waiting Verification','closed':'Closed'};
   return {
@@ -1212,7 +1219,7 @@ function saveCAPAFromReport(rep){
   }
   // Sync ke Firebase jika online — foto base64 langsung ke Realtime Database
   if(FB_OK&&fbdb&&IS_ONLINE){
-    fbdb.ref('capa/'+capaId).set(fbSafe(caps[capaId])).catch(function(){});
+    fbdb.ref('capa/'+capaId).set(capaForFB(caps[capaId])).catch(function(){});
   }
 }
 // Dashboard admin memakai 3 status: 'Open'/'In Progress'/'Closed' (+ 'Overdue' dihitung otomatis).
@@ -1250,7 +1257,11 @@ function initFB(){
     // bukan cuma status beku saat laporan pertama kali dikirim.
     fbdb.ref('capa').on('value',function(snap){
       var d=snap.val();
-      if(d) {try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache capa (penyimpanan penuh):',e);}}
+      if(d){
+        // Pertahankan foto bukti lokal bila salinan Firebase tidak membawanya (format ringan).
+        try{var _loc=getCAPAsLocal();Object.keys(d).forEach(function(k){var l=_loc[k];if(l&&d[k]){if(!d[k].evBefore&&l.evBefore)d[k].evBefore=l.evBefore;if(!d[k].evAfter&&l.evAfter)d[k].evAfter=l.evAfter;}});}catch(e){}
+        try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache capa (penyimpanan penuh):',e);}
+      }
       var tlScr=el('s-tl');
       if(tlScr&&tlScr.classList.contains('on')){renderTL();renderTLList();}
     }, function(err){console.warn('[INSPECTA] Firebase capa error:',err);});
@@ -1501,6 +1512,58 @@ function fbSafe(obj){
   catch(e){console.warn('[INSPECTA] fbSafe gagal membersihkan data, kirim apa adanya:',e);return obj;}
 }
 
+// ════ PEMISAHAN FOTO DARI DATA LAPORAN (supaya dashboard cepat terbuka) ════
+// Foto base64 sangat besar. Kalau ikut disimpan di dalam reports/{id}, dashboard terpaksa
+// mengunduh SEMUA foto dari SEMUA laporan hanya untuk menampilkan daftar — itu penyebab
+// dashboard lambat di laptop. Sekarang laporan dikirim dalam 2 bagian:
+//   reports/{id}      → data teks ringan (+ photoCount, mediaSplit:true)
+//   reportMedia/{id}  → foto: {photos:[...], ng:{idx:[...]}, evBefore, evAfter}
+// Dashboard mengunduh bagian ringan dulu, foto baru diambil saat laporan dibuka / PDF dibuat.
+function isDataUrl(v){return typeof v==='string'&&v.indexOf('data:')===0;}
+function splitMedia(rep){
+  var light=fbSafe(rep), media={}, has=false;
+  if(light.photos&&light.photos.length){
+    var ph=light.photos.filter(isDataUrl);
+    if(ph.length){media.photos=light.photos;has=true;}
+  }
+  if(has){light.photoCount=light.photos.length;light.photos=[];}
+  var ngs=light.extra&&light.extra.ngDetails;
+  if(ngs&&ngs.length){
+    ngs.forEach(function(ng,i){
+      if(ng&&ng.photos&&ng.photos.length&&ng.photos.some(isDataUrl)){
+        media.ng=media.ng||{};media.ng[i]=ng.photos;has=true;
+        ng.photoCount=ng.photos.length;ng.photos=[];
+      }
+    });
+  }
+  if(light.capa){
+    if(isDataUrl(light.capa.evBefore)){media.evBefore=light.capa.evBefore;light.capa.evBefore='';has=true;}
+    if(isDataUrl(light.capa.evAfter)){media.evAfter=light.capa.evAfter;light.capa.evAfter='';has=true;}
+  }
+  if(has)light.mediaSplit=true;
+  return {light:light,media:media,hasMedia:has};
+}
+// Tulis laporan ke Firebase (mengembalikan Promise). Media ditulis DULU; laporan ringan baru
+// ditulis setelah media sukses. Kalau node media ditolak (aturan database/ukuran), jatuh balik
+// ke format lama (foto di dalam laporan) supaya laporan TIDAK PERNAH hilang.
+function writeReportToFB(rep){
+  var sp=splitMedia(rep);
+  if(!sp.hasMedia)return fbdb.ref('reports/'+rep.id).set(sp.light);
+  return fbdb.ref('reportMedia/'+rep.id).set(sp.media).then(function(){
+    return fbdb.ref('reports/'+rep.id).set(sp.light);
+  },function(err){
+    console.warn('[INSPECTA] reportMedia gagal ditulis, kirim format lama (foto di dalam laporan):',err);
+    return fbdb.ref('reports/'+rep.id).set(fbSafe(rep));
+  });
+}
+// Salinan CAPA untuk Firebase tanpa foto bukti (foto sudah ada di reportMedia & di HP pemilik).
+function capaForFB(c){
+  var o=fbSafe(c);
+  if(isDataUrl(o.evBefore))o.evBefore='';
+  if(isDataUrl(o.evAfter))o.evAfter='';
+  return o;
+}
+
 function addReport(rep){
   var loc=getLocal();
   var idx=loc.findIndex(function(r){return r.id===rep.id;});
@@ -1512,7 +1575,7 @@ function addReport(rep){
 function pushToFB(rep){
   if(!FB_OK||!fbdb)return;
   // Kirim langsung ke Realtime Database termasuk foto base64 (tidak pakai Storage)
-  fbdb.ref('reports/'+rep.id).set(fbSafe(rep))
+  writeReportToFB(rep)
     .then(function(){
       var loc=getLocal();loc=loc.map(function(r){if(r.id===rep.id)r.synced=true;return r;});saveLocal(loc);
       // PENTING: field 'synced' yang barusan dikirim di dalam rep masih bernilai
@@ -1562,7 +1625,7 @@ function syncPending(){
     var rep=loc.find(function(r){return r.id===id;});
     if(!rep){done++;chkDone();return;}
     // Kirim langsung termasuk foto base64 (tidak pakai Storage)
-    fbdb.ref('reports/'+id).set(fbSafe(rep))
+    writeReportToFB(rep)
       .then(function(){
         var l=getLocal();l=l.map(function(r){if(r.id===id)r.synced=true;return r;});saveLocal(l);
         // Sama seperti di pushToFB(): patch balik field 'synced' di server supaya
@@ -1606,7 +1669,12 @@ function updPendUI(){
 }
 function getMine(){return CU?getLocal().filter(function(r){return r.userId===CU.empId;}):[];}
 function getLiveCL(type){
-  try{var s=JSON.parse(localStorage.getItem(CK)||'{}');if(s[type]&&s[type].sections&&s[type].sections.length)return s[type].sections.map(function(x){return{t:x.title||x.t,items:x.items};});}catch(e){}
+  try{var s=JSON.parse(localStorage.getItem(CK)||'{}');
+    // Area Dumping Crusher / Stock ROM menggantikan checklist 'Dumping Point' lama (fokus disposal).
+    // Kalau masih ada versi lama yang tersimpan di Firebase/localStorage (judul seksi pertama
+    // 'Tanggul Pengaman & Wheel Stop'), abaikan supaya checklist baru yang tampil.
+    if(type==='ma_dumping'&&s[type]&&s[type].sections&&s[type].sections[0]&&(s[type].sections[0].title||s[type].sections[0].t)==='Tanggul Pengaman & Wheel Stop')delete s[type];
+    if(s[type]&&s[type].sections&&s[type].sections.length)return s[type].sections.map(function(x){return{t:x.title||x.t,items:x.items};});}catch(e){}
   return CLD[type]||[];
 }
 
@@ -4332,412 +4400,270 @@ var MASTER_AREAS = {
     }
   ],
   ma_dumping: [
-    {
-      "t": "Tanggul Pengaman & Wheel Stop",
-      "items": [
-        {
-          "text": "Tanggul pengaman (wheel stop/bund) terpasang di tepi dumping point",
-          "criteria": "Tanggul terpasang penuh di sepanjang tepi crest yang menghadap jurang/void",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "Extreme",
-          "evidence": "Foto",
-          "action": "Bangun tanggul segera sebelum area digunakan",
-          "freq": "Harian",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mewajibkan setiap area dumping/disposal memiliki tanggul pengaman (bund wall) di sepanjang tepi crest sebagai penahan fisik agar unit tidak melewati batas aman & terjatuh ke area timbunan di bawahnya."
-        },
-        {
-          "text": "Tinggi tanggul minimal 3/4 diameter roda unit dumping terbesar",
-          "criteria": "Hasil ukur tinggi tanggul >= 3/4 diameter roda unit terbesar yang beroperasi",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "Extreme",
-          "evidence": "Foto + hasil ukur",
-          "action": "Tambah tinggi tanggul sesuai standar",
-          "freq": "Harian",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan tinggi tanggul pengaman sekurang-kurangnya 3/4 (tiga per empat) diameter roda unit terbesar yang beroperasi — sama dengan standar safety berm jalan tambang, memastikan roda unit tertahan sebelum badan unit melewati tanggul."
-        },
-        {
-          "text": "Tanggul dalam kondisi utuh, tidak longsor/tergerus akibat aktivitas dumping berulang",
-          "criteria": "Tidak ada bagian tanggul yang terkikis/roboh akibat benturan roda unit",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "Extreme",
-          "evidence": "Foto",
-          "action": "Perbaiki/bangun ulang tanggul yang rusak",
-          "freq": "Harian",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mewajibkan pemeliharaan tanggul secara berkala — aktivitas dumping berulang mengikis/menggerus tanggul sehingga tinggi efektifnya berkurang di bawah standar 3/4 diameter roda, wajib segera diperbaiki/ditambal."
-        },
-        {
-          "text": "Tanggul dibangun dari material yang cukup padat (bukan material lepas/gembur)",
-          "criteria": "Material tanggul dipadatkan, tidak mudah longsor saat tertekan roda unit",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Padatkan ulang/ganti material tanggul",
-          "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan material tanggul dipadatkan (bukan material lepas/gembur) agar mampu menahan benturan/tekanan roda unit — tanggul dari material gembur mudah runtuh saat unit menyentuhnya."
-        },
-        {
-          "text": "Panjang tanggul menutupi seluruh lebar efektif area dumping aktif",
-          "criteria": "Tidak ada celah/gap pada tanggul di sepanjang front dumping yang aktif digunakan",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "Extreme",
-          "evidence": "Foto",
-          "action": "Tutup celah tanggul yang terbuka",
-          "freq": "Harian",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan tanggul pengaman membentang menutupi seluruh lebar area yang aktif digunakan untuk dumping — celah/gap pada tanggul menciptakan titik tanpa proteksi yang berisiko unit terjatuh melaluinya."
-        }
-      ]
-    },
-    {
-      "t": "Kestabilan Lereng & Timbunan",
-      "items": [
-        {
-          "text": "Tidak ada retakan (tension crack) pada permukaan crest dumping point",
-          "criteria": "Visual inspection tidak menemukan retakan yang mengindikasikan potensi longsor",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "Extreme",
-          "evidence": "Foto",
-          "action": "Hentikan operasi, laporkan ke geoteknik untuk kajian",
-          "freq": "Harian",
-            "regDetail": "Kajian geoteknik (mendukung Kepmen ESDM 1827/2018) menyatakan tension crack pada permukaan crest adalah indikator awal potensi kegagalan lereng (slope failure) — area dengan retakan wajib segera diisolasi & dievaluasi geoteknik sebelum dipakai kembali."
-        },
-        {
-          "text": "Sudut kemiringan lereng timbunan (dump slope angle) sesuai kajian geoteknik",
-          "criteria": "Sudut lereng tidak melebihi rekomendasi safety factor dari kajian geoteknik",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "Extreme",
-          "evidence": "Foto + data survey",
-          "action": "Kurangi sudut/tinggi lift sesuai rekomendasi geoteknik",
-          "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mewajibkan sudut lereng timbunan (dump slope) dirancang berdasarkan kajian geoteknik spesifik (jenis material, kadar air, tinggi timbunan) — sudut melebihi rekomendasi kajian meningkatkan risiko longsor."
-        },
-        {
-          "text": "Tinggi lift timbunan tidak melebihi desain yang direkomendasikan",
-          "criteria": "Tinggi aktual timbunan sesuai rencana desain per tahap (lift)",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto + hasil ukur",
-          "action": "Hentikan penimbunan tambahan sampai sesuai desain",
-          "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mewajibkan tinggi tiap lapis timbunan (lift) sesuai desain geoteknik — lift yang terlalu tinggi meningkatkan tekanan pada lapisan dasar & risiko kegagalan lereng global."
-        },
-        {
-          "text": "Monitoring pergerakan tanah (survey patok/prisma) dilakukan berkala di area rawan",
-          "criteria": "Ada patok survey/monitoring yang dipantau untuk deteksi dini pergerakan lereng",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Pasang/aktifkan kembali sistem monitoring",
-          "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan area timbunan berisiko tinggi dipantau pergerakan tanahnya secara berkala (survey patok/prisma monitoring) untuk deteksi dini pergerakan yang mengindikasikan potensi kegagalan lereng."
-        },
-        {
-          "text": "Tidak ada indikasi rembesan air (seepage) pada badan timbunan",
-          "criteria": "Tidak ada titik basah/mata air baru yang muncul di lereng timbunan",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "Extreme",
-          "evidence": "Foto",
-          "action": "Investigasi & perbaiki sistem drainase internal timbunan",
-          "freq": "Mingguan",
-            "regDetail": "Prinsip geoteknik lereng (mendukung Kepmen ESDM 1827/2018) menyatakan rembesan air pada badan timbunan menandakan tekanan air pori meningkat, faktor utama pemicu kegagalan lereng — area dengan rembesan wajib dipantau intensif & dievaluasi stabilitasnya."
-        },
-        {
-          "text": "Penempatan material lunak (mud/lumpur) diatur agar tidak mengganggu kestabilan timbunan",
-          "criteria": "Material lumpur ditempatkan sesuai zonasi yang direncanakan, tidak sembarangan",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Atur ulang penempatan sesuai rencana zonasi",
-          "freq": "Setiap ada material lumpur",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan material lunak/berlumpur ditempatkan sesuai desain (biasanya di lapisan dasar/terpisah) — penempatan sembarangan pada badan timbunan mengurangi kekuatan geser & memicu longsor."
-        }
-      ]
-    },
-    {
-      "t": "Prosedur Dumping & Operasi",
-      "items": [
-        {
-          "text": "Spotter/petugas pengarah tersedia untuk memandu proses dumping",
-          "criteria": "Spotter bertugas mengarahkan mundur unit & memastikan area aman sebelum dumping",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Extreme",
-          "evidence": "Foto",
-          "action": "Tugaskan spotter di setiap sesi dumping aktif",
-          "freq": "Setiap sesi dumping",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mewajibkan petugas spotter memandu unit saat mundur menuju titik dumping, terutama pada kondisi visibilitas terbatas (malam hari/hujan/berdebu), sebagai kontrol tambahan selain alarm mundur unit."
-        },
-        {
-          "text": "Unit dumping mendekati tanggul dengan sudut tegak lurus (perpendicular approach)",
-          "criteria": "Operator mengikuti SOP pendekatan tegak lurus terhadap tanggul, bukan menyerong",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "High",
-          "evidence": "Foto/observasi",
-          "action": "Briefing ulang SOP pendekatan dumping ke operator",
-          "freq": "Harian",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 merekomendasikan unit mendekati tanggul dengan sudut tegak lurus (perpendicular) terhadap tanggul — pendekatan menyudut/miring meningkatkan risiko unit tergelincir melewati sisi tanggul yang tidak terlindungi."
-        },
-        {
-          "text": "Tidak ada unit/orang lain berada di belakang unit yang sedang mundur untuk dumping",
-          "criteria": "Area di belakang unit steril dari personel/unit lain selama proses reversing",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Extreme",
-          "evidence": "Foto/observasi",
-          "action": "Tegakkan zona steril, hentikan aktivitas jika dilanggar",
-          "freq": "Setiap sesi dumping",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 melarang keberadaan unit/orang lain di belakang unit yang sedang manuver mundur — blind spot operator dump truck besar signifikan di area belakang, berisiko tabrakan/tertabrak fatal."
-        },
-        {
-          "text": "Alarm mundur (reverse alarm) pada unit dumping berfungsi dengan baik",
-          "criteria": "Alarm berbunyi jelas saat unit melakukan gerakan mundur",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Extreme",
-          "evidence": "Foto/uji fungsi",
-          "action": "Perbaiki/ganti alarm mundur unit",
-          "freq": "Harian (P2H)",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mewajibkan setiap unit dilengkapi alarm mundur (reverse alarm/backup alarm) yang berfungsi & terdengar jelas, memberi peringatan dini kepada orang di sekitar saat unit bermanuver mundur menuju dumping point."
-        },
-        {
-          "text": "Kapasitas jumlah unit yang beroperasi bersamaan di satu dumping point diatur sesuai kajian",
-          "criteria": "Jumlah unit simultan tidak melebihi kapasitas aman area dumping",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Medium",
-          "evidence": "Foto/observasi",
-          "action": "Atur giliran/batasi jumlah unit simultan",
-          "freq": "Harian",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan pengaturan jumlah unit yang beroperasi bersamaan di satu titik kerja sesuai kajian kapasitas aman, mencegah kepadatan berlebih yang meningkatkan risiko tabrakan di dumping point."
-        },
-        {
-          "text": "Komunikasi radio antara operator, spotter, dan pengawas berfungsi baik",
-          "criteria": "Radio komunikasi dapat digunakan tanpa gangguan sinyal di area dumping",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "High",
-          "evidence": "Foto/uji fungsi radio",
-          "action": "Perbaiki sistem komunikasi radio",
-          "freq": "Mingguan",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan komunikasi radio 2 arah antara operator, spotter, dan pengawas berfungsi baik sebagai koordinasi real-time selama proses dumping berlangsung."
-        }
-      ]
-    },
-    {
-      "t": "Drainase & Lingkungan",
-      "items": [
-        {
-          "text": "Saluran drainase di sekitar dumping point berfungsi mengalirkan air permukaan",
-          "criteria": "Saluran tidak tersumbat, air tidak menggenang di area dumping aktif",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Bersihkan/perbaiki saluran drainase",
-          "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mewajibkan sistem drainase di sekitar dumping point mengalirkan air permukaan menjauhi badan timbunan — genangan air pada/dekat timbunan meningkatkan tekanan air pori & risiko longsor."
-        },
-        {
-          "text": "Penyiraman jalan akses menuju dumping point dilakukan untuk kendalikan debu",
-          "criteria": "Jadwal penyiraman berjalan sesuai kondisi cuaca & intensitas debu",
-          "reg": "Permenaker 5/2018 (K3 Lingkungan Kerja)",
-          "risk": "Medium",
-          "evidence": "Foto unit water truck",
-          "action": "Tambah frekuensi penyiraman",
-          "freq": "Harian",
-            "regDetail": "Permenaker No. 5/2018 mewajibkan pengendalian faktor kimia (debu) di tempat kerja — penyiraman berkala jalan akses dumping point menekan kadar debu yang dapat mengganggu visibilitas operator dump truck saat manuver mundur."
-        },
-        {
-          "text": "Settling pond/kolam pengendapan menerima air limpasan dari area dumping berfungsi baik",
-          "criteria": "Kolam tidak penuh sedimen berlebih, air limpasan tidak langsung ke badan air",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Keruk sedimen, perbaiki kapasitas settling pond",
-          "freq": "Bulanan",
-            "regDetail": "PP No. 22/2021 & Kepmen ESDM 1827/2018 mewajibkan air limpasan dari area dumping (mengandung sedimen) diolah melalui settling pond sebelum dialirkan ke lingkungan, mencegah pencemaran badan air oleh sedimen/material timbunan."
-        }
-      ]
-    },
-    {
-      "t": "Penerangan & Rambu",
-      "items": [
-        {
-          "text": "Penerangan memadai untuk operasi dumping malam hari",
-          "criteria": "Titik gelap signifikan tidak ada di area dumping aktif malam hari",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Tambah/perbaiki lampu penerangan",
-          "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan intensitas penerangan area dumping memadai untuk operasi malam hari, memastikan operator & spotter memiliki visibilitas jelas terhadap tepi crest & tanggul pengaman."
-        },
-        {
-          "text": "Rambu batas aman & larangan mendekati tepi crest terpasang jelas",
-          "criteria": "Rambu peringatan bahaya jurang/void terpasang di titik yang terlihat jelas",
-          "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Pasang rambu peringatan tambahan",
-          "freq": "Bulanan",
-            "regDetail": "UU No. 1/1970 & SMKP mewajibkan rambu peringatan batas aman terpasang jelas di sekitar tepi crest dumping point, memberi peringatan visual kepada seluruh pekerja tentang bahaya jatuh/longsor di area tersebut."
-        },
-        {
-          "text": "Marka batas mundur aman (limit line) untuk unit dumping tervisualisasi jelas",
-          "criteria": "Tanda batas mundur (cat/patok) terlihat jelas oleh operator saat reversing",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Perbaiki/tambahkan marka batas mundur",
-          "freq": "Mingguan",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan marka/garis batas mundur aman (limit line) tervisualisasi jelas di permukaan dumping point, membantu operator menentukan titik berhenti aman sebelum tanggul."
-        }
-      ]
-    },
-    {
-      "t": "Administrasi & Kompetensi",
-      "items": [
-        {
-          "text": "Kajian geoteknik untuk desain dumping point tersedia & masih relevan",
-          "criteria": "Dokumen kajian geoteknik disetujui Pengawas Operasional/geoteknik engineer",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto dokumen kajian",
-          "action": "Perbarui kajian geoteknik jika sudah lama/kondisi berubah",
-          "freq": "Tahunan (cek update bulanan)",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mewajibkan desain dumping point (tinggi lift, sudut lereng, kapasitas tanggul) didasarkan kajian geoteknik yang masih relevan dengan kondisi aktual — kajian usang tidak lagi merepresentasikan kondisi lapangan terkini."
-        },
-        {
-          "text": "Inspeksi harian dumping point terdokumentasi sebelum area digunakan",
-          "criteria": "Checklist inspeksi harian (tanggul, retakan, drainase) terisi sebelum shift dimulai",
-          "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
-          "risk": "High",
-          "evidence": "Foto checklist harian",
-          "action": "Laksanakan inspeksi harian sebelum operasi",
-          "freq": "Harian",
-            "regDetail": "UU No. 1/1970 & SMKP mewajibkan inspeksi harian dumping point (kondisi tanggul, retakan, rembesan) terdokumentasi sebelum area digunakan untuk operasi — kontrol administratif memastikan kondisi aman sebelum unit beroperasi."
-        },
-        {
-          "text": "Operator dump truck memahami & mematuhi SOP dumping sesuai pelatihan",
-          "criteria": "Bukti briefing/pelatihan SOP dumping dimiliki operator yang bertugas",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Medium",
-          "evidence": "Foto bukti briefing",
-          "action": "Jadwalkan refreshment SOP dumping",
-          "freq": "Tahunan (cek update bulanan)",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mewajibkan operator dump truck memahami & mematuhi SOP dumping (termasuk jarak aman dari tepi tanggul) melalui pelatihan, guna mencegah unit terperosok/terguling di area dumping."
-        },
-        {
-          "text": "Penanggung jawab area dumping point (Pengawas Operasional) teridentifikasi jelas",
-          "criteria": "Nama & kompetensi penanggung jawab tercantum di struktur organisasi",
-          "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
-          "risk": "Low",
-          "evidence": "Foto struktur organisasi",
-          "action": "Update penunjukan penanggung jawab",
-          "freq": "Tahunan (cek update bulanan)",
-            "regDetail": "UU No. 1/1970 & Kepmen ESDM No. 1827/2018 mensyaratkan penunjukan Pengawas Operasional yang bertanggung jawab atas area dumping point, sebagai bentuk kejelasan struktur tanggung jawab (accountability) dalam SMKP."
-        },
-        {
-          "text": "Temuan inspeksi dumping point periode sebelumnya ditindaklanjuti (CAPA closing)",
-          "criteria": "Temuan sebelumnya (tanggul rusak, retakan, dll) sudah ditutup dengan bukti perbaikan",
-          "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
-          "risk": "Medium",
-          "evidence": "Foto bukti closing CAPA",
-          "action": "Tindak lanjuti temuan yang masih terbuka",
-          "freq": "Setiap siklus inspeksi",
-            "regDetail": "UU No. 1/1970 & Kepmen ESDM No. 1827/2018 (elemen SMKP) mewajibkan tindak lanjut & penutupan (closing) temuan inspeksi dumping point sebelumnya (mis. tanggul rusak, retakan) dengan bukti perbaikan nyata di lapangan."
-        }
-      ]
-    },
-    {
-      "t": "Kondisi Unit & Peralatan Pendukung",
-      "items": [
-        {
-          "text": "Unit dump truck dilengkapi ROPS/FOPS (Roll Over/Falling Object Protective Structure) yang utuh",
-          "criteria": "Struktur kabin pelindung tidak retak/rusak, sesuai spesifikasi pabrikan",
-          "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
-          "risk": "Extreme",
-          "evidence": "Foto",
-          "action": "Perbaiki/ganti struktur ROPS/FOPS yang rusak",
-          "freq": "Bulanan (P2H harian visual)",
-            "regDetail": "UU No. 1/1970 & SMKP mewajibkan unit beroperasi di area berisiko (termasuk dumping point dengan potensi longsor material) dilengkapi ROPS/FOPS yang utuh & tersertifikasi untuk melindungi operator jika terjadi guling atau tertimpa material."
-        },
-        {
-          "text": "Kamera mundur (rear view camera) pada unit dumping berfungsi baik (jika terpasang)",
-          "criteria": "Monitor kamera menampilkan gambar jelas saat unit melakukan reversing",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Medium",
-          "evidence": "Foto/uji fungsi",
-          "action": "Perbaiki/bersihkan lensa kamera",
-          "freq": "Harian (P2H)",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mendukung penerapan teknologi bantu (kamera mundur) pada unit dumping sebagai pengendalian tambahan agar operator memiliki visibilitas jelas ke area belakang unit saat proses reversing/dumping."
-        },
-        {
-          "text": "Rem parkir & sistem pengereman unit dumping berfungsi optimal",
-          "criteria": "Uji fungsi rem tidak menunjukkan gejala selip/kurang pakem",
-          "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
-          "risk": "Extreme",
-          "evidence": "Foto/uji fungsi",
-          "action": "Perbaiki sistem pengereman sebelum unit dioperasikan",
-          "freq": "Harian (P2H)",
-            "regDetail": "UU No. 1/1970 & SMKP mewajibkan sistem pengereman (termasuk rem parkir) unit dumping diperiksa & berfungsi optimal — kegagalan rem saat manuver di tepi crest berisiko unit tergelincir melewati tanggul."
-        },
-        {
-          "text": "Bak/vessel dump truck dapat naik-turun (hoist) dengan lancar tanpa macet",
-          "criteria": "Mekanisme hidrolik hoist berfungsi normal, tidak ada macet/miring saat tipping",
-          "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
-          "risk": "High",
-          "evidence": "Foto/uji fungsi",
-          "action": "Perbaiki sistem hidrolik hoist",
-          "freq": "Harian (P2H)",
-            "regDetail": "UU No. 1/1970 & SMKP mewajibkan sistem hidrolik hoist bak dump truck diperiksa & berfungsi lancar — bak yang macet saat proses dumping berisiko unit menjadi tidak stabil (tinggi pusat gravitasi berubah mendadak) terutama di tepi crest."
-        }
-      ]
-    },
-    {
-      "t": "Cuaca & Kondisi Khusus",
-      "items": [
-        {
-          "text": "SOP penghentian operasi dumping saat hujan deras/kabut tebal diterapkan",
-          "criteria": "Kriteria stop operasi jelas & dipatuhi saat kondisi cuaca ekstrem",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Extreme",
-          "evidence": "Foto dokumen SOP/bukti penerapan",
-          "action": "Tegakkan SOP stop operasi cuaca ekstrem",
-          "freq": "Setiap kondisi cuaca ekstrem",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan SOP stop work saat kondisi cuaca ekstrem (hujan deras mengurangi stabilitas tanggul basah, kabut tebal mengurangi visibilitas spotter & operator) diterapkan secara konsisten."
-        },
-        {
-          "text": "Area dumping point dievaluasi ulang setelah kejadian hujan ekstrem/gempa",
-          "criteria": "Ada bukti inspeksi tambahan (extraordinary inspection) setelah kejadian ekstrem",
-          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran II (Standar Tanggul & Timbunan/Disposal)",
-          "risk": "High",
-          "evidence": "Foto laporan inspeksi tambahan",
-          "action": "Lakukan inspeksi ulang setelah kejadian ekstrem",
-          "freq": "Setiap kejadian ekstrem",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mewajibkan evaluasi ulang stabilitas dumping point setelah kejadian yang berpotensi mengubah kondisi geoteknik (hujan ekstrem meningkatkan air pori, gempa mengganggu struktur timbunan) sebelum area dipakai kembali."
-        }
-      ]
-    },
-    {
-      "t": "APD & Keselamatan Petugas",
-      "items": [
-        {
-          "text": "Spotter/petugas di area dumping menggunakan APD lengkap & rompi visibilitas tinggi",
-          "criteria": "Rompi reflektif, helm, safety shoes digunakan sesuai standar",
-          "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
-          "risk": "High",
-          "evidence": "Foto",
-          "action": "Sediakan/pastikan APD digunakan",
-          "freq": "Harian",
-            "regDetail": "UU No. 1/1970 Pasal 14 & prinsip visibilitas kerja mewajibkan spotter menggunakan APD lengkap termasuk rompi visibilitas tinggi (high-visibility vest) agar mudah terlihat oleh operator unit besar dengan blind spot signifikan di area dumping."
-        },
-        {
-          "text": "Petugas non-operator dilarang berada dalam radius kerja unit tanpa izin & pengawasan",
-          "criteria": "Akses area dumping point dibatasi hanya untuk petugas berwenang dengan otorisasi",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Extreme",
-          "evidence": "Foto/observasi",
-          "action": "Perketat akses & pengawasan area dumping",
-          "freq": "Harian",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan segregasi area kerja unit besar dari pekerja non-operator — akses ke radius kerja unit dumping hanya diizinkan dengan otorisasi & pengawasan langsung mengingat blind spot & risiko tertabrak."
-        }
-      ]
-    }
-  ],
+  {
+    "t": "Wheel Stop & Area Dumping",
+    "items": [
+      {
+        "text": "Wheel stop/tanggul pengaman terpasang di tepi hopper crusher dan tepi area dumping stock ROM",
+        "criteria": "Wheel stop terpasang penuh di semua sisi tempat unit mundur & dump yang berhadapan dengan hopper atau tepi timbunan",
+        "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+        "risk": "Extreme",
+        "evidence": "Foto",
+        "action": "Pasang/lengkapi wheel stop sebelum area dioperasikan",
+        "freq": "Harian",
+        "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang) mengatur penggunaan tanggul/berm pengaman pada tepi area yang berisiko unit terperosok. Di dumping crusher/stock ROM, wheel stop mencegah unit melewati batas aman dan terjun ke hopper atau tepi timbunan."
+      },
+      {
+        "text": "Tinggi wheel stop minimal 3/4 diameter roda unit terbesar yang beroperasi",
+        "criteria": "Hasil ukur tinggi wheel stop >= 3/4 diameter roda unit terbesar",
+        "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+        "risk": "Extreme",
+        "evidence": "Foto + hasil ukur",
+        "action": "Tambah tinggi wheel stop sesuai standar",
+        "freq": "Harian",
+        "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang) mensyaratkan tinggi tanggul pengaman sekurang-kurangnya 3/4 diameter roda unit terbesar agar roda tertahan sebelum badan unit melewati tanggul."
+      },
+      {
+        "text": "Wheel stop dalam kondisi utuh, tidak bergeser, retak, atau tergerus benturan roda berulang",
+        "criteria": "Tidak ada bagian wheel stop yang roboh, bergeser, atau terkikis sehingga tinggi efektifnya berkurang",
+        "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+        "risk": "High",
+        "evidence": "Foto",
+        "action": "Perbaiki/ganti wheel stop yang rusak sebelum unit dump berikutnya",
+        "freq": "Harian",
+        "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang) mensyaratkan pemeliharaan tanggul pengaman secara berkala; benturan roda berulang di hopper/titik dump mengurangi tinggi efektif wheel stop di bawah standar sehingga wajib segera diperbaiki."
+      },
+      {
+        "text": "Area pendekatan (approach) ke hopper/titik dump rata, padat, dan bebas ceceran batubara atau lumpur licin",
+        "criteria": "Tidak ada genangan, lumpur, atau ceceran batubara yang membuat unit selip saat mundur",
+        "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+        "risk": "High",
+        "evidence": "Foto",
+        "action": "Bersihkan ceceran, perbaiki permukaan, siram/grader bila perlu",
+        "freq": "Harian",
+        "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang) mensyaratkan permukaan jalan dan area manuver terpelihara agar traksi dan pengereman unit terjaga; ceceran material dan lumpur di approach hopper meningkatkan risiko unit selip saat mundur."
+      },
+      {
+        "text": "Rambu batas kecepatan, rambu hopper/titik dump, dan marka area dump terpasang jelas",
+        "criteria": "Rambu & marka terbaca jelas, tidak rusak atau tertutup debu",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "Medium",
+        "evidence": "Foto",
+        "action": "Pasang/ganti rambu & marka yang hilang atau pudar",
+        "freq": "Mingguan"
+      }
+    ]
+  },
+  {
+    "t": "Operasi Dumping & Lalu Lintas",
+    "items": [
+      {
+        "text": "Spotter/banksman tersedia dan terlihat jelas (rompi reflektif) saat unit dump di hopper crusher atau stock ROM",
+        "criteria": "Spotter berada di posisi aman yang terlihat operator dan memandu setiap unit yang mundur",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "High",
+        "evidence": "Foto/observasi",
+        "action": "Tugaskan spotter dan lengkapi dengan rompi reflektif & radio",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan pengendalian risiko pada aktivitas manuver unit. Spotter memandu unit mundur ke hopper/titik dump sehingga mengurangi risiko tabrakan, unit terperosok, dan pekerja tertabrak."
+      },
+      {
+        "text": "Unit mundur ke hopper secara tegak lurus dan perlahan; tidak dump saat hopper penuh atau ada hambatan",
+        "criteria": "Operator mengikuti sinyal spotter/operator crusher; tidak ada dump ke hopper yang masih penuh (spillback)",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "High",
+        "evidence": "Observasi",
+        "action": "Briefing ulang operator; hentikan dump sampai hopper siap menerima",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan operator bekerja sesuai prosedur kerja aman. Dump ke hopper yang penuh menyebabkan material tumpah dan unit dipaksa manuver ulang di area sempit sehingga risiko kecelakaan meningkat."
+      },
+      {
+        "text": "Alarm mundur (reverse alarm) dan lampu unit dump berfungsi baik",
+        "criteria": "Alarm mundur berbunyi saat gigi mundur dan lampu menyala normal",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "High",
+        "evidence": "Uji fungsi + foto",
+        "action": "Perbaiki sebelum unit dioperasikan; tarik unit dari area bila belum diperbaiki",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan kelaikan unit dan pengendalian bahaya manuver mundur. Alarm mundur memperingatkan orang di sekitar unit yang bergerak mundur ke hopper/titik dump."
+      },
+      {
+        "text": "Tidak ada orang atau unit lain di belakang atau di area manuver unit yang sedang mundur (zona eksklusi dijaga)",
+        "criteria": "Zona eksklusi di sekitar hopper dan titik dump bebas orang & unit lain saat unit dump bergerak",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "Extreme",
+        "evidence": "Foto/observasi",
+        "action": "Tegakkan zona eksklusi; tegur dan keluarkan orang/unit dari area",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan pemisahan orang dari unit bergerak. Unit yang mundur memiliki blind spot besar sehingga orang di belakangnya berisiko fatal tertabrak atau terlindas."
+      },
+      {
+        "text": "Alur lalu lintas di area crusher/stock ROM diatur (satu arah/antrean) dan jarak aman antar unit terjaga",
+        "criteria": "Unit antre di luar zona manuver; tidak ada unit saling menyalip atau berpapasan di area dump",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "Medium",
+        "evidence": "Foto/observasi",
+        "action": "Atur ulang alur, tambahkan rambu dan marka antrean",
+        "freq": "Harian"
+      },
+      {
+        "text": "Komunikasi radio antara operator unit, spotter, operator crusher, dan pengawas berfungsi baik",
+        "criteria": "Uji radio jelas pada semua pihak, kanal sesuai prosedur",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "Medium",
+        "evidence": "Uji fungsi",
+        "action": "Perbaiki/ganti radio; tetapkan kanal komunikasi area",
+        "freq": "Harian"
+      },
+      {
+        "text": "Pencahayaan area dump crusher/stock ROM memadai pada shift malam",
+        "criteria": "Area manuver dan hopper terang merata tanpa titik gelap; sesuai persyaratan penerangan Permenaker 5/2018 (ukur dengan lux meter)",
+        "reg": "Permenaker 5/2018 (K3 Lingkungan Kerja)",
+        "risk": "Medium",
+        "evidence": "Foto + hasil ukur lux",
+        "action": "Tambah/arahkan ulang lampu (light tower) di area gelap",
+        "freq": "Mingguan"
+      }
+    ]
+  },
+  {
+    "t": "Stock ROM & Kestabilan Timbunan",
+    "items": [
+      {
+        "text": "Tinggi dan kemiringan tumpukan stock ROM tidak melebihi batas desain/SOP",
+        "criteria": "Tinggi dan sudut tumpukan sesuai batas yang ditetapkan perusahaan, tanpa overhang",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "High",
+        "evidence": "Foto + hasil ukur",
+        "action": "Turunkan/ratakan tumpukan dan atur ulang pola penimbunan",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan pengendalian bahaya longsoran material. Tumpukan yang terlalu tinggi atau curam berisiko longsor menimpa unit dan pekerja di sekitarnya."
+      },
+      {
+        "text": "Tidak ada overhang/undercut pada muka tumpukan, dan tidak ada unit/orang bekerja atau berhenti di bawah muka tumpukan",
+        "criteria": "Muka tumpukan landai dan tidak menggantung; area di bawah muka tumpukan bebas aktivitas",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "Extreme",
+        "evidence": "Foto",
+        "action": "Robohkan overhang dengan alat dan prosedur aman; pasang barikade area bahaya",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan identifikasi dan pengendalian bahaya runtuhan material. Overhang pada muka tumpukan dapat runtuh tiba-tiba dan menimbun unit atau pekerja di bawahnya."
+      },
+      {
+        "text": "Dozer/loader di stock ROM dikawal spotter dan rute kerjanya terpisah dari jalur dump truk",
+        "criteria": "Rute alat dorong/muat tidak bersilangan dengan jalur manuver dump truk; ada pengatur lalu lintas",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "High",
+        "evidence": "Foto/observasi",
+        "action": "Pisahkan rute kerja dan tempatkan spotter/pengatur lalu lintas",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan pemisahan lalu lintas antar jenis unit. Dozer dan loader memiliki blind spot besar; persilangan rute dengan dump truk meningkatkan risiko tabrakan."
+      },
+      {
+        "text": "Dasar (floor) stock ROM padat, rata, dan tidak amblas atau bergenang",
+        "criteria": "Tidak ada rutting dalam, genangan, atau area lembek yang membahayakan unit",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "Medium",
+        "evidence": "Foto",
+        "action": "Perbaiki dasar stock, buat kemiringan/drainase untuk air",
+        "freq": "Mingguan"
+      },
+      {
+        "text": "Titik panas/swabakar (spontaneous combustion) pada stock ROM dipantau dan ditangani sesuai prosedur",
+        "criteria": "Tidak ada asap atau area panas yang dibiarkan; ada catatan pemantauan dan tindakan penanganan (pemadatan, pemisahan batubara terbakar)",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "High",
+        "evidence": "Foto + catatan pemantauan",
+        "action": "Padatkan/pisahkan batubara terbakar dan tangani sesuai prosedur; laporkan ke HSE",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan identifikasi dan pengendalian bahaya kebakaran, termasuk swabakar pada timbunan batubara. Pemantauan rutin mencegah api membesar dan menekan risiko kehilangan produk serta paparan asap."
+      }
+    ]
+  },
+  {
+    "t": "Crusher, Debu & Lingkungan",
+    "items": [
+      {
+        "text": "Guard/pelindung terpasang pada bagian bergerak crusher, feeder, dan conveyor (nip point, pulley, roller)",
+        "criteria": "Seluruh bagian berputar/terjepit tertutup guard yang kokoh dan terpasang penuh",
+        "reg": "Permenaker 38/2016 (K3 Pesawat Tenaga & Produksi)",
+        "risk": "Extreme",
+        "evidence": "Foto",
+        "action": "Pasang/pulihkan guard sebelum peralatan dioperasikan",
+        "freq": "Harian",
+        "regDetail": "Permenaker No. 38/2016 mewajibkan alat perlindungan pada bagian mesin produksi yang bergerak atau berputar untuk mencegah anggota tubuh/pakaian pekerja terjepit atau tertarik."
+      },
+      {
+        "text": "Emergency stop/tali tarik (pull cord) crusher dan conveyor berfungsi dan mudah dijangkau",
+        "criteria": "Uji tekan E-stop menghentikan peralatan; tali tarik utuh dan tidak terhalang",
+        "reg": "Permenaker 8/2020 (K3 Pesawat Angkat & Angkut - Conveyor/Ship Loader)",
+        "risk": "Extreme",
+        "evidence": "Uji fungsi + foto",
+        "action": "Perbaiki E-stop/tali tarik; hentikan operasi sampai berfungsi",
+        "freq": "Mingguan",
+        "regDetail": "Permenaker No. 8/2020 (K3 Pesawat Angkat & Angkut) mengatur pengamanan conveyor, termasuk perangkat penghenti darurat yang mudah dijangkau sehingga peralatan dapat dihentikan segera saat terjadi bahaya."
+      },
+      {
+        "text": "Prosedur LOTO diterapkan saat pembersihan blockage/perawatan hopper dan crusher; tidak ada orang masuk hopper saat mesin hidup",
+        "criteria": "Ada gembok dan tag LOTO terpasang, izin kerja tersedia, dan peralatan dipastikan mati sebelum pekerjaan dimulai",
+        "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
+        "risk": "Extreme",
+        "evidence": "Foto/observasi + dokumen izin kerja",
+        "action": "Hentikan pekerjaan; terapkan LOTO dan izin kerja sebelum dilanjutkan",
+        "freq": "Harian",
+        "regDetail": "SMKP Kepmen ESDM No. 1827 K/30/MEM/2018 mewajibkan pengendalian energi berbahaya saat perawatan. Material tersangkut di hopper/crusher dapat bergerak mendadak atau mesin menyala tak terduga sehingga pekerja berisiko terjepit atau tertimbun."
+      },
+      {
+        "text": "Sistem pengendali debu (water spray/sprinkler) pada hopper, crusher, dan jalan akses berfungsi",
+        "criteria": "Nozzle dan pompa berfungsi, area hopper dan jalan akses tidak berdebu pekat",
+        "reg": "Permenaker 5/2018 (K3 Lingkungan Kerja)",
+        "risk": "High",
+        "evidence": "Foto",
+        "action": "Perbaiki nozzle/pompa dan jadwalkan penyiraman jalan akses",
+        "freq": "Harian",
+        "regDetail": "Permenaker No. 5/2018 mengatur faktor kimia (debu) di lingkungan kerja yang harus dikendalikan di bawah Nilai Ambang Batas (NAB). Water spray pada hopper dan crusher menekan debu di sumbernya sehingga paparan pekerja berkurang."
+      },
+      {
+        "text": "Pekerja di area crusher memakai APD sesuai bahaya (masker debu, pelindung telinga, helm, rompi reflektif)",
+        "criteria": "Seluruh pekerja di zona crusher/hopper memakai APD lengkap dan dalam kondisi layak",
+        "reg": "Permenaker 5/2018 (K3 Lingkungan Kerja)",
+        "risk": "High",
+        "evidence": "Foto/observasi",
+        "action": "Tegur dan lengkapi APD; briefing ulang pekerja",
+        "freq": "Harian",
+        "regDetail": "Permenaker No. 5/2018 mensyaratkan pengendalian kebisingan dan debu di tempat kerja; bila tidak cukup dikendalikan di sumber, pekerja wajib memakai APD yang sesuai (pelindung telinga, masker) sebagai lapisan perlindungan terakhir."
+      },
+      {
+        "text": "Kebisingan dan debu di area crusher diukur berkala dan hasilnya di bawah NAB",
+        "criteria": "Laporan pengukuran terbaru tersedia dan hasilnya di bawah NAB Permenaker 5/2018",
+        "reg": "Permenaker 5/2018 (K3 Lingkungan Kerja)",
+        "risk": "Medium",
+        "evidence": "Foto dokumen",
+        "action": "Jadwalkan pengukuran; lakukan pengendalian bila melebihi NAB",
+        "freq": "Triwulanan"
+      },
+      {
+        "text": "APAR tersedia, laik pakai, dan jalur evakuasi bebas hambatan di area crusher",
+        "criteria": "APAR terpasang di tempat terlihat, jarum indikator zona hijau, segel utuh, belum kedaluwarsa; jalur evakuasi bebas halangan",
+        "reg": "Permenaker 04/1980 (APAR) & SNI 03-3987",
+        "risk": "High",
+        "evidence": "Foto tag APAR",
+        "action": "Isi ulang/ganti APAR; bersihkan jalur evakuasi",
+        "freq": "Bulanan",
+        "regDetail": "Permenaker No. 04/1980 mensyaratkan APAR tersedia, ditempatkan sesuai risiko, dan diperiksa berkala. Debu batubara dan peralatan listrik di area crusher meningkatkan risiko kebakaran sehingga kesiapan APAR harus terjaga."
+      },
+      {
+        "text": "Drainase dan settling pond menampung air limpasan dari area stock ROM/crusher dan berfungsi baik",
+        "criteria": "Saluran tidak tersumbat, air limpasan mengalir ke settling pond, tidak ada tumpahan lumpur batubara ke luar area",
+        "reg": "PP 22/2021 (Penyelenggaraan Perlindungan & Pengelolaan Lingkungan Hidup)",
+        "risk": "Medium",
+        "evidence": "Foto",
+        "action": "Bersihkan saluran, keruk sedimen settling pond",
+        "freq": "Mingguan"
+      }
+    ]
+  }
+],
   ma_port: [
     {
       "t": "Struktur Dermaga & Jetty",
@@ -7032,7 +6958,7 @@ var MASTER_AREA_LABELS = {
   "ma_hauling": "Hauling Road",
   "ma_fuel": "Fuel Station",
   "ma_tyre": "Tyre Bay",
-  "ma_dumping": "Dumping Point",
+  "ma_dumping": "Dumping Crusher / Stock ROM",
   "ma_port": "Port / Jetty",
   "ma_loading": "Loading Area",
   "ma_warehouse": "Warehouse",
@@ -7581,7 +7507,7 @@ var FCFG={
   ma_hauling:   {title:'Hauling Road',    icon:ICONS.hauling,   sub:'Master Area V1.0 — Hauling Road',        info:['Segmen Jalan'],extraFindings:true},
   ma_fuel:      {title:'Fuel Station',    icon:ICONS.default,   sub:'Master Area V1.0 — Fuel Station',        info:['Sub-Area / Lokasi'],extraFindings:true},
   ma_tyre:      {title:'Tyre Bay',        icon:ICONS.workshoptyre, sub:'Master Area V1.0 — Tyre Bay',         info:['Sub-Area / Lokasi'],extraFindings:true},
-  ma_dumping:   {title:'Dumping Point',   icon:ICONS.pit,       sub:'Master Area V1.0 — Dumping Point',       info:['Sub-Area / Lokasi'],extraFindings:true},
+  ma_dumping:   {title:'Dumping Crusher / Stock ROM',   icon:ICONS.pit,       sub:'Master Area V1.0 — Dumping Crusher / Stock ROM',       info:['Sub-Area / Lokasi'],extraFindings:true},
   ma_port:      {title:'Port / Jetty',    icon:ICONS.port,      sub:'Master Area V1.0 — Port / Jetty',        info:['Sub-Area / Lokasi'],extraFindings:true},
   ma_loading:   {title:'Loading Area',    icon:ICONS.pit,       sub:'Master Area V1.0 — Loading Area',        info:['Sub-Area / Lokasi'],extraFindings:true},
   ma_warehouse: {title:'Warehouse',       icon:ICONS.default,   sub:'Master Area V1.0 — Warehouse',           info:['Sub-Area / Lokasi'],extraFindings:true},
@@ -8013,7 +7939,9 @@ function doGetGPS(dot,txt){
       if(err.code===1)msg='<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Izin GPS ditolak — aktifkan di Pengaturan > Izin Lokasi, lalu tap di sini';
       else if(err.code===2)msg='<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Sinyal GPS lemah — pindah ke area terbuka, lalu tap di sini';
       else msg='<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> GPS timeout — tap di sini untuk coba lagi';
-      if(txt)txt.textContent=msg;
+      // msg berisi markup ikon SVG (string statis, aman) — harus innerHTML, bukan textContent,
+      // kalau tidak ikon tampil sebagai teks kode '<svg ...>' di layar HP.
+      if(txt)txt.innerHTML=msg;
     },
     {enableHighAccuracy:true, timeout:15000, maximumAge:30000}
   );

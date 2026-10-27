@@ -1,7 +1,11 @@
-// INSPECTA Service Worker v1.6
+// INSPECTA Service Worker v1.7
 // PT Bina Sarana Sukses — HSE Department
 //
-// PERBAIKAN v1.6: Naikkan versi cache — dashboard-admin.html bertambah halaman
+// PERBAIKAN v1.7: Naikkan versi cache — app-user.html: pesan status GPS (izin ditolak/
+// timeout) sebelumnya tampil sebagai teks kode '<svg ...>' di layar HP; sekarang tampil
+// dengan ikon yang benar.
+//
+// PERBAIKAN v1.6 (referensi): Naikkan versi cache — dashboard-admin.html bertambah halaman
 // "Monitoring Pengawas Mingguan" (rekap sudah/belum lapor per minggu + grafik 8 minggu).
 //
 // PERBAIKAN v1.5 (referensi): Naikkan versi cache lagi — app-user.html & dashboard-admin.html
@@ -43,7 +47,7 @@
 // ada Service Worker baru dan proses install/activate (yang membersihkan cache lama
 // & mengambil versi terbaru) benar-benar berjalan.
 
-const CACHE_NAME = 'inspecta-v1.6';
+const CACHE_NAME = 'inspecta-v1.8';
 const NETWORK_TIMEOUT_MS = 3000; // dipersingkat dari 4000ms — fallback ke cache lebih cepat terasa instan di sinyal lemah, tanpa terlalu agresif memotong request yang sebenarnya hampir selesai
 const STATIC_FILES = [
   './app-user.html',
