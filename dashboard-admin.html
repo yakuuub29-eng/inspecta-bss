@@ -2990,6 +2990,7 @@ function renderWeekly(){
     +'<label style="font-size:11px;color:var(--G5)">Target min./minggu <input class="fi" type="number" min="1" max="50" value="'+WK_TARGET+'" style="width:60px;padding:4px 6px;font-size:12px" onchange="wkSetTarget(this.value)"/></label>'
     +'<button class="cc-btn" onclick="wkCsv()">⬇️ CSV</button>'
     +'<button class="cc-btn" style="background:var(--Y);font-weight:700" onclick="wkPdfAll()" title="Semua PDF laporan inspeksi seluruh pengawas pada minggu ini (Sabtu–Jumat), dikemas dalam 1 ZIP — satu folder per pengawas">📦 Unduh Semua PDF Inspeksi (ZIP)</button>'
+    +'<button class="cc-btn" style="font-weight:700" onclick="rxOpenDialog()" title="Resume bulanan format MASTER / TEMUAN / GRAFIK (Excel)">📊 Export Resume Excel</button>'
     +'</div>';
   // ringkasan
   html+='<div class="trend-card"><div class="trend-summary-row">'
@@ -3089,13 +3090,13 @@ function wkPdfOverlay(show,msg){
     o=document.createElement('div');o.id='wk-pdf-ov';
     o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:flex;align-items:center;justify-content:center';
     o.innerHTML='<div style="background:#fff;border-radius:12px;padding:22px 26px;min-width:300px;max-width:90vw;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center">'
-      +'<div style="font-weight:700;margin-bottom:8px">📦 Menyiapkan PDF laporan…</div>'
+      +'<div id="wk-pdf-h" style="font-weight:700;margin-bottom:8px">📦 Menyiapkan PDF laporan…</div>'
       +'<div id="wk-pdf-msg" style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px"></div>'
       +'<div style="height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-bottom:14px"><div id="wk-pdf-bar" style="height:100%;width:0;background:#F5C400;transition:width .2s"></div></div>'
       +'<button class="cc-btn" onclick="WK_PDF_CANCEL=true">Batal</button></div>';
     document.body.appendChild(o);
   }
-  document.getElementById('wk-pdf-msg').innerHTML=msg.t;document.getElementById('wk-pdf-bar').style.width=(msg.pct||0)+'%';
+  document.getElementById('wk-pdf-h').innerHTML=msg.h||'📦 Menyiapkan PDF laporan…';document.getElementById('wk-pdf-msg').innerHTML=msg.t;document.getElementById('wk-pdf-bar').style.width=(msg.pct||0)+'%';
 }
 // people: array pengawas yang diproses; kosong = semua
 function wkPdfRun(people,label){
@@ -5922,6 +5923,504 @@ if('serviceWorker' in navigator){
       .then(function(reg){console.log('INSPECTA Admin SW:',reg.scope);})
       .catch(function(e){console.warn('SW error:',e);});
   });
+}
+</script>
+<script>
+// ════ EXPORT RESUME EXCEL (MASTER / TEMUAN / GRAFIK) — penulis XLSX mini (tanpa library tambahan selain JSZip) ════
+// Menghasilkan file .xlsx asli dengan: gaya sel, rumus COUNTIFS (nilai sudah dihitung agar langsung tampil),
+// foto kecil di sheet MASTER, grafik batang native Excel di sheet GRAFIK, conditional formatting.
+var RX={};
+RX.esc=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');};
+RX.col=function(n){var s='';while(n>0){var m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;};
+RX.addr=function(r,c,abs){return abs?('$'+RX.col(c)+'$'+r):(RX.col(c)+r);};
+RX.serial=function(d){return Math.round((Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())-Date.UTC(1899,11,30))/86400000);};
+RX.EMU=9525;
+
+// ── registri gaya ──
+function RXStyles(){
+  this.fonts=['<font><sz val="10"/><color rgb="FF1F2937"/><name val="Calibri"/><family val="2"/></font>'];
+  this.fills=['<fill><patternFill patternType="none"/></fill>','<fill><patternFill patternType="gray125"/></fill>'];
+  this.borders=['<border><left/><right/><top/><bottom/><diagonal/></border>'];
+  this.numFmts=[];this.xfs=['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'];
+  this.maps={font:{},fill:{},border:{},fmt:{},xf:{}};this.dxfs=[];
+}
+RXStyles.prototype._idx=function(kind,key,xml,list,base){
+  var m=this.maps[kind];if(m[key]!=null)return m[key];
+  list.push(xml);m[key]=list.length-1+(base||0);return m[key];
+};
+RXStyles.prototype.get=function(sp){
+  sp=sp||{};
+  var key=JSON.stringify(sp);if(this.maps.xf[key]!=null)return this.maps.xf[key];
+  var fontId=0,fillId=0,borderId=0,fmtId=0;
+  if(sp.b||sp.i||sp.sz||sp.color||sp.u){
+    var fx='<font>'+(sp.b?'<b/>':'')+(sp.i?'<i/>':'')+'<sz val="'+(sp.sz||10)+'"/><color rgb="FF'+(sp.color||'1F2937')+'"/><name val="Calibri"/><family val="2"/></font>';
+    fontId=this._idx('font',fx,fx,this.fonts);
+  }
+  if(sp.fill){var fl='<fill><patternFill patternType="solid"><fgColor rgb="FF'+sp.fill+'"/><bgColor indexed="64"/></patternFill></fill>';fillId=this._idx('fill',fl,fl,this.fills);}
+  if(sp.border){
+    var bc='FF'+(sp.bcolor||'D1D5DB'),side=function(n,on){return on?'<'+n+' style="thin"><color rgb="'+bc+'"/></'+n+'>':'<'+n+'/>';};
+    var all=sp.border==='all',bt=sp.border==='bottom';
+    var bx='<border>'+side('left',all)+side('right',all)+side('top',all)+side('bottom',all||bt)+'<diagonal/></border>';
+    borderId=this._idx('border',bx,bx,this.borders);
+  }
+  if(sp.fmt){
+    var builtin={'0%':9,'0':1,'General':0};
+    if(builtin[sp.fmt]!=null)fmtId=builtin[sp.fmt];
+    else{
+      if(this.maps.fmt[sp.fmt]==null){this.numFmts.push(sp.fmt);this.maps.fmt[sp.fmt]=163+this.numFmts.length;}
+      fmtId=this.maps.fmt[sp.fmt];
+    }
+  }
+  var al='';
+  if(sp.h||sp.v||sp.wrap||sp.indent){
+    al='<alignment'+(sp.h?' horizontal="'+sp.h+'"':'')+' vertical="'+(sp.v||'center')+'"'+(sp.wrap?' wrapText="1"':'')+(sp.indent?' indent="'+sp.indent+'"':'')+'/>';
+  }
+  var xf='<xf numFmtId="'+fmtId+'" fontId="'+fontId+'" fillId="'+fillId+'" borderId="'+borderId+'" xfId="0"'
+    +(fmtId?' applyNumberFormat="1"':'')+(fontId?' applyFont="1"':'')+(fillId?' applyFill="1"':'')+(borderId?' applyBorder="1"':'')+(al?' applyAlignment="1">'+al+'</xf>':'/>');
+  this.xfs.push(xf);this.maps.xf[key]=this.xfs.length-1;return this.maps.xf[key];
+};
+RXStyles.prototype.dxf=function(font,fill,bold){
+  var x='<dxf><font>'+(bold?'<b/>':'')+'<color rgb="FF'+font+'"/></font><fill><patternFill><bgColor rgb="FF'+fill+'"/></patternFill></fill></dxf>';
+  var i=this.dxfs.indexOf(x);if(i>=0)return i;this.dxfs.push(x);return this.dxfs.length-1;
+};
+RXStyles.prototype.xml=function(){
+  var nf=this.numFmts.map(function(f,i){return '<numFmt numFmtId="'+(164+i)+'" formatCode="'+RX.esc(f)+'"/>';}).join('');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    +(nf?'<numFmts count="'+this.numFmts.length+'">'+nf+'</numFmts>':'')
+    +'<fonts count="'+this.fonts.length+'">'+this.fonts.join('')+'</fonts>'
+    +'<fills count="'+this.fills.length+'">'+this.fills.join('')+'</fills>'
+    +'<borders count="'+this.borders.length+'">'+this.borders.join('')+'</borders>'
+    +'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+    +'<cellXfs count="'+this.xfs.length+'">'+this.xfs.join('')+'</cellXfs>'
+    +'<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+    +'<dxfs count="'+this.dxfs.length+'">'+this.dxfs.join('')+'</dxfs></styleSheet>';
+};
+
+// ── sheet ──
+function RXSheet(name,st){this.name=name;this.st=st;this.cells={};this.merges=[];this.cols=[];this.rowH={};this.cf=[];this.pics=[];this.charts=[];this.freezeRow=0;this.landscape=false;this.selected=false;}
+RXSheet.prototype.set=function(r,c,o){this.cells[r]=this.cells[r]||{};this.cells[r][c]=o;};
+RXSheet.prototype.put=function(r,c,v,sp,f){this.set(r,c,{v:v,s:this.st.get(sp),f:f});};
+RXSheet.prototype.blank=function(r,c,sp){this.set(r,c,{s:this.st.get(sp)});};
+RXSheet.prototype.merge=function(r1,c1,r2,c2,v,sp){
+  for(var r=r1;r<=r2;r++)for(var c=c1;c<=c2;c++){
+    if(r===r1&&c===c1)this.put(r,c,v,sp);else this.blank(r,c,sp);
+  }
+  if(r1!==r2||c1!==c2)this.merges.push(RX.addr(r1,c1)+':'+RX.addr(r2,c2));
+};
+RXSheet.prototype.width=function(c1,c2,w){this.cols.push({a:c1,b:c2,w:w});};
+RXSheet.prototype.xml=function(drawingRid){
+  var self=this,rows=Object.keys(this.cells).map(Number).sort(function(a,b){return a-b;});
+  Object.keys(this.rowH).forEach(function(r){r=Number(r);if(!self.cells[r]){self.cells[r]={};rows.push(r);}});
+  rows=rows.filter(function(v,i,a){return a.indexOf(v)===i;}).sort(function(a,b){return a-b;});
+  var minR=1e9,maxR=0,minC=1e9,maxC=0;
+  var sd=rows.map(function(r){
+    var cs=Object.keys(self.cells[r]).map(Number).sort(function(a,b){return a-b;});
+    cs.forEach(function(c){minC=Math.min(minC,c);maxC=Math.max(maxC,c);});
+    if(cs.length){minR=Math.min(minR,r);maxR=Math.max(maxR,r);}
+    var h=self.rowH[r];
+    return '<row r="'+r+'"'+(h?' ht="'+h+'" customHeight="1"':'')+'>'+cs.map(function(c){
+      var o=self.cells[r][c],a=RX.addr(r,c),s=o.s?' s="'+o.s+'"':'';
+      if(o.f!=null){
+        var isStr=typeof o.v==='string';
+        return '<c r="'+a+'"'+s+(isStr?' t="str"':'')+'><f>'+RX.esc(o.f)+'</f>'+(o.v==null?'':'<v>'+RX.esc(o.v)+'</v>')+'</c>';
+      }
+      if(o.v==null||o.v==='')return '<c r="'+a+'"'+s+'/>';
+      if(typeof o.v==='number')return '<c r="'+a+'"'+s+'><v>'+o.v+'</v></c>';
+      return '<c r="'+a+'"'+s+' t="inlineStr"><is><t xml:space="preserve">'+RX.esc(o.v)+'</t></is></c>';
+    }).join('')+'</row>';
+  }).join('');
+  var dim=maxR?RX.addr(minR,minC)+':'+RX.addr(maxR,maxC):'A1';
+  var cols=this.cols.length?'<cols>'+this.cols.map(function(c){return '<col min="'+c.a+'" max="'+c.b+'" width="'+c.w+'" customWidth="1"/>';}).join('')+'</cols>':'';
+  var pane=this.freezeRow?'<pane ySplit="'+this.freezeRow+'" topLeftCell="A'+(this.freezeRow+1)+'" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/>':'';
+  var cf=this.cf.map(function(g){
+    return '<conditionalFormatting sqref="'+g.sqref+'">'+g.rules.map(function(r,i){
+      return '<cfRule type="expression" dxfId="'+r.dxf+'" priority="'+(g.p0+i)+'"'+(r.stop?' stopIfTrue="1"':'')+'><formula>'+RX.esc(r.f)+'</formula></cfRule>';
+    }).join('')+'</conditionalFormatting>';
+  }).join('');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    +'<sheetPr>'+(this.tab?'<tabColor rgb="FF'+this.tab+'"/>':'')+'<pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="'+dim+'"/>'
+    +'<sheetViews><sheetView showGridLines="0"'+(this.selected?' tabSelected="1"':'')+' workbookViewId="0">'+pane+'</sheetView></sheetViews>'
+    +'<sheetFormatPr defaultRowHeight="15"/>'+cols+'<sheetData>'+sd+'</sheetData>'
+    +(this.merges.length?'<mergeCells count="'+this.merges.length+'">'+this.merges.map(function(m){return '<mergeCell ref="'+m+'"/>';}).join('')+'</mergeCells>':'')
+    +cf+'<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>'
+    +'<pageSetup paperSize="9" orientation="'+(this.landscape?'landscape':'portrait')+'" fitToHeight="0"/>'
+    +(drawingRid?'<drawing r:id="'+drawingRid+'"/>':'')+'</worksheet>';
+};
+
+// ── grafik batang native ──
+RX.chartXml=function(c){
+  // c: {title, cats:[..], catRef, series:[{name,ref,vals:[..],color}], axBase}
+  var A=function(sz,b,color){return '<a:defRPr sz="'+sz+'" b="'+(b?1:0)+'"><a:solidFill><a:srgbClr val="'+(color||'374151')+'"/></a:solidFill><a:latin typeface="Calibri"/></a:defRPr>';};
+  var txPr=function(sz,b,color){return '<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr>'+A(sz,b,color)+'</a:pPr><a:endParaRPr lang="en-US"/></a:p></c:txPr>';};
+  var strCache=function(arr){return '<c:strCache><c:ptCount val="'+arr.length+'"/>'+arr.map(function(v,i){return '<c:pt idx="'+i+'"><c:v>'+RX.esc(v)+'</c:v></c:pt>';}).join('')+'</c:strCache>';};
+  var numCache=function(arr){return '<c:numCache><c:formatCode>General</c:formatCode><c:ptCount val="'+arr.length+'"/>'+arr.map(function(v,i){return '<c:pt idx="'+i+'"><c:v>'+v+'</c:v></c:pt>';}).join('')+'</c:numCache>';};
+  var sers=c.series.map(function(s,i){
+    return '<c:ser><c:idx val="'+i+'"/><c:order val="'+i+'"/><c:tx><c:v>'+RX.esc(s.name)+'</c:v></c:tx>'
+      +'<c:spPr><a:solidFill><a:srgbClr val="'+s.color+'"/></a:solidFill></c:spPr><c:invertIfNegative val="0"/>'
+      +'<c:dLbls>'+txPr(800,true,'1F2937')+'<c:dLblPos val="outEnd"/><c:showLegendKey val="0"/><c:showVal val="1"/><c:showCatName val="0"/><c:showSerName val="0"/><c:showPercent val="0"/><c:showBubbleSize val="0"/></c:dLbls>'
+      +'<c:cat><c:strRef><c:f>'+RX.esc(c.catRef)+'</c:f>'+strCache(c.cats)+'</c:strRef></c:cat>'
+      +'<c:val><c:numRef><c:f>'+RX.esc(s.ref)+'</c:f>'+numCache(s.vals)+'</c:numRef></c:val></c:ser>';
+  }).join('');
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:lang val="en-US"/>'
+    +'<c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:pPr>'+A(1100,true,'1F2937')+'</a:pPr><a:r><a:rPr lang="en-US" sz="1100" b="1"><a:solidFill><a:srgbClr val="1F2937"/></a:solidFill></a:rPr><a:t>'+RX.esc(c.title)+'</a:t></a:r></a:p></c:rich></c:tx><c:overlay val="0"/></c:title>'
+    +'<c:autoTitleDeleted val="0"/><c:plotArea><c:layout/><c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/>'+sers
+    +'<c:gapWidth val="70"/><c:axId val="'+c.axBase+'1"/><c:axId val="'+c.axBase+'2"/></c:barChart>'
+    +'<c:catAx><c:axId val="'+c.axBase+'1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:numFmt formatCode="General" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln><a:solidFill><a:srgbClr val="9CA3AF"/></a:solidFill></a:ln></c:spPr>'+txPr(800,false,'374151')+'<c:crossAx val="'+c.axBase+'2"/><c:crosses val="autoZero"/><c:auto val="1"/><c:lblAlgn val="ctr"/><c:lblOffset val="100"/><c:noMultiLvlLbl val="0"/></c:catAx>'
+    +'<c:valAx><c:axId val="'+c.axBase+'2"/><c:scaling><c:orientation val="minMax"/><c:min val="0"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines><c:spPr><a:ln><a:solidFill><a:srgbClr val="E5E7EB"/></a:solidFill></a:ln></c:spPr></c:majorGridlines><c:numFmt formatCode="0" sourceLinked="0"/><c:majorTickMark val="none"/><c:minorTickMark val="none"/><c:tickLblPos val="nextTo"/><c:spPr><a:ln><a:noFill/></a:ln></c:spPr>'+txPr(800,false,'6B7280')+'<c:crossAx val="'+c.axBase+'1"/><c:crosses val="autoZero"/><c:crossBetween val="between"/></c:valAx>'
+    +'<c:spPr><a:noFill/></c:spPr></c:plotArea><c:legend><c:legendPos val="b"/><c:overlay val="0"/>'+txPr(800,false,'374151')+'</c:legend><c:plotVisOnly val="1"/><c:dispBlanksAs val="gap"/></c:chart>'
+    +'<c:spPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:ln><a:solidFill><a:srgbClr val="D1D5DB"/></a:solidFill></a:ln></c:spPr></c:chartSpace>';
+};
+RX.drawingXml=function(sheet,rels){
+  // rels diisi: [{id,type,target}]
+  var parts=[],id=1;
+  sheet.pics.forEach(function(p){
+    var rid='rId'+(rels.length+1);rels.push({id:rid,type:'image',target:'../media/'+p.file});
+    parts.push('<xdr:oneCellAnchor><xdr:from><xdr:col>'+p.col+'</xdr:col><xdr:colOff>'+p.dx+'</xdr:colOff><xdr:row>'+p.row+'</xdr:row><xdr:rowOff>'+p.dy+'</xdr:rowOff></xdr:from><xdr:ext cx="'+p.cx+'" cy="'+p.cy+'"/>'
+      +'<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="'+(++id)+'" name="Foto '+id+'" descr="'+RX.esc(p.descr||'foto')+'"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr>'
+      +'<xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="'+rid+'"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill>'
+      +'<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+p.cx+'" cy="'+p.cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>');
+  });
+  sheet.charts.forEach(function(ch){
+    var rid='rId'+(rels.length+1);rels.push({id:rid,type:'chart',target:'../charts/'+ch.file});
+    parts.push('<xdr:twoCellAnchor><xdr:from><xdr:col>'+ch.c1+'</xdr:col><xdr:colOff>'+(ch.dx1||0)+'</xdr:colOff><xdr:row>'+ch.r1+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>'+ch.c2+'</xdr:col><xdr:colOff>'+(ch.dx2||0)+'</xdr:colOff><xdr:row>'+ch.r2+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>'
+      +'<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="'+(++id)+'" name="Grafik '+id+'"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm>'
+      +'<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="'+rid+'"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>');
+  });
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'+parts.join('')+'</xdr:wsDr>';
+};
+
+// ── model → workbook ──
+// model: {site,monthLabel,tgtInsp,tgtIbpr,weeks:[{n,dates:[Date]}],groups:[str],rows:[{date,week,group,loc,photo:{bytes,w,h}|null}],temuan:[{date,loc,ket,pic}],allDates:[Date]}
+RX.PAL={ink:'1F2937',ink2:'374151',amber:'F5C400',line:'D1D5DB',zebra:'F9FAFB',muted:'6B7280',soft:'F3F4F6'};
+RX.build=function(model){
+  var P=RX.PAL,st=new RXStyles(),T=function(x){return st.get(x);};
+  var fmtD='dd/mm/yyyy',MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  function shortRange(ds){var a=ds[0],b=ds[ds.length-1];return a.getDate()+(a.getMonth()!==b.getMonth()?' '+MON[a.getMonth()]:'')+(ds.length>1?' – '+b.getDate():'')+' '+MON[b.getMonth()]+' '+b.getFullYear();}
+  var sM=new RXSheet('MASTER',st),sT=new RXSheet('TEMUAN',st),sG=new RXSheet('GRAFIK',st);
+  sM.tab=P.amber;sT.tab=P.ink2;sG.tab=P.ink;sG.selected=true;sG.landscape=true;
+  var hdr={b:1,sz:10,color:'FFFFFF',fill:P.ink,h:'center',wrap:1,border:'all',bcolor:P.ink2};
+  var title={b:1,sz:15,color:P.amber,fill:P.ink,h:'left',indent:1};
+  var sub={i:1,sz:9,color:P.muted,fill:P.soft,h:'left',indent:1};
+
+  // ═══ MASTER ═══
+  sM.width(1,1,2);sM.width(2,2,5);sM.width(3,3,12.5);sM.width(4,4,9);sM.width(5,5,22);sM.width(6,6,20);sM.width(7,7,24);sM.width(8,8,24);sM.width(9,9,9);sM.width(10,10,11);
+  sM.merge(2,2,3,10,'RESUME IBPR DAN INSPEKSI PENGAWAS '+model.site,title);sM.rowH[2]=20;sM.rowH[3]=20;
+  ['NO','TANGGAL','WEEK','PENGAWAS','LOKASI','IBPR','INSPEKSI','IBPR','INSPEKSI'].forEach(function(h,i){
+    var sp=(i>=7)?{b:1,sz:8,color:'FFFFFF',fill:P.muted,h:'center',border:'all',bcolor:P.ink2}:hdr;
+    sM.put(4,2+i,h,sp);
+  });
+  sM.rowH[4]=22;sM.freezeRow=4;
+  var PW=118,PH=78; // px kotak foto
+  var media=[]; // {file,bytes}
+  var rows=model.rows;
+  var nSpare=10,totalRows=rows.length+nSpare;
+  for(var i=0;i<totalRows;i++){
+    var r=5+i,z=(i%2)?P.zebra:'FFFFFF',row=rows[i];
+    var base={border:'all',fill:z,sz:10,v:'center'};
+    var center=Object.assign({h:'center'},base),left=Object.assign({h:'left',indent:1},base);
+    var noF=i===0?null:('B'+(r-1)+'+1');
+    sM.set(r,2,{v:i+1,f:noF,s:T(center)});
+    if(row){
+      sM.set(r,3,{v:RX.serial(row.date),s:T(Object.assign({fmt:fmtD},center))});
+      sM.put(r,4,'WEEK'+row.week,center);sM.put(r,5,row.group,left);sM.put(r,6,row.loc||'-',left);
+      sM.blank(r,7,center);sM.blank(r,8,center);
+      sM.blank(r,9,Object.assign({sz:8,color:P.muted},center));sM.put(r,10,'INSPEKSI',Object.assign({sz:8,color:P.muted},center));
+      if(row.photo){
+        sM.rowH[r]=PH*0.75+8;
+        var fn='img'+(media.length+1)+'.jpeg';media.push({file:fn,bytes:row.photo.bytes});
+        var w=row.photo.w,h=row.photo.h,k=Math.min(PW/w,PH/h),pw=Math.round(w*k),ph=Math.round(h*k);
+        // lebar kolom H 24 ≈ 173px; pusatkan foto
+        sM.pics.push({file:fn,col:7,row:r-1,dx:Math.round((173-pw)/2*RX.EMU),dy:Math.round(((PH+10)-ph)/2*RX.EMU),cx:pw*RX.EMU,cy:ph*RX.EMU,descr:row.group+' '+row.loc});
+      }else sM.rowH[r]=26;
+    }else{
+      for(var c=3;c<=10;c++)sM.blank(r,c,(c===3)?Object.assign({fmt:fmtD},center):center);
+      sM.rowH[r]=22;
+    }
+  }
+  var lastM=4+totalRows;
+
+  // ═══ TEMUAN ═══
+  sT.width(1,1,2);sT.width(2,2,13);sT.width(3,3,24);sT.width(4,4,58);sT.width(5,5,16);
+  sT.merge(2,2,3,5,'TEMUAN IBPR DAN INSPEKSI '+model.site,title);sT.rowH[2]=20;sT.rowH[3]=20;
+  ['Tanggal','Lokasi','Keterangan','PIC'].forEach(function(h,i){sT.put(4,2+i,h,hdr);});
+  sT.rowH[4]=22;sT.freezeRow=4;
+  var tem=model.temuan,nT=Math.max(tem.length,1)+5;
+  for(var j=0;j<nT;j++){
+    var rr=5+j,zz=(j%2)?P.zebra:'FFFFFF',t=tem[j];
+    var b2={border:'all',fill:zz,v:'center'};
+    if(t){
+      sT.put(rr,2,RX.serial(t.date),Object.assign({fmt:fmtD,h:'center'},b2));
+      sT.put(rr,3,t.loc||'-',Object.assign({h:'left',indent:1,wrap:1},b2));
+      sT.put(rr,4,t.ket||'-',Object.assign({h:'left',indent:1,wrap:1},b2));
+      sT.put(rr,5,t.pic||'-',Object.assign({h:'center'},b2));
+      var lines=Math.max(1,Math.ceil(String(t.ket||'').length/62)+(String(t.ket||'').split('\n').length-1));
+      sT.rowH[rr]=Math.max(22,lines*14+6);
+    }else{for(var c2=2;c2<=5;c2++)sT.blank(rr,c2,Object.assign({fmt:c2===2?fmtD:undefined},b2));sT.rowH[rr]=22;}
+  }
+
+  // ═══ GRAFIK ═══
+  var G=model.groups,N=G.length;
+  sG.width(1,1,2);sG.width(2,2,22);sG.width(3,15,10.5);sG.width(16,70,8.5);
+  var lastCol=15;
+  sG.merge(2,2,2,lastCol,'RESUME KETERCAPAIAN IBPR DAN INSPEKSI — '+model.site,title);sG.rowH[2]=26;
+  sG.merge(3,2,3,lastCol,'Periode '+model.monthLabel+'  ·  Minggu pelaporan Sabtu–Jumat  ·  Target per pengawas per minggu: IBPR '+model.tgtIbpr+', Inspeksi '+model.tgtInsp,sub);sG.rowH[3]=18;
+  // hitung
+  function cnt(week,g,type){return rows.filter(function(x){return x.week===week&&x.group===g&&type==='INSPEKSI';}).length;}
+  function cntDay(d,g,type){var s=RX.serial(d);return rows.filter(function(x){return RX.serial(x.date)===s&&x.group===g&&type==='INSPEKSI';}).length;}
+  var cfRows={st:[],ach:[]}; // sqref list
+  var dxG=st.dxf('166534','DCFCE7',true),dxR=st.dxf('991B1B','FEE2E2',true),dxA=st.dxf('92400E','FEF3C7',true),dxS=st.dxf('4B5563','E5E7EB',true);
+  var r0=5,chartNo=0,chartList=[];
+  model.weeks.forEach(function(wk){
+    var nd=wk.dates.length,dEnd=8+nd; // kolom hari: 9..8+nd
+    sG.merge(r0,2,r0,lastCol,'WEEK'+wk.n+'   ·   '+shortRange(wk.dates),{b:1,sz:11,color:P.ink,fill:P.amber,h:'left',indent:1});sG.rowH[r0]=21;
+    // header grup
+    sG.merge(r0+1,2,r0+2,2,'NAMA',hdr);
+    sG.merge(r0+1,3,r0+1,5,'IBPR',hdr);sG.merge(r0+1,6,r0+1,8,'INSPEKSI',hdr);
+    sG.merge(r0+1,9,r0+1,8+nd,nd>2?'KETERANGAN TANGGAL PEMBUATAN':'KET. TANGGAL',hdr);
+    var sh=Object.assign({},hdr,{fill:P.ink2,sz:9});
+    ['PLANT','ACTUAL','ACHIEVMENT','PLANT','ACTUAL','ACHIEVMENT'].forEach(function(h,i){sG.put(r0+2,3+i,h,sh);});
+    wk.dates.forEach(function(d,i){sG.put(r0+2,9+i,RX.serial(d),Object.assign({},sh,{fmt:'dd/mm'}));});
+    sG.rowH[r0+1]=20;sG.rowH[r0+2]=20;
+    var first=r0+3,tot={pi:0,ai:0,ps:0,as:0};
+    G.forEach(function(g,gi){
+      var rr=first+gi,z=(gi%2)?P.zebra:'FFFFFF',base={border:'all',fill:z,v:'center'};
+      var c=Object.assign({h:'center'},base);
+      sG.put(rr,2,g,Object.assign({h:'left',indent:1,b:1},base));
+      var ai=0,as=cnt(wk.n,g,'INSPEKSI');
+      var qI='MASTER!$D:$D,"WEEK'+wk.n+'",MASTER!$E:$E,$B'+rr;
+      sG.put(rr,3,model.tgtIbpr,c);
+      sG.set(rr,4,{v:ai,f:'COUNTIFS('+qI+',MASTER!$I:$I,"IBPR")',s:T(c)});
+      sG.set(rr,5,{v:model.tgtIbpr?ai/model.tgtIbpr:'',f:'IF(C'+rr+'=0,"",D'+rr+'/C'+rr+')',s:T(Object.assign({fmt:'0%',b:1},c))});
+      sG.put(rr,6,model.tgtInsp,c);
+      sG.set(rr,7,{v:as,f:'COUNTIFS('+qI+',MASTER!$J:$J,"INSPEKSI")',s:T(c)});
+      sG.set(rr,8,{v:model.tgtInsp?as/model.tgtInsp:'',f:'IF(F'+rr+'=0,"",G'+rr+'/F'+rr+')',s:T(Object.assign({fmt:'0%',b:1},c))});
+      wk.dates.forEach(function(d,i){
+        var colL=RX.col(9+i);
+        var has=cntDay(d,g,'INSPEKSI')>0;
+        sG.set(rr,9+i,{v:has?'CLOSE':'KOSONG',f:'IF(COUNTIFS(MASTER!$C:$C,'+colL+'$'+(r0+2)+',MASTER!$E:$E,$B'+rr+',MASTER!$J:$J,"INSPEKSI")+COUNTIFS(MASTER!$C:$C,'+colL+'$'+(r0+2)+',MASTER!$E:$E,$B'+rr+',MASTER!$I:$I,"IBPR")>0,"CLOSE","KOSONG")',s:T(Object.assign({sz:8,b:1},c))});
+      });
+      tot.pi+=model.tgtIbpr;tot.ai+=ai;tot.ps+=model.tgtInsp;tot.as+=as;
+    });
+    var last=first+N-1,tr=last+1,tb={b:1,fill:P.soft,border:'all',v:'center',h:'center'};
+    sG.put(tr,2,'TOTAL',Object.assign({},tb,{h:'left',indent:1}));
+    sG.set(tr,3,{v:tot.pi,f:'SUM(C'+first+':C'+last+')',s:T(tb)});sG.set(tr,4,{v:tot.ai,f:'SUM(D'+first+':D'+last+')',s:T(tb)});
+    sG.set(tr,5,{v:tot.pi?tot.ai/tot.pi:'',f:'IF(C'+tr+'=0,"",D'+tr+'/C'+tr+')',s:T(Object.assign({fmt:'0%'},tb))});
+    sG.set(tr,6,{v:tot.ps,f:'SUM(F'+first+':F'+last+')',s:T(tb)});sG.set(tr,7,{v:tot.as,f:'SUM(G'+first+':G'+last+')',s:T(tb)});
+    sG.set(tr,8,{v:tot.ps?tot.as/tot.ps:'',f:'IF(F'+tr+'=0,"",G'+tr+'/F'+tr+')',s:T(Object.assign({fmt:'0%'},tb))});
+    for(var q=0;q<nd;q++)sG.blank(tr,9+q,tb);
+    sG.rowH[tr]=20;
+    // conditional formatting
+    sG.cf.push({sqref:RX.addr(first,9)+':'+RX.addr(last,8+nd),p0:cfPriority(),rules:[
+      {f:RX.addr(first,9)+'="CLOSE"',dxf:dxG},{f:RX.addr(first,9)+'="KOSONG"',dxf:dxR},{f:RX.addr(first,9)+'="OFF"',dxf:dxS}]});
+    ['E','H'].forEach(function(L){
+      var a=L+first;
+      sG.cf.push({sqref:L+first+':'+L+tr,p0:cfPriority(3),rules:[
+        {f:'AND(ISNUMBER('+a+'),'+a+'>=1)',dxf:dxG,stop:1},{f:'AND(ISNUMBER('+a+'),'+a+'>=0.5)',dxf:dxA,stop:1},{f:'AND(ISNUMBER('+a+'),'+a+'<0.5)',dxf:dxR}]});
+    });
+    // grafik
+    var catRef='GRAFIK!'+RX.addr(first,2,1)+':'+RX.addr(last,2,1);
+    var cr0=tr+1; // 0-based row index of the row after TOTAL = tr (since row numbers 1-based): from row index tr+1 (blank row skip)
+    var hRows=Math.max(15,Math.min(26,13+Math.round(N/2)));
+    function mk(titleTxt,colP,colA,c1,c2,vP,vA){
+      chartNo++;var file='chart'+chartNo+'.xml';
+      chartList.push({file:file,xml:RX.chartXml({title:titleTxt,cats:G.slice(),catRef:catRef,axBase:5000+chartNo*10,series:[
+        {name:'PLANT',color:'9CA3AF',ref:'GRAFIK!'+RX.addr(first,colP,1)+':'+RX.addr(last,colP,1),vals:vP},
+        {name:'ACTUAL',color:P.amber,ref:'GRAFIK!'+RX.addr(first,colA,1)+':'+RX.addr(last,colA,1),vals:vA}]})});
+      sG.charts.push({file:file,c1:c1,c2:c2,r1:tr+1,r2:tr+1+hRows});
+    }
+    var inspVals=G.map(function(g){return cnt(wk.n,g,'INSPEKSI');});
+    if(model.tgtIbpr>0){
+      mk('RESUME IBPR — WEEK'+wk.n,3,4,1,7,G.map(function(){return model.tgtIbpr;}),G.map(function(){return 0;}));
+      mk('RESUME INSPEKSI — WEEK'+wk.n,6,7,7,15,G.map(function(){return model.tgtInsp;}),inspVals);
+    }else{
+      // target IBPR 0 (IBPR tidak dicatat di INSPECTA) → grafik inspeksi saja, selebar tabel
+      mk('RESUME INSPEKSI — WEEK'+wk.n,6,7,1,15,G.map(function(){return model.tgtInsp;}),inspVals);
+    }
+    r0=tr+1+hRows+2;
+  });
+  function cfPriority(n){cfPriority.p=(cfPriority.p||1);var v=cfPriority.p;cfPriority.p+=(n||3);return v;}
+  // ═══ REKAP HARIAN ═══
+  var days=model.allDates,hc=2+2*days.length;
+  sG.merge(r0,2,r0,Math.max(lastCol,hc),'REKAP HARIAN — jumlah IBPR dan INSPEKSI per tanggal',{b:1,sz:11,color:P.ink,fill:P.amber,h:'left',indent:1});sG.rowH[r0]=21;
+  sG.merge(r0+1,2,r0+2,2,'NAMA',hdr);
+  days.forEach(function(d,i){
+    sG.merge(r0+1,3+i*2,r0+1,4+i*2,RX.serial(d),Object.assign({},hdr,{fmt:'dd/mm'}));
+    var sh2=Object.assign({},hdr,{fill:P.ink2,sz:8});
+    sG.put(r0+2,3+i*2,'IBPR',sh2);sG.put(r0+2,4+i*2,'INSPEKSI',sh2);
+  });
+  sG.rowH[r0+1]=20;sG.rowH[r0+2]=20;
+  G.forEach(function(g,gi){
+    var rr=r0+3+gi,z=(gi%2)?P.zebra:'FFFFFF',c={border:'all',fill:z,v:'center',h:'center',sz:9};
+    sG.put(rr,2,g,{border:'all',fill:z,v:'center',h:'left',indent:1,b:1});
+    days.forEach(function(d,i){
+      var colD=RX.col(3+i*2);
+      sG.set(rr,3+i*2,{v:0,f:'COUNTIFS(MASTER!$C:$C,'+colD+'$'+(r0+1)+',MASTER!$E:$E,$B'+rr+',MASTER!$I:$I,"IBPR")',s:T(c)});
+      sG.set(rr,4+i*2,{v:cntDay(d,g,'INSPEKSI'),f:'COUNTIFS(MASTER!$C:$C,'+colD+'$'+(r0+1)+',MASTER!$E:$E,$B'+rr+',MASTER!$J:$J,"INSPEKSI")',s:T(c)});
+    });
+  });
+  var firstH=r0+3,lastH=r0+2+N;
+  if(days.length)sG.cf.push({sqref:RX.addr(firstH,3)+':'+RX.addr(lastH,2+2*days.length),p0:cfPriority(1),rules:[{f:'AND(ISNUMBER('+RX.addr(firstH,3)+'),'+RX.addr(firstH,3)+'>0)',dxf:dxG}]});
+
+  // ── rakit paket ──
+  var files={},sheets=[sM,sT,sG],ct='',wbSheets='',wbRels='';
+  var imgRelCounter=0;
+  sheets.forEach(function(sh,i){
+    var n=i+1,rid=null;
+    if(sh.pics.length||sh.charts.length){
+      var rels=[];var dx=RX.drawingXml(sh,rels);
+      var dn=n;files['xl/drawings/drawing'+dn+'.xml']=dx;
+      files['xl/drawings/_rels/drawing'+dn+'.xml.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+rels.map(function(r){return '<Relationship Id="'+r.id+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/'+r.type+'" Target="'+r.target+'"/>';}).join('')+'</Relationships>';
+      files['xl/worksheets/_rels/sheet'+n+'.xml.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing'+dn+'.xml"/></Relationships>';
+      ct+='<Override PartName="/xl/drawings/drawing'+dn+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>';
+      rid='rId1';
+    }
+    files['xl/worksheets/sheet'+n+'.xml']=sh.xml(rid);
+    ct+='<Override PartName="/xl/worksheets/sheet'+n+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+    wbSheets+='<sheet name="'+sh.name+'" sheetId="'+n+'" r:id="rId'+n+'"/>';
+    wbRels+='<Relationship Id="rId'+n+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'+n+'.xml"/>';
+  });
+  chartList.forEach(function(c){files['xl/charts/'+c.file]=c.xml;ct+='<Override PartName="/xl/charts/'+c.file+'" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>';});
+  var bin={};media.forEach(function(m){bin['xl/media/'+m.file]=m.bytes;});
+  wbRels+='<Relationship Id="rId'+(sheets.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+  files['xl/styles.xml']=st.xml();
+  files['xl/workbook.xml']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView activeTab="2"/></bookViews><sheets>'+wbSheets+'</sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>';
+  files['xl/_rels/workbook.xml.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+wbRels+'</Relationships>';
+  files['_rels/.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  files['[Content_Types].xml']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+ct+'</Types>';
+  return {text:files,bin:bin};
+};
+RX.zip=function(pkg){
+  var z=new JSZip();
+  // [Content_Types].xml harus entri pertama
+  z.file('[Content_Types].xml',pkg.text['[Content_Types].xml']);
+  Object.keys(pkg.text).forEach(function(k){if(k!=='[Content_Types].xml')z.file(k,pkg.text[k]);});
+  Object.keys(pkg.bin).forEach(function(k){z.file(k,pkg.bin[k]);});
+  return z.generateAsync({type:'blob',compression:'DEFLATE',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+};
+
+// ════ UI EXPORT RESUME EXCEL ════
+function rxIsInsp(r){return !QUICK_TYPES[r.type]&&r.type!=='fatigue'&&r.type!=='speedgun';}
+function rxWeeks(y,m){ // m: 0-11 · blok Sabtu–Jumat; minggu 1 = tanggal 1 s/d Jumat pertama
+  var weeks=[],cur=new Date(y,m,1),n=1;
+  while(cur.getMonth()===m){
+    var ds=[];
+    do{ds.push(new Date(cur));cur=new Date(cur.getFullYear(),cur.getMonth(),cur.getDate()+1);}
+    while(cur.getMonth()===m&&cur.getDay()!==6);
+    weeks.push({n:n++,dates:ds});
+  }
+  return weeks;
+}
+function rxThumb(src,cb){
+  var im=new Image();
+  im.onload=function(){
+    try{
+      var k=Math.min(150/im.width,100/im.height,1),w=Math.max(1,Math.round(im.width*k)),h=Math.max(1,Math.round(im.height*k));
+      var cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,h);cx.drawImage(im,0,0,w,h);
+      var b=atob(cv.toDataURL('image/jpeg',0.6).split(',')[1]),u=new Uint8Array(b.length);
+      for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+      cb({bytes:u,w:w,h:h});
+    }catch(e){cb(null);}
+  };
+  im.onerror=function(){cb(null);};
+  im.src=src;
+}
+function rxOpenDialog(){
+  if(document.getElementById('rx-dlg'))return;
+  var now=new Date(),ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var site='SM SITE MSJ';try{site=localStorage.getItem('k3_rx_site')||site;}catch(e){}
+  var o=document.createElement('div');o.id='rx-dlg';
+  o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:flex;align-items:center;justify-content:center;padding:16px';
+  var L='display:block;font-size:11px;font-weight:600;color:#555;margin:10px 0 3px';
+  o.innerHTML='<div style="background:#fff;border-radius:12px;padding:22px 24px;width:380px;max-width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:15px;margin-bottom:2px">📊 Export Resume Excel</div>'
+    +'<div style="font-size:11px;color:#777;margin-bottom:6px">Sheet MASTER, TEMUAN, dan GRAFIK — per bulan, minggu Sabtu–Jumat.</div>'
+    +'<label style="'+L+'">Bulan</label><input type="month" id="rx-month" value="'+ym+'" class="fi" style="width:100%"/>'
+    +'<label style="'+L+'">Nama site / dept (untuk judul)</label><input id="rx-site" class="fi" style="width:100%" value="'+esc(site)+'"/>'
+    +'<label style="'+L+'">Kelompokkan baris berdasarkan</label><select id="rx-grp" class="fsel" style="width:100%"><option value="name">Nama pengawas</option><option value="dept">Departemen</option></select>'
+    +'<div style="display:flex;gap:10px"><div style="flex:1"><label style="'+L+'">Target INSPEKSI / minggu</label><input type="number" min="1" id="rx-ti" class="fi" style="width:100%" value="'+WK_TARGET+'"/></div>'
+    +'<div style="flex:1"><label style="'+L+'">Target IBPR / minggu</label><input type="number" min="0" id="rx-tb" class="fi" style="width:100%" value="0"/></div></div>'
+    +'<div style="font-size:10px;color:#888;margin-top:3px">IBPR tidak dicatat di INSPECTA — isi 0 bila tidak dipakai (grafik IBPR disembunyikan).</div>'
+    +'<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin-top:12px"><input type="checkbox" id="rx-ph" checked/> Sertakan foto kecil di sheet MASTER (butuh koneksi, file lebih besar)</label>'
+    +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button class="cc-btn" onclick="document.getElementById(\'rx-dlg\').remove()">Batal</button>'
+    +'<button class="btn-save" style="padding:8px 16px" onclick="rxRun()">📥 Buat Excel</button></div></div>';
+  document.body.appendChild(o);
+}
+var RX_BUSY=false;
+function rxRun(){
+  if(RX_BUSY)return;
+  if(!window.JSZip){showToast('⚠️ Library ZIP/Excel belum termuat — periksa koneksi lalu coba lagi','warning');return;}
+  var mv=(el('rx-month').value||'').split('-');if(mv.length<2){showToast('Pilih bulan dulu','warning');return;}
+  var y=+mv[0],m=+mv[1]-1;
+  var site=(el('rx-site').value||'').trim().toUpperCase()||'SITE';
+  var grp=el('rx-grp').value,ti=Math.max(1,parseInt(el('rx-ti').value,10)||1),tb=Math.max(0,parseInt(el('rx-tb').value,10)||0),usePh=el('rx-ph').checked;
+  try{localStorage.setItem('k3_rx_site',site);}catch(e){}
+  document.getElementById('rx-dlg').remove();
+  var from=new Date(y,m,1),to=new Date(y,m+1,1);
+  // pengawas aktif (tidak disembunyikan) — baris nama: roster + yang punya laporan bulan ini
+  var hidden=getRosterData().hidden,people=wkBuildPeople(getReports()).filter(function(p){return hidden.indexOf(p.key)<0;});
+  var items=[],groupSet={};
+  people.forEach(function(p){
+    var rs=p.reports.filter(function(r){var t=new Date(r.timestamp);return t>=from&&t<to;});
+    if(grp==='name'){
+      if(!rs.length&&!p.manual)return;
+      var g=p.name||p.id||'—';groupSet[g]=1;
+      rs.forEach(function(r){items.push({r:r,g:g});});
+    }else{
+      rs.forEach(function(r){var g=(r.userDept||'—').toUpperCase();groupSet[g]=1;items.push({r:r,g:g});});
+    }
+  });
+  var groups=Object.keys(groupSet).sort(function(a,b){return a.localeCompare(b);});
+  if(!groups.length){showToast('Tidak ada data pengawas pada bulan itu','warning');return;}
+  items.sort(function(a,b){return new Date(a.r.timestamp)-new Date(b.r.timestamp);});
+  var weeks=rxWeeks(y,m);
+  function weekOf(d){for(var i=0;i<weeks.length;i++)for(var j=0;j<weeks[i].dates.length;j++)if(weeks[i].dates[j].getDate()===d.getDate())return weeks[i].n;return 1;}
+  var capas=getCAPAs();
+  var rows=[],temuan=[];
+  items.forEach(function(it){
+    var r=it.r,d=new Date(r.timestamp),day=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+    if(rxIsInsp(r)){
+      rows.push({date:day,week:weekOf(d),group:it.g,loc:r.location||r.typeName||'-',photo:null,_r:r});
+      ((r.extra&&r.extra.ngDetails)||[]).forEach(function(ng){
+        var k=(ng.item||'—')+(ng.desc&&String(ng.desc).trim()&&ng.desc!==ng.item?' — '+ng.desc:'');
+        temuan.push({date:day,loc:r.typeName||r.location||'-',ket:k,pic:ng.pic||''});
+      });
+    }else if(['hazard','nearmiss','stopwork'].indexOf(r.type)>=0){
+      var c=capas['CAPA-'+r.id];
+      temuan.push({date:day,loc:r.location||r.typeName||'-',ket:'['+(QUICK_TYPES[r.type]||r.type)+'] '+(r.notes||'—'),pic:(c&&c.pic)||(r.capa&&r.capa.pic)||''});
+    }
+  });
+  if(!rows.length&&!temuan.length){showToast('Tidak ada laporan pada bulan itu','warning');return;}
+  var allDates=[];for(var dd=new Date(from);dd<to;dd=new Date(dd.getFullYear(),dd.getMonth(),dd.getDate()+1))allDates.push(new Date(dd));
+  var MN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  var model={site:site,monthLabel:MN[m]+' '+y,tgtInsp:ti,tgtIbpr:tb,weeks:weeks,groups:groups,rows:rows,temuan:temuan,allDates:allDates};
+  RX_BUSY=true;WK_PDF_CANCEL=false;
+  var k=0,noPhoto=0;
+  function finish(){
+    wkPdfOverlay(true,{h:'📊 Membuat file Excel…',t:'Mengemas sheet MASTER, TEMUAN, GRAFIK…',pct:100});
+    rows.forEach(function(r){delete r._r;});
+    try{
+      RX.zip(RX.build(model)).then(function(b){
+        wkPdfOverlay(false);RX_BUSY=false;
+        wkDownloadBlob(b,'Resume_IBPR_Inspeksi_'+y+'-'+String(m+1).padStart(2,'0')+'.xlsx');
+        showToast('✅ Excel dibuat: '+rows.length+' inspeksi, '+temuan.length+' temuan'+(noPhoto&&usePh?' ('+noPhoto+' tanpa foto)':''),'success');
+      }).catch(function(e){wkPdfOverlay(false);RX_BUSY=false;showToast('❌ Gagal membuat Excel: '+e.message,'error');});
+    }catch(e){wkPdfOverlay(false);RX_BUSY=false;console.error(e);showToast('❌ Gagal membuat Excel: '+e.message,'error');}
+  }
+  function step(){
+    if(WK_PDF_CANCEL){wkPdfOverlay(false);RX_BUSY=false;showToast('Dibatalkan');return;}
+    if(!usePh||k>=rows.length)return finish();
+    var row=rows[k++];
+    wkPdfOverlay(true,{h:'📊 Menyiapkan foto…',t:'Foto '+k+' dari '+rows.length+'<br><b>'+esc(row.group)+'</b>',pct:Math.round((k-1)/rows.length*100)});
+    function pick(){
+      var r=hydrated(row._r),src=(r.photos&&r.photos.filter(isDataUrl)[0])||null;
+      if(!src&&r.extra&&r.extra.ngDetails){for(var i=0;i<r.extra.ngDetails.length&&!src;i++){var ph=r.extra.ngDetails[i].photos;if(ph)src=ph.filter(isDataUrl)[0]||null;}}
+      if(!src){noPhoto++;return setTimeout(step,0);}
+      rxThumb(src,function(t){row.photo=t;if(!t)noPhoto++;setTimeout(step,0);});
+    }
+    if(row._r.mediaSplit&&!MEDIA_CACHE[row._r.id])loadMedia(row._r.id,function(){pick();});else pick();
+  }
+  step();
 }
 </script>
 </body>
