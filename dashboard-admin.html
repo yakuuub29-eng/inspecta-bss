@@ -6103,15 +6103,14 @@ RX.build=function(model){
   var sub={i:1,sz:9,color:P.muted,fill:P.soft,h:'left',indent:1};
 
   // ═══ MASTER ═══
-  sM.width(1,1,2);sM.width(2,2,5);sM.width(3,3,12.5);sM.width(4,4,9);sM.width(5,5,22);sM.width(6,6,20);sM.width(7,7,24);sM.width(8,8,24);sM.width(9,9,9);sM.width(10,10,11);
-  sM.merge(2,2,3,10,'RESUME IBPR DAN INSPEKSI PENGAWAS '+model.site,title);sM.rowH[2]=20;sM.rowH[3]=20;
+  sM.width(1,1,2);sM.width(2,2,5);sM.width(3,3,12.5);sM.width(4,4,9);sM.width(5,5,22);sM.width(6,6,20);sM.width(7,7,34);sM.width(8,8,34);sM.width(9,9,9);sM.width(10,10,11);
+  sM.merge(2,2,3,10,model.titleM||('RESUME IBPR DAN INSPEKSI PENGAWAS '+model.site),title);sM.rowH[2]=20;sM.rowH[3]=20;
   ['NO','TANGGAL','WEEK','PENGAWAS','LOKASI','IBPR','INSPEKSI','IBPR','INSPEKSI'].forEach(function(h,i){
     var sp=(i>=7)?{b:1,sz:8,color:'FFFFFF',fill:P.muted,h:'center',border:'all',bcolor:P.ink2}:hdr;
     sM.put(4,2+i,h,sp);
   });
   sM.rowH[4]=22;sM.freezeRow=4;
-  var PW=118,PH=78; // px kotak foto
-  var media=[]; // {file,bytes}
+    var media=[]; // {file,bytes}
   var rows=model.rows;
   var nSpare=10,totalRows=rows.length+nSpare;
   for(var i=0;i<totalRows;i++){
@@ -6124,13 +6123,19 @@ RX.build=function(model){
       sM.set(r,3,{v:RX.serial(row.date),s:T(Object.assign({fmt:fmtD},center))});
       sM.put(r,4,'WEEK'+row.week,center);sM.put(r,5,row.group,left);sM.put(r,6,row.loc||'-',left);
       sM.blank(r,7,center);sM.blank(r,8,center);
-      sM.blank(r,9,Object.assign({sz:8,color:P.muted},center));sM.put(r,10,'INSPEKSI',Object.assign({sz:8,color:P.muted},center));
-      if(row.photo){
-        sM.rowH[r]=PH*0.75+8;
-        var fn='img'+(media.length+1)+'.jpeg';media.push({file:fn,bytes:row.photo.bytes});
-        var w=row.photo.w,h=row.photo.h,k=Math.min(PW/w,PH/h),pw=Math.round(w*k),ph=Math.round(h*k);
-        // lebar kolom H 24 ≈ 173px; pusatkan foto
-        sM.pics.push({file:fn,col:7,row:r-1,dx:Math.round((173-pw)/2*RX.EMU),dy:Math.round(((PH+10)-ph)/2*RX.EMU),cx:pw*RX.EMU,cy:ph*RX.EMU,descr:row.group+' '+row.loc});
+      sM.put(r,9,row.ibpr?'IBPR':'',Object.assign({sz:8,color:P.muted},center));sM.put(r,10,'INSPEKSI',Object.assign({sz:8,color:P.muted},center));
+      // gambar: IBPR (kolom G, hanya bila ada NC) & INSPEKSI (kolom H) — screenshot form
+      var BW=212,BH=290,COLPX=243,maxH=0,imgs=[[row.imgB,6],[row.imgI,7]];
+      imgs.forEach(function(it){
+        var im=it[0];if(!im)return;
+        var k=Math.min(BW/im.w,BH/im.h),pw=Math.round(im.w*k),ph=Math.round(im.h*k);maxH=Math.max(maxH,ph);
+        var fn='img'+(media.length+1)+'.jpeg';media.push({file:fn,bytes:im.bytes});
+        im._pw=pw;im._ph=ph;im._fn=fn;
+      });
+      if(maxH){
+        var rowPx=maxH+12;sM.rowH[r]=Math.round(rowPx*0.75);
+        imgs.forEach(function(it){var im=it[0];if(!im)return;
+          sM.pics.push({file:im._fn,col:it[1],row:r-1,dx:Math.round((COLPX-im._pw)/2*RX.EMU),dy:Math.round((rowPx-im._ph)/2*RX.EMU),cx:im._pw*RX.EMU,cy:im._ph*RX.EMU,descr:row.group+' '+row.loc+(it[1]===6?' IBPR':' INSPEKSI')});});
       }else sM.rowH[r]=26;
     }else{
       for(var c=3;c<=10;c++)sM.blank(r,c,(c===3)?Object.assign({fmt:fmtD},center):center);
@@ -6141,7 +6146,7 @@ RX.build=function(model){
 
   // ═══ TEMUAN ═══
   sT.width(1,1,2);sT.width(2,2,13);sT.width(3,3,24);sT.width(4,4,58);sT.width(5,5,16);
-  sT.merge(2,2,3,5,'TEMUAN IBPR DAN INSPEKSI '+model.site,title);sT.rowH[2]=20;sT.rowH[3]=20;
+  sT.merge(2,2,3,5,model.titleT||('TEMUAN IBPR DAN INSPEKSI '+model.site),title);sT.rowH[2]=20;sT.rowH[3]=20;
   ['Tanggal','Lokasi','Keterangan','PIC'].forEach(function(h,i){sT.put(4,2+i,h,hdr);});
   sT.rowH[4]=22;sT.freezeRow=4;
   var tem=model.temuan,nT=Math.max(tem.length,1)+5;
@@ -6162,11 +6167,11 @@ RX.build=function(model){
   var G=model.groups,N=G.length;
   sG.width(1,1,2);sG.width(2,2,22);sG.width(3,15,10.5);sG.width(16,70,8.5);
   var lastCol=15;
-  sG.merge(2,2,2,lastCol,'RESUME KETERCAPAIAN IBPR DAN INSPEKSI — '+model.site,title);sG.rowH[2]=26;
+  sG.merge(2,2,2,lastCol,model.titleG||('RESUME KETERCAPAIAN IBPR DAN INSPEKSI — '+model.site),title);sG.rowH[2]=26;
   sG.merge(3,2,3,lastCol,'Periode '+model.monthLabel+'  ·  Minggu pelaporan Sabtu–Jumat  ·  Target per pengawas per minggu: IBPR '+model.tgtIbpr+', Inspeksi '+model.tgtInsp,sub);sG.rowH[3]=18;
   // hitung
-  function cnt(week,g,type){return rows.filter(function(x){return x.week===week&&x.group===g&&type==='INSPEKSI';}).length;}
-  function cntDay(d,g,type){var s=RX.serial(d);return rows.filter(function(x){return RX.serial(x.date)===s&&x.group===g&&type==='INSPEKSI';}).length;}
+  function cnt(week,g,type){return rows.filter(function(x){return x.week===week&&x.group===g&&(type==='IBPR'?x.ibpr:true);}).length;}
+  function cntDay(d,g,type){var s=RX.serial(d);return rows.filter(function(x){return RX.serial(x.date)===s&&x.group===g&&(type==='IBPR'?x.ibpr:true);}).length;}
   var cfRows={st:[],ach:[]}; // sqref list
   var dxG=st.dxf('166534','DCFCE7',true),dxR=st.dxf('991B1B','FEE2E2',true),dxA=st.dxf('92400E','FEF3C7',true),dxS=st.dxf('4B5563','E5E7EB',true);
   var r0=5,chartNo=0,chartList=[];
@@ -6186,7 +6191,7 @@ RX.build=function(model){
       var rr=first+gi,z=(gi%2)?P.zebra:'FFFFFF',base={border:'all',fill:z,v:'center'};
       var c=Object.assign({h:'center'},base);
       sG.put(rr,2,g,Object.assign({h:'left',indent:1,b:1},base));
-      var ai=0,as=cnt(wk.n,g,'INSPEKSI');
+      var ai=cnt(wk.n,g,'IBPR'),as=cnt(wk.n,g,'INSPEKSI');
       var qI='MASTER!$D:$D,"WEEK'+wk.n+'",MASTER!$E:$E,$B'+rr;
       sG.put(rr,3,model.tgtIbpr,c);
       sG.set(rr,4,{v:ai,f:'COUNTIFS('+qI+',MASTER!$I:$I,"IBPR")',s:T(c)});
@@ -6196,7 +6201,7 @@ RX.build=function(model){
       sG.set(rr,8,{v:model.tgtInsp?as/model.tgtInsp:'',f:'IF(F'+rr+'=0,"",G'+rr+'/F'+rr+')',s:T(Object.assign({fmt:'0%',b:1},c))});
       wk.dates.forEach(function(d,i){
         var colL=RX.col(9+i);
-        var has=cntDay(d,g,'INSPEKSI')>0;
+        var has=cntDay(d,g,'INSPEKSI')+cntDay(d,g,'IBPR')>0;
         sG.set(rr,9+i,{v:has?'CLOSE':'KOSONG',f:'IF(COUNTIFS(MASTER!$C:$C,'+colL+'$'+(r0+2)+',MASTER!$E:$E,$B'+rr+',MASTER!$J:$J,"INSPEKSI")+COUNTIFS(MASTER!$C:$C,'+colL+'$'+(r0+2)+',MASTER!$E:$E,$B'+rr+',MASTER!$I:$I,"IBPR")>0,"CLOSE","KOSONG")',s:T(Object.assign({sz:8,b:1},c))});
       });
       tot.pi+=model.tgtIbpr;tot.ai+=ai;tot.ps+=model.tgtInsp;tot.as+=as;
@@ -6230,7 +6235,7 @@ RX.build=function(model){
     }
     var inspVals=G.map(function(g){return cnt(wk.n,g,'INSPEKSI');});
     if(model.tgtIbpr>0){
-      mk('RESUME IBPR — WEEK'+wk.n,3,4,1,7,G.map(function(){return model.tgtIbpr;}),G.map(function(){return 0;}));
+      mk('RESUME IBPR — WEEK'+wk.n,3,4,1,7,G.map(function(){return model.tgtIbpr;}),G.map(function(g){return cnt(wk.n,g,'IBPR');}));
       mk('RESUME INSPEKSI — WEEK'+wk.n,6,7,7,15,G.map(function(){return model.tgtInsp;}),inspVals);
     }else{
       // target IBPR 0 (IBPR tidak dicatat di INSPECTA) → grafik inspeksi saja, selebar tabel
@@ -6254,7 +6259,7 @@ RX.build=function(model){
     sG.put(rr,2,g,{border:'all',fill:z,v:'center',h:'left',indent:1,b:1});
     days.forEach(function(d,i){
       var colD=RX.col(3+i*2);
-      sG.set(rr,3+i*2,{v:0,f:'COUNTIFS(MASTER!$C:$C,'+colD+'$'+(r0+1)+',MASTER!$E:$E,$B'+rr+',MASTER!$I:$I,"IBPR")',s:T(c)});
+      sG.set(rr,3+i*2,{v:cntDay(d,g,'IBPR'),f:'COUNTIFS(MASTER!$C:$C,'+colD+'$'+(r0+1)+',MASTER!$E:$E,$B'+rr+',MASTER!$I:$I,"IBPR")',s:T(c)});
       sG.set(rr,4+i*2,{v:cntDay(d,g,'INSPEKSI'),f:'COUNTIFS(MASTER!$C:$C,'+colD+'$'+(r0+1)+',MASTER!$E:$E,$B'+rr+',MASTER!$J:$J,"INSPEKSI")',s:T(c)});
     });
   });
@@ -6298,8 +6303,128 @@ RX.zip=function(pkg){
   return z.generateAsync({type:'blob',compression:'DEFLATE',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 };
 
+// ════ RENDER "SCREENSHOT" FORM INSPEKSI & CAPA (digambar di canvas, tanpa foto kegiatan) ════
+var RXF={LW:320,S:1.5,FONT:'"Segoe UI",Arial,sans-serif'};
+RXF.wrap=function(ctx,text,maxW,maxLines){
+  var words=String(text==null?'':text).replace(/\s+/g,' ').trim().split(' '),lines=[],cur='';
+  for(var i=0;i<words.length;i++){
+    var t=cur?cur+' '+words[i]:words[i];
+    if(ctx.measureText(t).width<=maxW||!cur)cur=t;else{lines.push(cur);cur=words[i];}
+  }
+  if(cur)lines.push(cur);
+  if(maxLines&&lines.length>maxLines){
+    lines=lines.slice(0,maxLines);var l=lines[maxLines-1];
+    while(l.length>1&&ctx.measureText(l+'…').width>maxW)l=l.slice(0,-1);
+    lines[maxLines-1]=l+'…';
+  }
+  return lines.length?lines:['—'];
+};
+RXF.fit=function(ctx,t,maxW){t=String(t==null?'':t);if(ctx.measureText(t).width<=maxW)return t;while(t.length>1&&ctx.measureText(t+'…').width>maxW)t=t.slice(0,-1);return t+'…';};
+RXF.canvas=function(drawFn){
+  var LW=RXF.LW,S=RXF.S,cv=document.createElement('canvas');cv.width=LW*S;cv.height=1500*S;
+  var ctx=cv.getContext('2d');ctx.scale(S,S);ctx.fillStyle='#fff';ctx.fillRect(0,0,LW,1500);
+  var H=Math.ceil(drawFn(ctx,LW))+8;
+  var out=document.createElement('canvas');out.width=LW*S;out.height=H*S;
+  var o=out.getContext('2d');o.fillStyle='#fff';o.fillRect(0,0,out.width,out.height);o.drawImage(cv,0,0,LW*S,H*S,0,0,LW*S,H*S);
+  o.strokeStyle='#D1D5DB';o.lineWidth=1;o.strokeRect(.5,.5,out.width-1,out.height-1);
+  var b=atob(out.toDataURL('image/jpeg',0.72).split(',')[1]),u=new Uint8Array(b.length);
+  for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+  return {bytes:u,w:out.width,h:out.height};
+};
+RXF.header=function(ctx,LW,title,sub,color){
+  ctx.fillStyle=color||'#1F2937';ctx.fillRect(0,0,LW,48);
+  ctx.fillStyle='#F5C400';ctx.fillRect(0,48,LW,3);
+  ctx.textBaseline='alphabetic';ctx.fillStyle='#F5C400';ctx.font='bold 13px '+RXF.FONT;
+  ctx.fillText(RXF.fit(ctx,String(title||'').toUpperCase(),LW-20),10,21);
+  ctx.fillStyle='#E5E7EB';ctx.font='10px '+RXF.FONT;ctx.fillText(RXF.fit(ctx,sub||'',LW-20),10,38);
+  return 60;
+};
+RXF.info=function(ctx,LW,y,rows){
+  rows.forEach(function(rw){
+    ctx.font='9.5px '+RXF.FONT;ctx.fillStyle='#6B7280';ctx.fillText(rw[0],10,y);
+    ctx.font='bold 10.5px '+RXF.FONT;ctx.fillStyle='#111827';ctx.fillText(RXF.fit(ctx,rw[1],LW-96),86,y);y+=16;
+  });
+  return y;
+};
+RXF.band=function(ctx,LW,y,txt,color){
+  ctx.fillStyle=color||'#F3F4F6';ctx.fillRect(0,y,LW,20);
+  ctx.fillStyle=color?'#fff':'#374151';ctx.font='bold 10px '+RXF.FONT;ctx.fillText(txt,10,y+14);return y+26;
+};
+RXF.chip=function(ctx,x,y,txt,fg,bg){
+  ctx.font='bold 9px '+RXF.FONT;var w=ctx.measureText(txt).width+12;
+  ctx.fillStyle=bg;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y-10,w,15,7);else ctx.rect(x,y-10,w,15);ctx.fill();
+  ctx.fillStyle=fg;ctx.fillText(txt,x+6,y+1);return w;
+};
+RXF.when=function(r){var d=new Date(r.timestamp);return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});};
+// Form inspeksi: info + hasil checklist per seksi (OK/NC/N/A + bar kepatuhan)
+RXF.insp=function(r){
+  return RXF.canvas(function(ctx,LW){
+    var y=RXF.header(ctx,LW,r.typeName||'Inspeksi',(r.noTemuan||'—')+'  ·  FORM INSPEKSI')+4;
+    y=RXF.info(ctx,LW,y+10,[['Inspektor',r.userName||r.reporter||'—'],['Departemen',r.userDept||'—'],['Tanggal & jam',RXF.when(r)],['Lokasi',r.location||'—'],['Shift',r.userShift||'—']]);
+    y=RXF.band(ctx,LW,y+2,'HASIL CHECKLIST')+6;
+    var CR=r.extra&&r.extra.CR?Object.values(r.extra.CR):[],tok=0,tng=0,tna=0,tall=0;
+    if(!CR.length){ctx.font='italic 10px '+RXF.FONT;ctx.fillStyle='#6B7280';ctx.fillText('Rincian checklist tidak tersimpan pada laporan ini.',10,y+8);y+=22;}
+    CR.forEach(function(s,i){
+      tok+=s.ok||0;tng+=s.ng||0;tna+=s.na||0;tall+=s.total||0;
+      if(i>=14){if(i===14){ctx.font='italic 9.5px '+RXF.FONT;ctx.fillStyle='#6B7280';ctx.fillText('+ '+(CR.length-14)+' seksi lainnya',10,y+4);y+=16;}return;}
+      var pct=s.total?Math.round(((s.ok||0)+(s.na||0))/s.total*100):0;
+      ctx.font='bold 10px '+RXF.FONT;ctx.fillStyle='#111827';ctx.fillText(RXF.fit(ctx,s.title||'—',LW-20),10,y+2);
+      ctx.font='9.5px '+RXF.FONT;var x=10;
+      [['OK '+(s.ok||0),'#166534'],['NC '+(s.ng||0),(s.ng?'#B91C1C':'#6B7280')],['N/A '+(s.na||0),'#6B7280']].forEach(function(c){ctx.fillStyle=c[1];ctx.fillText(c[0],x,y+16);x+=ctx.measureText(c[0]).width+10;});
+      ctx.fillStyle='#E5E7EB';ctx.fillRect(160,y+8,110,6);ctx.fillStyle=s.ng?'#DC2626':'#16A34A';ctx.fillRect(160,y+8,110*pct/100,6);
+      ctx.fillStyle='#374151';ctx.font='bold 9.5px '+RXF.FONT;ctx.fillText(pct+'%',277,y+15);
+      ctx.strokeStyle='#F3F4F6';ctx.beginPath();ctx.moveTo(10,y+22);ctx.lineTo(LW-10,y+22);ctx.stroke();
+      y+=27;
+    });
+    y+=4;ctx.fillStyle='#F9FAFB';ctx.fillRect(0,y,LW,34);
+    ctx.font='bold 10px '+RXF.FONT;ctx.fillStyle='#111827';
+    ctx.fillText('Total: OK '+tok+' · NC '+tng+' · N/A '+tna+(tall?' · '+Math.round((tok+tna)/tall*100)+'%':''),10,y+14);
+    var nc=r.status==='NC'||tng>0;
+    RXF.chip(ctx,10,y+29,nc?'NON-CONFORM':'CONFORM',nc?'#991B1B':'#166534',nc?'#FEE2E2':'#DCFCE7');
+    return y+36;
+  });
+};
+// Form CAPA: fokus temuan NC → risiko, regulasi, tindakan, PIC, due date, status CAPA
+RXF.capa=function(r,capa){
+  return RXF.canvas(function(ctx,LW){
+    var ngs=(r.extra&&r.extra.ngDetails)||[];
+    var y=RXF.header(ctx,LW,'Temuan NC & CAPA',(r.noTemuan||'—')+'  ·  '+(r.typeName||''),'#7F1D1D')+4;
+    y=RXF.info(ctx,LW,y+10,[['Tanggal & jam',RXF.when(r)],['Lokasi',r.location||'—'],['Inspektor',r.userName||r.reporter||'—']]);
+    y=RXF.band(ctx,LW,y+2,'TEMUAN NON-CONFORM ('+ngs.length+')  ·  CAPA','#B91C1C');
+    var MAX=2;
+    if(!ngs.length){ctx.font='10px '+RXF.FONT;ctx.fillStyle='#374151';RXF.wrap(ctx,r.notes||'Temuan NC (rincian tidak tersimpan).',LW-20,3).forEach(function(l){ctx.fillText(l,10,y+4);y+=14;});}
+    ngs.slice(0,MAX).forEach(function(ng,i){
+      var top=y;
+      ctx.font='bold 10.5px '+RXF.FONT;ctx.fillStyle='#991B1B';ctx.fillText('Temuan #'+(i+1),12,y+4);
+      var rk=ng.riskCategory||ng.risk;if(rk)RXF.chip(ctx,92,y+4,String(rk).toUpperCase(),'#92400E','#FEF3C7');
+      y+=14;
+      ctx.font='bold 10px '+RXF.FONT;ctx.fillStyle='#111827';RXF.wrap(ctx,ng.item,LW-26,3).forEach(function(l){ctx.fillText(l,12,y+4);y+=13;});
+      var cp=capa||{};
+      var fields=[['Regulasi',ng.reg],['Tindakan segera',ng.immediateAction||cp.immediateAction],['Perbaikan (CAPA)',ng.action||cp.action||cp.description],['PIC',(ng.pic||cp.pic)],['Due date',(ng.dueDate||cp.dueDate)]];
+      fields.forEach(function(f){
+        ctx.font='9px '+RXF.FONT;ctx.fillStyle='#6B7280';ctx.fillText(f[0],12,y+5);
+        ctx.font='10px '+RXF.FONT;ctx.fillStyle='#111827';
+        var lines=RXF.wrap(ctx,f[1]||'—',LW-114,f[0]==='PIC'||f[0]==='Due date'?1:2);
+        lines.forEach(function(l,li){ctx.fillText(l,102,y+5+li*12);});
+        y+=Math.max(14,lines.length*12+3);
+      });
+      ctx.fillStyle='#DC2626';ctx.fillRect(4,top-6,3,y-top+4);
+      ctx.strokeStyle='#F3F4F6';ctx.beginPath();ctx.moveTo(10,y+2);ctx.lineTo(LW-10,y+2);ctx.stroke();y+=10;
+    });
+    if(ngs.length>MAX){ctx.font='italic 9.5px '+RXF.FONT;ctx.fillStyle='#6B7280';ctx.fillText('+ '+(ngs.length-MAX)+' temuan lainnya (lihat sheet TEMUAN)',10,y+4);y+=16;}
+    var st=(capa&&capa.status)||(r.capa&&r.capa.status)||'Open';
+    ctx.fillStyle='#F9FAFB';ctx.fillRect(0,y,LW,28);ctx.font='bold 10px '+RXF.FONT;ctx.fillStyle='#111827';ctx.fillText('Status CAPA:',10,y+18);
+    var closed=/close/i.test(st);RXF.chip(ctx,82,y+19,String(st).toUpperCase(),closed?'#166534':'#991B1B',closed?'#DCFCE7':'#FEE2E2');
+    return y+30;
+  });
+};
+
 // ════ UI EXPORT RESUME EXCEL ════
 function rxIsInsp(r){return !QUICK_TYPES[r.type]&&r.type!=='fatigue'&&r.type!=='speedgun';}
+function rxIsNC(r){return r.status==='NC'||!!(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length);}
+var RX_DEPT_LABEL={SM:'LOGISTIK'};
+function rxDeptLabel(d){return RX_DEPT_LABEL[String(d).toUpperCase()]||String(d).toUpperCase();}
+function rxDeptKey(r){return String(r.userDept||'—').trim().toUpperCase()||'—';}
 function rxWeeks(y,m){ // m: 0-11 · blok Sabtu–Jumat; minggu 1 = tanggal 1 s/d Jumat pertama
   var weeks=[],cur=new Date(y,m,1),n=1;
   while(cur.getMonth()===m){
@@ -6310,41 +6435,39 @@ function rxWeeks(y,m){ // m: 0-11 · blok Sabtu–Jumat; minggu 1 = tanggal 1 s/
   }
   return weeks;
 }
-function rxThumb(src,cb){
-  var im=new Image();
-  im.onload=function(){
-    try{
-      var k=Math.min(150/im.width,100/im.height,1),w=Math.max(1,Math.round(im.width*k)),h=Math.max(1,Math.round(im.height*k));
-      var cv=document.createElement('canvas');cv.width=w;cv.height=h;
-      var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,h);cx.drawImage(im,0,0,w,h);
-      var b=atob(cv.toDataURL('image/jpeg',0.6).split(',')[1]),u=new Uint8Array(b.length);
-      for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
-      cb({bytes:u,w:w,h:h});
-    }catch(e){cb(null);}
-  };
-  im.onerror=function(){cb(null);};
-  im.src=src;
-}
 function rxOpenDialog(){
   if(document.getElementById('rx-dlg'))return;
   var now=new Date(),ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-  var site='SM SITE MSJ';try{site=localStorage.getItem('k3_rx_site')||site;}catch(e){}
+  var site='MSJ';try{site=localStorage.getItem('k3_rx_site')||site;}catch(e){}
+  var lastDept='';try{lastDept=localStorage.getItem('k3_rx_dept')||'';}catch(e){}
+  var seen={};getReports().forEach(function(r){seen[rxDeptKey(r)]=1;});
+  Object.keys(RX_DEPT_LABEL).forEach(function(k){seen[k]=1;});
+  var depts=Object.keys(seen).sort(function(a,b){return a.localeCompare(b);});
+  var sel=depts.indexOf(lastDept)>=0?lastDept:(depts.indexOf('SM')>=0?'SM':depts[0]);
   var o=document.createElement('div');o.id='rx-dlg';
   o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:flex;align-items:center;justify-content:center;padding:16px';
   var L='display:block;font-size:11px;font-weight:600;color:#555;margin:10px 0 3px';
-  o.innerHTML='<div style="background:#fff;border-radius:12px;padding:22px 24px;width:380px;max-width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+  o.innerHTML='<div style="background:#fff;border-radius:12px;padding:22px 24px;width:400px;max-width:100%;max-height:92vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
     +'<div style="font-weight:700;font-size:15px;margin-bottom:2px">📊 Export Resume Excel</div>'
-    +'<div style="font-size:11px;color:#777;margin-bottom:6px">Sheet MASTER, TEMUAN, dan GRAFIK — per bulan, minggu Sabtu–Jumat.</div>'
-    +'<label style="'+L+'">Bulan</label><input type="month" id="rx-month" value="'+ym+'" class="fi" style="width:100%"/>'
-    +'<label style="'+L+'">Nama site / dept (untuk judul)</label><input id="rx-site" class="fi" style="width:100%" value="'+esc(site)+'"/>'
-    +'<label style="'+L+'">Kelompokkan baris berdasarkan</label><select id="rx-grp" class="fsel" style="width:100%"><option value="name">Nama pengawas</option><option value="dept">Departemen</option></select>'
+    +'<div style="font-size:11px;color:#777;margin-bottom:6px">Sheet MASTER, TEMUAN, dan GRAFIK — per departemen, per bulan, minggu Sabtu–Jumat.</div>'
+    +'<label style="'+L+'">Departemen yang diresume</label><select id="rx-dept" class="fsel" style="width:100%" onchange="rxDeptChanged()">'
+    +depts.map(function(d){return '<option value="'+esc(d)+'"'+(d===sel?' selected':'')+'>'+esc(d)+(RX_DEPT_LABEL[d]?' ('+RX_DEPT_LABEL[d]+')':'')+'</option>';}).join('')
+    +'<option value="*">SEMUA DEPARTEMEN</option></select>'
+    +'<label style="'+L+'">Nama dept di judul</label><input id="rx-label" class="fi" style="width:100%" value="'+esc(rxDeptLabel(sel))+'"/>'
+    +'<div style="display:flex;gap:10px"><div style="flex:1"><label style="'+L+'">Bulan</label><input type="month" id="rx-month" value="'+ym+'" class="fi" style="width:100%"/></div>'
+    +'<div style="flex:1"><label style="'+L+'">Site</label><input id="rx-site" class="fi" style="width:100%" value="'+esc(site)+'"/></div></div>'
+    +'<label style="'+L+'">Baris pada GRAFIK</label><select id="rx-grp" class="fsel" style="width:100%"><option value="dept">Per departemen (1 baris)</option><option value="name">Per pengawas dalam dept</option></select>'
     +'<div style="display:flex;gap:10px"><div style="flex:1"><label style="'+L+'">Target INSPEKSI / minggu</label><input type="number" min="1" id="rx-ti" class="fi" style="width:100%" value="'+WK_TARGET+'"/></div>'
-    +'<div style="flex:1"><label style="'+L+'">Target IBPR / minggu</label><input type="number" min="0" id="rx-tb" class="fi" style="width:100%" value="0"/></div></div>'
-    +'<div style="font-size:10px;color:#888;margin-top:3px">IBPR tidak dicatat di INSPECTA — isi 0 bila tidak dipakai (grafik IBPR disembunyikan).</div>'
-    +'<label style="display:flex;gap:6px;align-items:center;font-size:12px;margin-top:12px"><input type="checkbox" id="rx-ph" checked/> Sertakan foto kecil di sheet MASTER (butuh koneksi, file lebih besar)</label>'
+    +'<div style="flex:1"><label style="'+L+'">Target IBPR / minggu</label><input type="number" min="0" id="rx-tb" class="fi" style="width:100%" value="'+WK_TARGET+'"/></div></div>'
+    +'<div style="font-size:10px;color:#888;margin-top:3px">IBPR terisi otomatis dari inspeksi yang punya temuan NC. Isi target IBPR 0 untuk menyembunyikan grafik IBPR.</div>'
+    +'<label style="display:flex;gap:6px;align-items:flex-start;font-size:12px;margin-top:12px"><input type="checkbox" id="rx-ph" checked style="margin-top:2px"/><span>Sertakan screenshot form di sheet MASTER (kolom INSPEKSI = form inspeksi, kolom IBPR = form temuan NC &amp; CAPA)</span></label>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button class="cc-btn" onclick="document.getElementById(\'rx-dlg\').remove()">Batal</button>'
     +'<button class="btn-save" style="padding:8px 16px" onclick="rxRun()">📥 Buat Excel</button></div></div>';
   document.body.appendChild(o);
+}
+function rxDeptChanged(){
+  var v=el('rx-dept').value;
+  el('rx-label').value=v==='*'?'SEMUA DEPT':rxDeptLabel(v);
 }
 var RX_BUSY=false;
 function rxRun(){
@@ -6352,26 +6475,25 @@ function rxRun(){
   if(!window.JSZip){showToast('⚠️ Library ZIP/Excel belum termuat — periksa koneksi lalu coba lagi','warning');return;}
   var mv=(el('rx-month').value||'').split('-');if(mv.length<2){showToast('Pilih bulan dulu','warning');return;}
   var y=+mv[0],m=+mv[1]-1;
-  var site=(el('rx-site').value||'').trim().toUpperCase()||'SITE';
-  var grp=el('rx-grp').value,ti=Math.max(1,parseInt(el('rx-ti').value,10)||1),tb=Math.max(0,parseInt(el('rx-tb').value,10)||0),usePh=el('rx-ph').checked;
-  try{localStorage.setItem('k3_rx_site',site);}catch(e){}
+  var dept=el('rx-dept').value,label=(el('rx-label').value||'').trim().toUpperCase()||(dept==='*'?'SEMUA DEPT':dept);
+  var site=(el('rx-site').value||'').trim().toUpperCase()||'MSJ';
+  var grp=el('rx-grp').value,ti=Math.max(1,parseInt(el('rx-ti').value,10)||1),tb=Math.max(0,parseInt(el('rx-tb').value,10)||0),useImg=el('rx-ph').checked;
+  try{localStorage.setItem('k3_rx_site',site);localStorage.setItem('k3_rx_dept',dept);}catch(e){}
   document.getElementById('rx-dlg').remove();
   var from=new Date(y,m,1),to=new Date(y,m+1,1);
-  // pengawas aktif (tidak disembunyikan) — baris nama: roster + yang punya laporan bulan ini
   var hidden=getRosterData().hidden,people=wkBuildPeople(getReports()).filter(function(p){return hidden.indexOf(p.key)<0;});
   var items=[],groupSet={};
+  if(dept!=='*'&&grp==='dept')groupSet[label]=1; // dept dipilih → barisnya selalu ada, walau belum ada laporan
   people.forEach(function(p){
-    var rs=p.reports.filter(function(r){var t=new Date(r.timestamp);return t>=from&&t<to;});
-    if(grp==='name'){
-      if(!rs.length&&!p.manual)return;
-      var g=p.name||p.id||'—';groupSet[g]=1;
-      rs.forEach(function(r){items.push({r:r,g:g});});
-    }else{
-      rs.forEach(function(r){var g=(r.userDept||'—').toUpperCase();groupSet[g]=1;items.push({r:r,g:g});});
-    }
+    p.reports.forEach(function(r){
+      var t=new Date(r.timestamp);if(!(t>=from&&t<to))return;
+      if(dept!=='*'&&rxDeptKey(r)!==dept)return;
+      var g=grp==='name'?(p.name||p.id||'—'):(dept==='*'?rxDeptLabel(rxDeptKey(r)):label);
+      groupSet[g]=1;items.push({r:r,g:g});
+    });
   });
   var groups=Object.keys(groupSet).sort(function(a,b){return a.localeCompare(b);});
-  if(!groups.length){showToast('Tidak ada data pengawas pada bulan itu','warning');return;}
+  if(!groups.length){showToast('Tidak ada data pada bulan/departemen itu','warning');return;}
   items.sort(function(a,b){return new Date(a.r.timestamp)-new Date(b.r.timestamp);});
   var weeks=rxWeeks(y,m);
   function weekOf(d){for(var i=0;i<weeks.length;i++)for(var j=0;j<weeks[i].dates.length;j++)if(weeks[i].dates[j].getDate()===d.getDate())return weeks[i].n;return 1;}
@@ -6380,7 +6502,7 @@ function rxRun(){
   items.forEach(function(it){
     var r=it.r,d=new Date(r.timestamp),day=new Date(d.getFullYear(),d.getMonth(),d.getDate());
     if(rxIsInsp(r)){
-      rows.push({date:day,week:weekOf(d),group:it.g,loc:r.location||r.typeName||'-',photo:null,_r:r});
+      rows.push({date:day,week:weekOf(d),group:it.g,loc:r.location||r.typeName||'-',ibpr:rxIsNC(r),imgI:null,imgB:null,_r:r});
       ((r.extra&&r.extra.ngDetails)||[]).forEach(function(ng){
         var k=(ng.item||'—')+(ng.desc&&String(ng.desc).trim()&&ng.desc!==ng.item?' — '+ng.desc:'');
         temuan.push({date:day,loc:r.typeName||r.location||'-',ket:k,pic:ng.pic||''});
@@ -6390,35 +6512,38 @@ function rxRun(){
       temuan.push({date:day,loc:r.location||r.typeName||'-',ket:'['+(QUICK_TYPES[r.type]||r.type)+'] '+(r.notes||'—'),pic:(c&&c.pic)||(r.capa&&r.capa.pic)||''});
     }
   });
-  if(!rows.length&&!temuan.length){showToast('Tidak ada laporan pada bulan itu','warning');return;}
+  if(!rows.length&&!temuan.length){showToast('Tidak ada laporan pada bulan/departemen itu','warning');return;}
   var allDates=[];for(var dd=new Date(from);dd<to;dd=new Date(dd.getFullYear(),dd.getMonth(),dd.getDate()+1))allDates.push(new Date(dd));
   var MN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-  var model={site:site,monthLabel:MN[m]+' '+y,tgtInsp:ti,tgtIbpr:tb,weeks:weeks,groups:groups,rows:rows,temuan:temuan,allDates:allDates};
+  var model={site:site,monthLabel:MN[m]+' '+y,tgtInsp:ti,tgtIbpr:tb,weeks:weeks,groups:groups,rows:rows,temuan:temuan,allDates:allDates,
+    titleM:'RESUME IBPR DAN INSPEKSI PENGAWAS '+label+' SITE '+site,
+    titleT:'TEMUAN IBPR DAN INSPEKSI DEPT '+label,
+    titleG:'RESUME KETERCAPAIAN IBPR DAN INSPEKSI DEPT '+label+' SITE '+site};
   RX_BUSY=true;WK_PDF_CANCEL=false;
-  var k=0,noPhoto=0;
+  var k=0;
   function finish(){
     wkPdfOverlay(true,{h:'📊 Membuat file Excel…',t:'Mengemas sheet MASTER, TEMUAN, GRAFIK…',pct:100});
     rows.forEach(function(r){delete r._r;});
     try{
       RX.zip(RX.build(model)).then(function(b){
         wkPdfOverlay(false);RX_BUSY=false;
-        wkDownloadBlob(b,'Resume_IBPR_Inspeksi_'+y+'-'+String(m+1).padStart(2,'0')+'.xlsx');
-        showToast('✅ Excel dibuat: '+rows.length+' inspeksi, '+temuan.length+' temuan'+(noPhoto&&usePh?' ('+noPhoto+' tanpa foto)':''),'success');
+        wkDownloadBlob(b,'Resume_IBPR_Inspeksi_'+wkSafeName(label)+'_'+y+'-'+String(m+1).padStart(2,'0')+'.xlsx');
+        var nI=rows.filter(function(r){return r.ibpr;}).length;
+        showToast('✅ Excel dibuat: '+rows.length+' inspeksi, '+nI+' IBPR (temuan NC), '+temuan.length+' temuan','success');
       }).catch(function(e){wkPdfOverlay(false);RX_BUSY=false;showToast('❌ Gagal membuat Excel: '+e.message,'error');});
     }catch(e){wkPdfOverlay(false);RX_BUSY=false;console.error(e);showToast('❌ Gagal membuat Excel: '+e.message,'error');}
   }
   function step(){
     if(WK_PDF_CANCEL){wkPdfOverlay(false);RX_BUSY=false;showToast('Dibatalkan');return;}
-    if(!usePh||k>=rows.length)return finish();
+    if(!useImg||k>=rows.length)return finish();
     var row=rows[k++];
-    wkPdfOverlay(true,{h:'📊 Menyiapkan foto…',t:'Foto '+k+' dari '+rows.length+'<br><b>'+esc(row.group)+'</b>',pct:Math.round((k-1)/rows.length*100)});
-    function pick(){
-      var r=hydrated(row._r),src=(r.photos&&r.photos.filter(isDataUrl)[0])||null;
-      if(!src&&r.extra&&r.extra.ngDetails){for(var i=0;i<r.extra.ngDetails.length&&!src;i++){var ph=r.extra.ngDetails[i].photos;if(ph)src=ph.filter(isDataUrl)[0]||null;}}
-      if(!src){noPhoto++;return setTimeout(step,0);}
-      rxThumb(src,function(t){row.photo=t;if(!t)noPhoto++;setTimeout(step,0);});
-    }
-    if(row._r.mediaSplit&&!MEDIA_CACHE[row._r.id])loadMedia(row._r.id,function(){pick();});else pick();
+    wkPdfOverlay(true,{h:'📊 Menyiapkan screenshot form…',t:'Form '+k+' dari '+rows.length+'<br><b>'+esc(row.group)+'</b>',pct:Math.round((k-1)/rows.length*100)});
+    try{
+      var r=row._r;
+      row.imgI=RXF.insp(r);
+      if(row.ibpr)row.imgB=RXF.capa(r,capas['CAPA-'+r.id]);
+    }catch(e){console.warn('[INSPECTA] Gagal render form',e);}
+    setTimeout(step,0);
   }
   step();
 }
