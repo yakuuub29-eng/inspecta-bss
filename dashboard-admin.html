@@ -951,6 +951,17 @@ select.fi{-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csv
           <button class="btn-save" id="opt-btn" style="width:100%;padding:12px" onclick="optimizeLegacyData()">⚡ Optimasi Data Lama</button>
           <div id="opt-status" style="margin-top:10px;font-size:12px;color:var(--G6);line-height:1.6"></div>
         </div>
+        <div class="set-card" data-perm="settings">
+          <div class="set-t">🗑️ Hapus Data Lama</div>
+          <div style="font-size:12px;color:var(--G5);margin-bottom:10px;line-height:1.6">Menghapus <b>laporan</b> (beserta foto) dan <b>CAPA</b> yang dibuat <b>sebelum</b> tanggal yang dipilih — semua status CAPA ikut terhapus. File cadangan (.json) otomatis terunduh sebelum penghapusan. <b style="color:var(--R)">Tidak bisa dibatalkan.</b></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <label style="font-size:12px;font-weight:600">Hapus data sebelum:</label>
+            <input type="date" id="purge-date" style="padding:8px;border:1px solid var(--G2);border-radius:8px" onchange="purgePreview()">
+            <button class="btn-save" style="padding:9px 14px" onclick="purgePreview()">Hitung</button>
+          </div>
+          <div id="purge-info" style="margin-top:10px;font-size:12px;color:var(--G6);line-height:1.6"></div>
+          <button class="btn-save" id="purge-btn" style="width:100%;padding:12px;margin-top:10px;background:var(--R);display:none" onclick="purgeOldData()">🗑️ Cadangkan &amp; Hapus</button>
+        </div>
         <div class="set-card">
           <div class="set-t">ℹ️ Informasi Sistem</div>
           <div class="set-row"><span class="set-k">Nama Aplikasi</span><span class="set-v">INSPECTA</span></div>
@@ -1351,7 +1362,7 @@ function initFB(){
     // yang hanya mengirim data laporan yang benar-benar berubah, jauh lebih ringan &
     // andal. Perubahan digabung ke array lokal lalu di-debounce sebelum re-render agar
     // saat sinkronisasi awal (ratusan laporan sekaligus) UI tidak macet re-render 1x per item.
-    var reportsById={};
+    var reportsById=window.RBI={};
     getReports().forEach(function(r){reportsById[r.id]=normLegacyReport(r);});
     var refreshTimer=null;
     function scheduleRefresh(){
@@ -5549,6 +5560,74 @@ function optimizeLegacyData(){
   }).catch(function(e){
     OPT_RUNNING=false;el('opt-btn').disabled=false;
     paint('<b style="color:var(--R)">❌ Proses berhenti: '+esc(e&&e.message?e.message:String(e))+'</b> — data yang sudah dipindah tetap aman; jalankan lagi untuk melanjutkan.');
+  });
+}
+
+// ════ HAPUS DATA LAMA (laporan + foto + CAPA sebelum tanggal tertentu) ════
+var PURGE_RUNNING=false;
+function purgeCutoff(){var v=el('purge-date').value;if(!v)return null;var d=new Date(v+'T00:00:00');return isNaN(d)?null:d;}
+function capaWhen(c){return c.createdAt||c.updatedAt||c.dueDate||'';}
+function purgeSelect(){
+  var cut=purgeCutoff();if(!cut)return null;
+  var reps=getReports().filter(function(r){var t=new Date(r.timestamp);return !isNaN(t)&&t<cut;});
+  var caps=[];var all=getCAPAs();
+  Object.keys(all).forEach(function(k){var c=all[k];var w=capaWhen(c);if(!c)return;var t=new Date(w);if(w&&!isNaN(t)&&t<cut)caps.push(c);});
+  return {cut:cut,reps:reps,caps:caps};
+}
+function purgePreview(){
+  var sel=purgeSelect(),info=el('purge-info'),btn=el('purge-btn');
+  if(!sel){info.innerHTML='Pilih tanggal dulu.';btn.style.display='none';return;}
+  var open=sel.caps.filter(function(c){return c.status!=='Closed';}).length;
+  info.innerHTML='Akan dihapus: <b>'+sel.reps.length+' laporan</b> dan <b>'+sel.caps.length+' CAPA</b>'+(open?' (<b style="color:var(--R)">'+open+' di antaranya masih belum Closed</b>)':'')+'. Data dengan tanggal '+sel.cut.toLocaleDateString('id-ID')+' ke atas tidak disentuh.';
+  btn.style.display=(sel.reps.length||sel.caps.length)?'block':'none';
+}
+function purgeDownload(obj,name){
+  var blob=new Blob([JSON.stringify(obj)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);
+}
+function purgeOldData(){
+  if(!hasPerm('settings')){showToast('⛔ Hanya Administrator yang boleh menghapus data','error');return;}
+  if(PURGE_RUNNING)return;
+  if(!(FB_OK&&fbdb)){showToast('⚠️ Firebase belum terhubung — coba lagi saat online','warning');return;}
+  var sel=purgeSelect();if(!sel||(!sel.reps.length&&!sel.caps.length))return;
+  var ans=prompt('Akan MENGHAPUS PERMANEN '+sel.reps.length+' laporan dan '+sel.caps.length+' CAPA sebelum '+sel.cut.toLocaleDateString('id-ID')+'.\n\nCadangan (.json) akan diunduh dulu.\nKetik HAPUS untuk melanjutkan:');
+  if(ans!=='HAPUS'){showToast('Dibatalkan — tidak ada data yang dihapus');return;}
+  PURGE_RUNNING=true;el('purge-btn').disabled=true;var info=el('purge-info');
+  info.innerHTML='⏳ Menyiapkan cadangan…';
+  var repIds=sel.reps.map(function(r){return r.id;}),capIds=sel.caps.map(function(c){return c.id;}).filter(Boolean);
+  var backup={exportedAt:new Date().toISOString(),cutoff:sel.cut.toISOString(),reports:{},capa:{},reportMedia:{},capaMedia:{}};
+  // Cadangan memakai data langsung dari Firebase (lengkap dengan foto), bukan cache lokal
+  Promise.all([fbdb.ref('reports').once('value'),fbdb.ref('capa').once('value'),fbdb.ref('reportMedia').once('value'),fbdb.ref('capaMedia').once('value')]).then(function(r){
+    var rep=r[0].val()||{},cap=r[1].val()||{},rm=r[2].val()||{},cm=r[3].val()||{};
+    repIds.forEach(function(id){if(rep[id])backup.reports[id]=rep[id];if(rm[id])backup.reportMedia[id]=rm[id];});
+    capIds.forEach(function(id){if(cap[id])backup.capa[id]=cap[id];if(cm[id])backup.capaMedia[id]=cm[id];});
+    purgeDownload(backup,'inspecta-backup-sebelum-'+el('purge-date').value+'.json');
+    info.innerHTML='⏳ Cadangan terunduh. Menghapus…';
+    var jobs=[];
+    repIds.forEach(function(id){jobs.push('reports/'+id);jobs.push('reportMedia/'+id);});
+    capIds.forEach(function(id){jobs.push('capa/'+id);jobs.push('capaMedia/'+id);});
+    var done=0,fail=0,q=jobs.slice();
+    function w(){
+      if(!q.length)return Promise.resolve();
+      var path=q.shift();
+      return fbdb.ref(path).remove().catch(function(e){fail++;console.warn('[INSPECTA] Gagal hapus '+path,e);}).then(function(){done++;if(done%20===0)info.innerHTML='⏳ Menghapus '+done+'/'+jobs.length+'…';return w();});
+    }
+    return Promise.all([w(),w(),w(),w()]).then(function(){return fail;});
+  }).then(function(fail){
+    // rapikan cache lokal & memori
+    repIds.forEach(function(id){if(window.RBI)delete window.RBI[id];delete MEDIA_CACHE[id];});
+    if(LIVE_REPORTS)LIVE_REPORTS=LIVE_REPORTS.filter(function(r){return repIds.indexOf(r.id)<0;});
+    try{var lr=JSON.parse(localStorage.getItem(SK)||'[]');if(Array.isArray(lr))localStorage.setItem(SK,JSON.stringify(lr.filter(function(r){return repIds.indexOf(r.id)<0;})));}catch(e){}
+    var ca=getCAPAs();capIds.forEach(function(id){delete ca[id];});saveCAPAsLocal(ca);
+    PURGE_RUNNING=false;el('purge-btn').disabled=false;
+    info.innerHTML=(fail?'⚠️ Selesai dengan <b style="color:var(--R)">'+fail+' gagal</b> (cek aturan Firebase / koneksi, lalu ulangi). ':'✅ Selesai. ')+repIds.length+' laporan dan '+capIds.length+' CAPA diproses. Simpan file cadangan yang terunduh.';
+    logAudit({action:'Hapus data lama (sebelum '+el('purge-date').value+')',module:'Sistem',newValue:repIds.length+' laporan, '+capIds.length+' CAPA',refId:'purge'});
+    showToast(fail?'⚠️ Selesai dengan beberapa kegagalan':'✅ Data lama dihapus','success');
+    refreshAll();
+  }).catch(function(e){
+    PURGE_RUNNING=false;el('purge-btn').disabled=false;
+    info.innerHTML='<b style="color:var(--R)">❌ Dibatalkan sebelum menghapus: '+esc(e&&e.message?e.message:String(e))+'</b> — tidak ada data yang dihapus.';
   });
 }
 function renderScheduleSettings(){
