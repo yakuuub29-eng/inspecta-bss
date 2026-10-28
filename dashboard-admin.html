@@ -1400,12 +1400,22 @@ function initFB(){
     fbdb.ref('reports').on('child_removed',function(snap){
       var r=snap.val();if(r&&r.id)delete reportsById[r.id];scheduleRefresh();
     });
+    // Setelah sinkronisasi awal selesai: buang laporan di cache lokal yang SUDAH TIDAK ADA di Firebase
+    // (mis. sudah dihapus lewat "Hapus Data Lama" atau dari Console). Tanpa ini, cache browser
+    // yang lama tetap menampilkan laporan yang sudah terhapus. (once() memakai data yang sudah
+    // diunduh listener di atas, tidak mengunduh ulang.)
+    fbdb.ref('reports').once('value').then(function(snap){
+      var live=snap.val()||{},removed=0;
+      Object.keys(reportsById).forEach(function(id){if(!live[id]){delete reportsById[id];removed++;}});
+      if(removed){console.log('[INSPECTA] '+removed+' laporan cache lokal dibuang (sudah tidak ada di Firebase)');scheduleRefresh();}
+    }).catch(function(e){console.warn('[INSPECTA] Gagal verifikasi cache laporan:',e);});
     fbdb.ref('checklists').on('value',function(snap){
       var d=snap.val();if(d){try{localStorage.setItem(CK,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache checklists (penyimpanan penuh):',e);}}
     },function(err){console.warn('[INSPECTA] Firebase checklists error:',err);});
     fbdb.ref('capa').on('value',function(snap){
       var d=snap.val();
-      if(d){try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache capa (penyimpanan penuh):',e);}if(curP==='capa')renderCAPA();}
+      if(!d)d={}; // node kosong (semua CAPA terhapus) → kosongkan cache lokal juga
+      try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache capa (penyimpanan penuh):',e);}if(curP==='capa')renderCAPA();
     },function(err){console.warn('[INSPECTA] Firebase capa error:',err);});
     fbdb.ref('masterPic').on('value',function(snap){
       var d=snap.val();
