@@ -6168,7 +6168,7 @@ RX.build=function(model){
   sG.width(1,1,2);sG.width(2,2,22);sG.width(3,15,10.5);sG.width(16,70,8.5);
   var lastCol=15;
   sG.merge(2,2,2,lastCol,model.titleG||('RESUME KETERCAPAIAN IBPR DAN INSPEKSI — '+model.site),title);sG.rowH[2]=26;
-  sG.merge(3,2,3,lastCol,'Periode '+model.monthLabel+'  ·  Minggu pelaporan Sabtu–Jumat  ·  Target per pengawas per minggu: IBPR '+model.tgtIbpr+', Inspeksi '+model.tgtInsp,sub);sG.rowH[3]=18;
+  sG.merge(3,2,3,lastCol,'Periode '+model.monthLabel+'  ·  Minggu pelaporan Sabtu–Jumat  ·  Plan inspeksi: '+model.tgtInsp+' / minggu  ·  IBPR = inspeksi yang memiliki temuan NC',sub);sG.rowH[3]=18;
   // hitung
   function cnt(week,g,type){return rows.filter(function(x){return x.week===week&&x.group===g&&(type==='IBPR'?x.ibpr:true);}).length;}
   function cntDay(d,g,type){var s=RX.serial(d);return rows.filter(function(x){return RX.serial(x.date)===s&&x.group===g&&(type==='IBPR'?x.ibpr:true);}).length;}
@@ -6183,7 +6183,7 @@ RX.build=function(model){
     sG.merge(r0+1,3,r0+1,5,'IBPR',hdr);sG.merge(r0+1,6,r0+1,8,'INSPEKSI',hdr);
     sG.merge(r0+1,9,r0+1,8+nd,nd>2?'KETERANGAN TANGGAL PEMBUATAN':'KET. TANGGAL',hdr);
     var sh=Object.assign({},hdr,{fill:P.ink2,sz:9});
-    ['PLANT','ACTUAL','ACHIEVMENT','PLANT','ACTUAL','ACHIEVMENT'].forEach(function(h,i){sG.put(r0+2,3+i,h,sh);});
+    ['PLAN','ACTUAL','ACHIEVMENT','PLAN','ACTUAL','ACHIEVMENT'].forEach(function(h,i){sG.put(r0+2,3+i,h,sh);});
     wk.dates.forEach(function(d,i){sG.put(r0+2,9+i,RX.serial(d),Object.assign({},sh,{fmt:'dd/mm'}));});
     sG.rowH[r0+1]=20;sG.rowH[r0+2]=20;
     var first=r0+3,tot={pi:0,ai:0,ps:0,as:0};
@@ -6229,16 +6229,17 @@ RX.build=function(model){
     function mk(titleTxt,colP,colA,c1,c2,vP,vA){
       chartNo++;var file='chart'+chartNo+'.xml';
       chartList.push({file:file,xml:RX.chartXml({title:titleTxt,cats:G.slice(),catRef:catRef,axBase:5000+chartNo*10,series:[
-        {name:'PLANT',color:'9CA3AF',ref:'GRAFIK!'+RX.addr(first,colP,1)+':'+RX.addr(last,colP,1),vals:vP},
+        {name:'PLAN',color:'9CA3AF',ref:'GRAFIK!'+RX.addr(first,colP,1)+':'+RX.addr(last,colP,1),vals:vP},
         {name:'ACTUAL',color:P.amber,ref:'GRAFIK!'+RX.addr(first,colA,1)+':'+RX.addr(last,colA,1),vals:vA}]})});
       sG.charts.push({file:file,c1:c1,c2:c2,r1:tr+1,r2:tr+1+hRows});
     }
     var inspVals=G.map(function(g){return cnt(wk.n,g,'INSPEKSI');});
-    if(model.tgtIbpr>0){
-      mk('RESUME IBPR — WEEK'+wk.n,3,4,1,7,G.map(function(){return model.tgtIbpr;}),G.map(function(g){return cnt(wk.n,g,'IBPR');}));
+    var ibprTot=G.reduce(function(a,g){return a+cnt(wk.n,g,'IBPR');},0);
+    if(ibprTot>0){
+      // IBPR hanya ada bila ada temuan NC pada minggu itu → grafik IBPR baru tampil saat ada temuan
+      mk('RESUME IBPR — WEEK'+wk.n,3,4,1,7,G.map(function(){return 0;}),G.map(function(g){return cnt(wk.n,g,'IBPR');}));
       mk('RESUME INSPEKSI — WEEK'+wk.n,6,7,7,15,G.map(function(){return model.tgtInsp;}),inspVals);
     }else{
-      // target IBPR 0 (IBPR tidak dicatat di INSPECTA) → grafik inspeksi saja, selebar tabel
       mk('RESUME INSPEKSI — WEEK'+wk.n,6,7,1,15,G.map(function(){return model.tgtInsp;}),inspVals);
     }
     r0=tr+1+hRows+2;
@@ -6422,7 +6423,7 @@ RXF.capa=function(r,capa){
 // ════ UI EXPORT RESUME EXCEL ════
 function rxIsInsp(r){return !QUICK_TYPES[r.type]&&r.type!=='fatigue'&&r.type!=='speedgun';}
 function rxIsNC(r){return r.status==='NC'||!!(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length);}
-var RX_DEPT_LABEL={SM:'LOGISTIK'};
+var RX_DEPT_LABEL={};
 function rxDeptLabel(d){return RX_DEPT_LABEL[String(d).toUpperCase()]||String(d).toUpperCase();}
 function rxDeptKey(r){return String(r.userDept||'—').trim().toUpperCase()||'—';}
 function rxWeeks(y,m){ // m: 0-11 · blok Sabtu–Jumat; minggu 1 = tanggal 1 s/d Jumat pertama
@@ -6457,9 +6458,8 @@ function rxOpenDialog(){
     +'<div style="display:flex;gap:10px"><div style="flex:1"><label style="'+L+'">Bulan</label><input type="month" id="rx-month" value="'+ym+'" class="fi" style="width:100%"/></div>'
     +'<div style="flex:1"><label style="'+L+'">Site</label><input id="rx-site" class="fi" style="width:100%" value="'+esc(site)+'"/></div></div>'
     +'<label style="'+L+'">Baris pada GRAFIK</label><select id="rx-grp" class="fsel" style="width:100%"><option value="dept">Per departemen (1 baris)</option><option value="name">Per pengawas dalam dept</option></select>'
-    +'<div style="display:flex;gap:10px"><div style="flex:1"><label style="'+L+'">Target INSPEKSI / minggu</label><input type="number" min="1" id="rx-ti" class="fi" style="width:100%" value="'+WK_TARGET+'"/></div>'
-    +'<div style="flex:1"><label style="'+L+'">Target IBPR / minggu</label><input type="number" min="0" id="rx-tb" class="fi" style="width:100%" value="'+WK_TARGET+'"/></div></div>'
-    +'<div style="font-size:10px;color:#888;margin-top:3px">IBPR terisi otomatis dari inspeksi yang punya temuan NC. Isi target IBPR 0 untuk menyembunyikan grafik IBPR.</div>'
+    +'<label style="'+L+'">Plan INSPEKSI / minggu</label><input type="number" min="1" id="rx-ti" class="fi" style="width:100%" value="'+WK_TARGET+'"/>'
+    +'<div style="font-size:10px;color:#888;margin-top:3px">IBPR tidak punya plan (0) — terisi otomatis dari inspeksi yang punya temuan NC, grafiknya hanya tampil bila ada temuan.</div>'
     +'<label style="display:flex;gap:6px;align-items:flex-start;font-size:12px;margin-top:12px"><input type="checkbox" id="rx-ph" checked style="margin-top:2px"/><span>Sertakan screenshot form di sheet MASTER (kolom INSPEKSI = form inspeksi, kolom IBPR = form temuan NC &amp; CAPA)</span></label>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button class="cc-btn" onclick="document.getElementById(\'rx-dlg\').remove()">Batal</button>'
     +'<button class="btn-save" style="padding:8px 16px" onclick="rxRun()">📥 Buat Excel</button></div></div>';
@@ -6477,7 +6477,7 @@ function rxRun(){
   var y=+mv[0],m=+mv[1]-1;
   var dept=el('rx-dept').value,label=(el('rx-label').value||'').trim().toUpperCase()||(dept==='*'?'SEMUA DEPT':dept);
   var site=(el('rx-site').value||'').trim().toUpperCase()||'MSJ';
-  var grp=el('rx-grp').value,ti=Math.max(1,parseInt(el('rx-ti').value,10)||1),tb=Math.max(0,parseInt(el('rx-tb').value,10)||0),useImg=el('rx-ph').checked;
+  var grp=el('rx-grp').value,ti=Math.max(1,parseInt(el('rx-ti').value,10)||1),tb=0,useImg=el('rx-ph').checked;
   try{localStorage.setItem('k3_rx_site',site);localStorage.setItem('k3_rx_dept',dept);}catch(e){}
   document.getElementById('rx-dlg').remove();
   var from=new Date(y,m,1),to=new Date(y,m+1,1);
