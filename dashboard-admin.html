@@ -2887,8 +2887,8 @@ function saveRosterData(d){
   if(FB_OK&&fbdb){fbdb.ref('pengawasRoster').set({list:d.list||[],hidden:d.hidden||[]}).catch(function(){});}
 }
 function wkRange(off){
-  // Minggu pelaporan: MINGGU 00.00 s/d SABTU 23.59 (cutoff Sabtu → Minggu)
-  var now=new Date();var day=now.getDay();
+  // Minggu pelaporan: SABTU 00.00 s/d JUMAT 23.59 (cutoff Jumat → Sabtu)
+  var now=new Date();var day=(now.getDay()+1)%7;
   var s=new Date(now.getFullYear(),now.getMonth(),now.getDate()-day+off*7);
   var e=new Date(s.getFullYear(),s.getMonth(),s.getDate()+7);
   return {s:s,e:e};
@@ -2943,12 +2943,12 @@ function renderWeekly(){
   WK_HIDDEN_LIST=allPeople.filter(function(p){return hidden.indexOf(p.key)>=0;});
   var canEdit=hasPerm('checklistEdit');
   var rg=wkRange(WK_OFFSET);
-  var DN=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  var DN=['Sab','Min','Sen','Sel','Rab','Kam','Jum'];
 
   var rows=WK_PEOPLE.map(function(p,i){
     var rs=wkCount(p,rg);
     var perDay=[0,0,0,0,0,0,0];
-    rs.forEach(function(r){var d=new Date(r.timestamp).getDay();perDay[d]++;});
+    rs.forEach(function(r){var d=(new Date(r.timestamp).getDay()+1)%7;perDay[d]++;});
     var last=p.reports.map(function(r){return new Date(r.timestamp).getTime();}).sort(function(a,b){return b-a;})[0];
     return {i:i,p:p,n:rs.length,perDay:perDay,last:last,ok:rs.length>=WK_TARGET};
   });
@@ -2989,7 +2989,7 @@ function renderWeekly(){
     +'</select></label>'
     +'<label style="font-size:11px;color:var(--G5)">Target min./minggu <input class="fi" type="number" min="1" max="50" value="'+WK_TARGET+'" style="width:60px;padding:4px 6px;font-size:12px" onchange="wkSetTarget(this.value)"/></label>'
     +'<button class="cc-btn" onclick="wkCsv()">⬇️ CSV</button>'
-    +'<button class="cc-btn" style="background:var(--Y);font-weight:700" onclick="wkPdfAll()" title="Satu PDF untuk setiap pengawas, dikemas dalam satu file ZIP">📄 PDF per Pengawas (ZIP)</button>'
+    +'<button class="cc-btn" style="background:var(--Y);font-weight:700" onclick="wkPdfAll()" title="Semua PDF laporan inspeksi seluruh pengawas pada minggu ini (Sabtu–Jumat), dikemas dalam 1 ZIP — satu folder per pengawas">📦 Unduh Semua PDF Inspeksi (ZIP)</button>'
     +'</div>';
   // ringkasan
   html+='<div class="trend-card"><div class="trend-summary-row">'
@@ -3014,7 +3014,7 @@ function renderWeekly(){
         +x.perDay.map(function(c){return '<td style="text-align:center;font-size:11px;'+(c?'color:#fff;background:#2F855A;font-weight:700':'color:var(--G3)')+'">'+(c||'·')+'</td>';}).join('')
         +'<td style="font-size:11px">'+(x.last?fd(x.last):'<span style="color:var(--R)">Belum pernah</span>')+'</td>'
         +'<td style="text-align:center">'+(x.ok?'<span style="color:var(--GR);font-weight:700">✅ Sudah</span>':'<span style="color:var(--R);font-weight:700">❌ Belum</span>')+'</td>'
-        +'<td><button class="cc-btn" style="padding:2px 7px;font-size:10px" title="Unduh PDF rekap pengawas ini" onclick="wkPdfOne('+x.i+')">📄 PDF</button></td>'
+        +'<td><button class="cc-btn" style="padding:2px 7px;font-size:10px" title="Unduh semua PDF laporan pengawas ini pada minggu terpilih (ZIP)" onclick="wkPdfPerson('+x.i+')">📦 PDF</button></td>'
         +(canEdit?'<td><button class="cc-btn" style="padding:2px 7px;font-size:10px" title="Sembunyikan (mis. sudah tidak aktif)" onclick="wkHide('+x.i+')">🙈</button></td>':'')
         +'</tr>';
     }).join('')+'</tbody></table></div>'
@@ -3068,127 +3068,95 @@ function wkUnhide(i){
   var d=getRosterData();d.hidden=d.hidden.filter(function(k){return k!==p.key;});saveRosterData(d);renderWeekly();
 }
 
-// ════ REKAP PDF PER PENGAWAS (per minggu, Minggu–Sabtu) ════
-var WK_DAYS_LONG=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-var WK_FILTER_LBL={all:'Semua laporan',inspeksi:'Inspeksi area',fatigue:'Fatigue Call',speedgun:'Speedgun',quick:'Quick Report (Hazard/Near Miss/SWA/Positif)'};
-function wkFmtDate(d){return d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});}
+// ════ UNDUH SEMUA PDF INSPEKSI PER MINGGU (Sabtu–Jumat), 1 folder per pengawas ════
+var ADM_CAPTURE=null; // bila diisi array: PDF laporan ditampung (bukan diunduh satu per satu)
+function admSaveDoc(doc,name){
+  if(ADM_CAPTURE){ADM_CAPTURE.push({name:name,blob:doc.output('blob')});}
+  else doc.save(name);
+}
 function wkSafeName(n){return String(n||'tanpa-nama').replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'')||'tanpa-nama';}
-function wkStatusLbl(r){
-  var st=r.status||'';
-  if(st==='OK')return 'Conform';
-  if(st==='NC')return 'Non-Conform';
-  return st||'—';
-}
-function wkTypeLbl(r){return r.typeName||QUICK_TYPES[r.type]||r.type||'—';}
-function wkBuildPdf(p,rg){
-  var J=admGetPDF();if(!J)return null;
-  var doc=new J({orientation:'portrait',unit:'mm',format:'a4'});
-  var W=doc.internal.pageSize.getWidth();
-  var rs=wkCount(p,rg).slice().sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
-  var last=new Date(rg.e.getTime()-86400000);
-  var ok=rs.length>=WK_TARGET;
-  var dept=(p.reports.filter(function(r){return r.userDept;}).map(function(r){return r.userDept;})[0])||'—';
-  var nc=rs.filter(function(r){return r.status==='NC';}).length;
-  var y=30;
-  doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(26,26,26);
-  doc.text('REKAP LAPORAN PENGAWAS MINGGUAN',W/2,y,{align:'center'});y+=6;
-  doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(90,90,90);
-  doc.text('Periode: Minggu, '+wkFmtDate(rg.s)+'  s/d  Sabtu, '+wkFmtDate(last),W/2,y,{align:'center'});y+=8;
-  // kotak identitas
-  doc.setDrawColor(200,200,200);doc.setFillColor(250,250,250);doc.roundedRect(10,y,W-20,28,2,2,'FD');
-  doc.setTextColor(26,26,26);doc.setFontSize(9);
-  var L=[['Nama Pengawas',p.name||'—'],['ID / NIK',p.id||'—'],['Departemen',dept],['Jenis laporan',WK_FILTER_LBL[WK_FILTER]||WK_FILTER]];
-  L.forEach(function(x,i){doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);doc.text(x[0],14,y+6+i*5.5);
-    doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);doc.text(': '+x[1],46,y+6+i*5.5);});
-  var R=[['Jumlah laporan',rs.length+' (target min. '+WK_TARGET+')'],['Non-Conform',String(nc)]];
-  R.forEach(function(x,i){doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);doc.text(x[0],112,y+6+i*5.5);
-    doc.setFont('helvetica','bold');doc.setTextColor(26,26,26);doc.text(': '+x[1],142,y+6+i*5.5);});
-  doc.setFont('helvetica','normal');doc.setTextColor(100,100,100);doc.text('Status',112,y+17);
-  doc.setFont('helvetica','bold');doc.setTextColor(ok?47:197,ok?133:48,ok?90:48);doc.text(': '+(ok?'SUDAH LAPOR':'BELUM LAPOR'),142,y+17);
-  y+=34;
-  if(rs.length){
-    doc.autoTable({
-      startY:y,margin:{left:10,right:10,bottom:14},
-      head:[['No','Hari, Tanggal','Jam','Jenis Laporan','Lokasi','Status','Temuan NC']],
-      body:rs.map(function(r,i){
-        var d=new Date(r.timestamp);
-        var ngc=(r.extra&&r.extra.ngDetails&&r.extra.ngDetails.length)||0;
-        return [i+1,WK_DAYS_LONG[d.getDay()]+', '+d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}),
-          d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),wkTypeLbl(r),r.location||'—',wkStatusLbl(r),ngc?String(ngc):'—'];
-      }),
-      styles:{fontSize:8,cellPadding:2,font:'helvetica',textColor:[26,26,26]},
-      headStyles:{fillColor:[26,26,26],textColor:[245,196,0],fontStyle:'bold',fontSize:8},
-      alternateRowStyles:{fillColor:[248,248,248]},
-      columnStyles:{0:{cellWidth:9,halign:'center'},2:{cellWidth:14},6:{cellWidth:18,halign:'center'}},
-      didParseCell:function(data){
-        if(data.section==='body'&&data.column.index===5){
-          var v=String(data.cell.raw||'');
-          if(v==='Non-Conform'){data.cell.styles.textColor=[197,48,48];data.cell.styles.fontStyle='bold';}
-          else if(v==='Conform'){data.cell.styles.textColor=[47,133,90];}
-        }
-      }
-    });
-  }else{
-    doc.setFont('helvetica','italic');doc.setFontSize(10);doc.setTextColor(197,48,48);
-    doc.text('Tidak ada laporan yang dikirim pada periode ini.',W/2,y+10,{align:'center'});
-  }
-  doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(120,120,120);
-  var fy=(rs.length?doc.lastAutoTable.finalY:y+16)+8;
-  if(fy<doc.internal.pageSize.getHeight()-20)doc.text('Dicetak: '+new Date().toLocaleString('id-ID')+' · Pergantian minggu: Sabtu 23.59 → Minggu 00.00',10,fy);
-  var total=doc.internal.getNumberOfPages();
-  for(var i=1;i<=total;i++){doc.setPage(i);admPdfHeader(doc,'Rekap Pengawas Mingguan',null,i,total);}
-  return doc;
-}
 function wkIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function wkFileName(p,rg){
-  var last=new Date(rg.e.getTime()-86400000);
-  return 'Rekap_'+wkSafeName(p.name||p.id)+'_'+wkIso(rg.s)+'_sd_'+wkIso(last)+'.pdf';
-}
-function wkPdfOne(i){
-  var p=WK_PEOPLE[i];if(!p)return;
-  if(!admGetPDF()){showToast('⚠️ Library PDF sedang dimuat...','warning');return;}
-  var rg=wkRange(WK_OFFSET);var doc=wkBuildPdf(p,rg);if(!doc)return;
-  doc.save(wkFileName(p,rg));
-}
 function wkDownloadBlob(blob,name){
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();
   setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},3000);
 }
-var WK_PDF_BUSY=false;
-function wkPdfAll(){
+var WK_PDF_BUSY=false, WK_PDF_CANCEL=false;
+function wkPdfOverlay(show,msg){
+  var o=document.getElementById('wk-pdf-ov');
+  if(!show){if(o)o.remove();return;}
+  if(!o){
+    o=document.createElement('div');o.id='wk-pdf-ov';
+    o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:flex;align-items:center;justify-content:center';
+    o.innerHTML='<div style="background:#fff;border-radius:12px;padding:22px 26px;min-width:300px;max-width:90vw;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center">'
+      +'<div style="font-weight:700;margin-bottom:8px">📦 Menyiapkan PDF laporan…</div>'
+      +'<div id="wk-pdf-msg" style="font-size:12px;color:#555;line-height:1.6;margin-bottom:12px"></div>'
+      +'<div style="height:8px;background:#eee;border-radius:4px;overflow:hidden;margin-bottom:14px"><div id="wk-pdf-bar" style="height:100%;width:0;background:#F5C400;transition:width .2s"></div></div>'
+      +'<button class="cc-btn" onclick="WK_PDF_CANCEL=true">Batal</button></div>';
+    document.body.appendChild(o);
+  }
+  document.getElementById('wk-pdf-msg').innerHTML=msg.t;document.getElementById('wk-pdf-bar').style.width=(msg.pct||0)+'%';
+}
+// people: array pengawas yang diproses; kosong = semua
+function wkPdfRun(people,label){
   if(WK_PDF_BUSY)return;
   if(!admGetPDF()){showToast('⚠️ Library PDF sedang dimuat...','warning');return;}
-  if(!WK_PEOPLE.length){showToast('Belum ada data pengawas','warning');return;}
   var rg=wkRange(WK_OFFSET),last=new Date(rg.e.getTime()-86400000);
-  var list=WK_PEOPLE.slice();WK_PDF_BUSY=true;
-  var used={},files=[],k=0;
-  showToast('⏳ Membuat '+list.length+' PDF…');
-  function step(){
-    if(k>=list.length)return finish();
-    var p=list[k++];
-    try{
-      var doc=wkBuildPdf(p,rg),name=wkFileName(p,rg);
-      if(used[name]){var n=used[name]++;name=name.replace(/\.pdf$/,'_'+n+'.pdf');}else used[name]=1;
-      if(doc)files.push({name:name,blob:doc.output('blob')});
-    }catch(e){console.warn('[INSPECTA] PDF gagal untuk '+p.name,e);}
-    setTimeout(step,0); // beri napas ke browser agar tidak macet
-  }
-  function finish(){
-    var zipName='Rekap_Pengawas_'+wkIso(rg.s)+'_sd_'+wkIso(last)+'.zip';
+  var jobs=[];
+  people.forEach(function(p){
+    wkCount(p,rg).slice().sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);})
+      .forEach(function(r){jobs.push({p:p,r:r});});
+  });
+  if(!jobs.length){showToast('Tidak ada laporan pada minggu ini ('+wkLbl(WK_OFFSET)+')','warning');return;}
+  if(jobs.length>60&&!confirm(jobs.length+' laporan akan dijadikan PDF. Proses bisa beberapa menit dan memakai memori cukup besar — biarkan halaman terbuka. Lanjutkan?'))return;
+  WK_PDF_BUSY=true;WK_PDF_CANCEL=false;
+  var files=[],used={},fail=0,k=0;
+  function finish(cancelled){
+    ADM_CAPTURE=null;
+    wkPdfOverlay(false);
+    if(cancelled){WK_PDF_BUSY=false;showToast('Dibatalkan — tidak ada file diunduh');return;}
+    if(!files.length){WK_PDF_BUSY=false;showToast('❌ Tidak ada PDF yang berhasil dibuat','error');return;}
+    var zipName=(label||'Rekap_PDF_Inspeksi')+'_'+wkIso(rg.s)+'_sd_'+wkIso(last)+'.zip';
     if(window.JSZip){
-      var z=new JSZip();files.forEach(function(f){z.file(f.name,f.blob);});
-      z.generateAsync({type:'blob'}).then(function(b){
-        wkDownloadBlob(b,zipName);WK_PDF_BUSY=false;showToast('✅ '+files.length+' PDF diunduh dalam 1 file ZIP','success');
-      }).catch(function(e){WK_PDF_BUSY=false;showToast('❌ Gagal membuat ZIP: '+e.message,'error');});
+      wkPdfOverlay(true,{t:'Mengemas ZIP…',pct:100});
+      var z=new JSZip();files.forEach(function(f){z.file(f.path,f.blob);});
+      z.generateAsync({type:'blob',compression:'STORE'}).then(function(b){
+        wkPdfOverlay(false);wkDownloadBlob(b,zipName);WK_PDF_BUSY=false;
+        showToast('✅ '+files.length+' PDF diunduh ('+zipName+')'+(fail?' — '+fail+' gagal':''),fail?'warning':'success');
+      }).catch(function(e){wkPdfOverlay(false);WK_PDF_BUSY=false;showToast('❌ Gagal membuat ZIP: '+e.message,'error');});
     }else{
-      // cadangan bila library ZIP tidak termuat: unduh satu per satu
-      files.forEach(function(f,i){setTimeout(function(){wkDownloadBlob(f.blob,f.name);},i*500);});
-      WK_PDF_BUSY=false;showToast('⚠️ ZIP tidak tersedia — '+files.length+' PDF diunduh satu per satu (izinkan unduhan ganda di browser)','warning');
+      files.forEach(function(f,i){setTimeout(function(){wkDownloadBlob(f.blob,f.path.replace('/','__'));},i*500);});
+      WK_PDF_BUSY=false;showToast('⚠️ ZIP tidak tersedia — '+files.length+' PDF diunduh satu per satu (izinkan unduhan ganda)','warning');
     }
+  }
+  function step(){
+    if(WK_PDF_CANCEL)return finish(true);
+    if(k>=jobs.length)return finish(false);
+    var j=jobs[k++];
+    wkPdfOverlay(true,{t:'Laporan '+k+' dari '+jobs.length+'<br><b>'+esc(j.p.name||'—')+'</b> — '+esc(j.r.typeName||j.r.type||''),pct:Math.round((k-1)/jobs.length*100)});
+    function make(){
+      try{
+        ADM_CAPTURE=[];
+        adminDownloadReportPDF(j.r.id,true);
+        var got=ADM_CAPTURE;ADM_CAPTURE=null;
+        if(got&&got.length){
+          var d=new Date(j.r.timestamp);
+          var base=wkIso(d)+'_'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0')+'_'+got[0].name;
+          var path=wkSafeName(j.p.name||j.p.id)+'/'+base;
+          if(used[path]){var n=used[path]++;path=path.replace(/\.pdf$/,'_'+n+'.pdf');}else used[path]=1;
+          files.push({path:path,blob:got[0].blob});
+        }else fail++;
+      }catch(e){ADM_CAPTURE=null;fail++;console.warn('[INSPECTA] PDF gagal untuk laporan '+j.r.id,e);}
+      setTimeout(step,0);
+    }
+    // foto laporan baru dimuat terpisah — unduh dulu (gagal/offline → PDF tanpa foto)
+    if(j.r.mediaSplit&&!MEDIA_CACHE[j.r.id]){loadMedia(j.r.id,function(){make();});}
+    else make();
   }
   step();
 }
+function wkPdfAll(){wkPdfRun(WK_PEOPLE.slice(),'Rekap_PDF_Inspeksi_Semua_Pengawas');}
+function wkPdfPerson(i){var p=WK_PEOPLE[i];if(!p)return;wkPdfRun([p],'Rekap_PDF_'+wkSafeName(p.name||p.id));}
 
 function wkCsv(){
   var rg=wkRange(WK_OFFSET);
@@ -4017,8 +3985,8 @@ function adminDownloadReportPDF(reportId,_noMedia){
   admPdfSignature(doc,r,y);
 
   var dateStr=new Date(r.timestamp).toISOString().split('T')[0].replace(/-/g,'');
-  doc.save((r.noTemuan||'laporan').replace(/[^a-zA-Z0-9-]/g,'_')+'_'+dateStr+'.pdf');
-  showToast('📄 PDF laporan terunduh!','success');
+  admSaveDoc(doc,(r.noTemuan||'laporan').replace(/[^a-zA-Z0-9-]/g,'_')+'_'+dateStr+'.pdf');
+  if(!ADM_CAPTURE)showToast('📄 PDF laporan terunduh!','success');
 }
 
 // ── PICA (Problem Identification & Corrective Action) — khusus Inspeksi Gabungan ──
@@ -4166,8 +4134,8 @@ function adminDownloadPICAPDF(reportId,_noMedia){
   admPdfSignature(doc,r,y);
 
   var dateStr2=new Date(r.timestamp).toISOString().split('T')[0].replace(/-/g,'');
-  doc.save('PICA_'+(r.noTemuan||'Inspeksi_Gabungan').replace(/[^a-zA-Z0-9-]/g,'_')+'_'+dateStr2+'.pdf');
-  showToast('📄 PDF PICA terunduh!','success');
+  admSaveDoc(doc,'PICA_'+(r.noTemuan||'Inspeksi_Gabungan').replace(/[^a-zA-Z0-9-]/g,'_')+'_'+dateStr2+'.pdf');
+  if(!ADM_CAPTURE)showToast('📄 PDF PICA terunduh!','success');
 }
 
 // ── EXPORT PDF DASHBOARD ──
