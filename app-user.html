@@ -401,6 +401,8 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
 .pdf-shift-bar{background:var(--W);padding:10px 14px;border-bottom:1px solid var(--G2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .pdf-shift-bar h3{font-size:13px;font-weight:700;color:var(--B);margin:0}
 
+.fi-err{border-color:#C53030 !important;background:#FFF5F5 !important;box-shadow:0 0 0 3px rgba(197,48,48,.12) !important}
+.fi-err-msg{font-size:11px;font-weight:600;color:#C53030;margin-top:4px}
 </style>
 <!-- jsPDF untuk export laporan PDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -7548,7 +7550,7 @@ function buildForm(type){
     +'</div>';
 
   var infoHtml=autoInfoHtml+cfg.info.map(function(f,i){
-    return fgg(f,'<input type="text" class="fi" id="fi'+i+'" placeholder="'+f+'"/>');
+    return fgg(i===0?(f+' <span style="color:#C53030">*</span>'):f,'<input type="text" class="fi" id="fi'+i+'" placeholder="'+f+'"'+(i===0?' required':'')+'/>');
   }).join('');
 
   // Severity matrix umum (form-level) SUDAH DIHAPUS per keputusan standarisasi —
@@ -8192,6 +8194,20 @@ function submitQuick(type){
 
 // ════ SUBMIT FORM ════
 function submitForm(){
+  // WAJIB isi lokasi: field pertama (fi0) = Sub-Area/Lokasi di semua form inspeksi.
+  // Dicek SEBELUM tombol dikunci & layar loading muncul, supaya pengawas bisa langsung melengkapi.
+  var _locEl=el('fi0');
+  if(_locEl&&!(_locEl.value||'').trim()){
+    var _lbl=(FCFG[CFT]&&FCFG[CFT].info&&FCFG[CFT].info[0])||'Lokasi';
+    _locEl.classList.add('fi-err');
+    var _fg=_locEl.closest?_locEl.closest('.fg'):null;
+    if(_fg&&!_fg.querySelector('.fi-err-msg')){var _m=document.createElement('div');_m.className='fi-err-msg';_m.textContent='Wajib diisi sebelum laporan dikirim';_fg.appendChild(_m);}
+    _locEl.oninput=function(){_locEl.classList.remove('fi-err');var m=_fg&&_fg.querySelector('.fi-err-msg');if(m)m.remove();};
+    try{_locEl.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+    setTimeout(function(){try{_locEl.focus();}catch(e){}},350);
+    showToast('Isi "'+_lbl+'" dulu sebelum mengirim laporan','warning');
+    return;
+  }
   var btn=el('subbtn');btn.disabled=true;
   showLoad(IS_ONLINE?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Mengirim laporan...':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13H5z"/><path d="M8 3v6h8V3"/><path d="M7 21v-7h10v7"/></svg> Menyimpan secara offline...');
   var cfg=FCFG[CFT];

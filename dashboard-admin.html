@@ -720,6 +720,28 @@ tr:last-child td{border-bottom:none}
 .notif-panel{box-shadow:var(--shm)}
 .notif-item.unread{background:var(--YP)}
 .toast{border-radius:10px;box-shadow:var(--shm);background:var(--G9)}
+/* ═════ Ikon garis monokrom (menggantikan emoji; dirender oleh skrip ikon di akhir halaman) ═════ */
+.ic-w{display:inline-flex;align-items:center;vertical-align:-.17em;line-height:1}
+.ic{width:1.12em;height:1.12em;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.ic.dot{stroke:none}
+.kpi-ico,.li-ico,.overdue-alert-ico,.ll-fi-ico{color:var(--G5)}
+.kpi-ico .ic,.li-ico .ic{width:22px;height:22px;stroke-width:1.5}
+.overdue-alert-ico .ic{width:26px;height:26px;stroke-width:1.5;color:var(--R)}
+.ll-fi-ico{color:var(--Y)}
+.trend-card>div>div[style*="font-size:22px"]{color:var(--G5)}
+.panel-title .ic,.ccard-t .ic,.export-bar-t .ic{color:var(--G5);stroke-width:1.6}
+.exp-btn .ic{stroke-width:2}
+.ccard-t{justify-content:flex-start;gap:7px}.ccard-t .ccard-sub{margin-left:auto}
+.ccard-t>.ic-w{margin-right:0}
+.kpi-ico{margin-bottom:8px}
+/* Menu kiri: kategori bisa dilipat */
+.sb-sec{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-user-select:none;transition:color .15s}
+.sb-sec:hover{color:var(--G7)}
+.sb-sec::after{content:'';width:6px;height:6px;margin-right:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translate(-1px,-1px);transition:transform .2s;flex-shrink:0}
+.sb-sec.collapsed::after{transform:rotate(-45deg) translate(-1px,-1px)}
+.sb-sec .sb-sec-n{margin-left:auto;margin-right:8px;font-size:9px;font-weight:600;color:var(--G4);letter-spacing:0;display:none}
+.sb-sec.collapsed .sb-sec-n{display:inline}
+.sb-hide{display:none !important}
 @media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 </style>
 <!-- SheetJS untuk export Excel -->
@@ -6681,6 +6703,138 @@ function rxRun(){
   }
   step();
 }
+</script>
+<script>
+/* INSPECTA — ikon garis monokrom pengganti emoji (tampilan saja; tidak menyentuh data/logika) */
+(function(){
+  var P={
+    chart:'<path d="M3 3v18h18"/><path d="M8 17v-5M13 17V7M18 17v-3"/>',
+    clip:'<rect x="8" y="2.5" width="8" height="4" rx="1"/><path d="M16 4.5h2a2 2 0 0 1 2 2V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2h2"/>',
+    warn:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/>',
+    ok:'<circle cx="12" cy="12" r="9"/><path d="m8 12.2 2.8 2.8L16 9.5"/>',
+    check:'<path d="m5 12.5 4.5 4.5L19 7"/>',
+    xc:'<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
+    x:'<path d="M6 6l12 12M18 6 6 18"/>',
+    ban:'<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/>',
+    hour:'<path d="M6 3h12M6 21h12M7 3v3.5a5 5 0 0 0 10 0V3M7 21v-3.5a5 5 0 0 1 10 0V21"/>',
+    file:'<path d="M14 2.5H7a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7.5z"/><path d="M14 2.5v5h5M9 13h6M9 17h6"/>',
+    up:'<path d="m3 17 6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    down:'<path d="m3 7 6 6 4-4 8 8"/><path d="M15 17h6v-6"/>',
+    user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    trash:'<path d="M4 6.5h16M9 6.5V4h6v2.5M6 6.5l1 14h10l1-14M10 11v6M14 11v6"/>',
+    pen:'<path d="M4 20h4L19.5 8.5l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+    cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    siren:'<path d="M7 19v-6a5 5 0 0 1 10 0v6M5 21h14M12 3v2M4.5 7l1.4 1.4M19.5 7l-1.4 1.4"/>',
+    wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+    search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+    cam:'<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13.5" r="3.5"/>',
+    cloud:'<path d="M7 18a4 4 0 0 1-.6-7.95A6 6 0 0 1 18 11.5 3.3 3.3 0 0 1 17.5 18z"/>',
+    save:'<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h7V3M8 21v-7h8v7"/>',
+    target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    pin:'<path d="M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    minus:'<path d="M5 12h14"/>',
+    box:'<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="m3 7.5 9 4.5 9-4.5M12 12v9"/>',
+    fire:'<path d="M12 3c.8 4 5 5.5 5 10.2a5 5 0 0 1-10 0c0-2 1-3.2 2-4.2 0 2 1 3 2 3 0-3-1-5 1-9z"/>',
+    lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    dl:'<path d="M12 3v12m-5-5 5 5 5-5M4 21h16"/>',
+    ul:'<path d="M12 15V3m-5 5 5-5 5 5M4 21h16"/>',
+    trophy:'<path d="M8 4h8v6a4 4 0 0 1-8 0zM8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4M12 14v4M8 21h8"/>',
+    cpu:'<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
+    sync:'<path d="M20 11a8 8 0 0 0-14-4L4 9M4 5v4h4M4 13a8 8 0 0 0 14 4l2-2M20 19v-4h-4"/>',
+    bell:'<path d="M6 17v-6a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1"/>',
+    bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    bld:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>',
+    clipx:'<path d="m20 11-8 8a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-9 9a2 2 0 0 1-3-3l8-8"/>',
+    mega:'<path d="M3 10v4l12 5V5zM15 9.5a3 3 0 0 1 0 5"/>',
+    eyeoff:'<path d="M3 3l18 18M10.6 6.1A9 9 0 0 1 21 12a9 9 0 0 1-3 4M6.4 7.9A9 9 0 0 0 3 12a9 9 0 0 0 11.4 5.9"/>',
+    ruler:'<path d="M4 20 20 4M4 20V9l5 5M4 20h11"/>',
+    spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/>'
+  };
+  var D={red:'#B4423B',yel:'#C9A227',grn:'#2F7355',org:'#CC7A2E',blu:'#3B5B87'};
+  var MAP={'📊':'chart','📋':'clip','⚠':'warn','✅':'ok','✔':'check','❌':'xc','✕':'x','⛔':'ban','⏳':'hour','⌛':'hour','📄':'file','📈':'up','📉':'down','👤':'user','👷':'user','🕵':'user','🗑':'trash','✏':'pen','✍':'pen','📝':'pen','📅':'cal','🕐':'clock','🕒':'clock','⏰':'clock','🚨':'siren','🔧':'wrench','🔍':'search','🔎':'search','📷':'cam','☁':'cloud','💾':'save','🎯':'target','📍':'pin','📌':'pin','➕':'plus','➖':'minus','📦':'box','🔥':'fire','🔐':'lock','📥':'dl','📤':'ul','🏆':'trophy','🤖':'cpu','🔄':'sync','🔁':'sync','🔔':'bell','⚙':'gear','⚡':'bolt','🏢':'bld','📎':'clipx','📢':'mega','🙈':'eyeoff','📐':'ruler','🔮':'spark',
+    '🔴':'d:red','🟡':'d:yel','🟢':'d:grn','🟠':'d:org','🔵':'d:blu'};
+  var keys=Object.keys(MAP).map(function(k){return k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');});
+  var RE=new RegExp('('+keys.join('|')+')[\\uFE0E\\uFE0F]?','g');
+  var TEST=new RegExp(keys.join('|'));
+  var SKIP={SCRIPT:1,STYLE:1,TEXTAREA:1,OPTION:1,TITLE:1,INPUT:1,SELECT:1,NOSCRIPT:1};
+  function svg(name){
+    if(name.indexOf('d:')===0)return '<svg class="ic dot" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="'+D[name.slice(2)]+'"/></svg>';
+    return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">'+P[name]+'</svg>';
+  }
+  function fix(t){
+    var p=t.parentNode;if(!p||SKIP[p.nodeName])return;
+    var v=t.nodeValue;if(!v||!TEST.test(v))return;
+    var out=[],last=0,m;RE.lastIndex=0;
+    var frag=document.createDocumentFragment();
+    while((m=RE.exec(v))){
+      if(m.index>last)frag.appendChild(document.createTextNode(v.slice(last,m.index)));
+      var s=document.createElement('span');s.className='ic-w';s.innerHTML=svg(MAP[m[1]]);frag.appendChild(s);
+      last=m.index+m[0].length;
+    }
+    if(last<v.length)frag.appendChild(document.createTextNode(v.slice(last)));
+    p.replaceChild(frag,t);
+  }
+  function walk(n){
+    if(n.nodeType===3){fix(n);return;}
+    if(n.nodeType!==1||SKIP[n.nodeName]||(n.classList&&n.classList.contains('ic-w')))return;
+    var w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT,{acceptNode:function(x){var p=x.parentNode;return(p&&!SKIP[p.nodeName]&&TEST.test(x.nodeValue))?1:2;}}),a=[],c;
+    while((c=w.nextNode()))a.push(c);
+    a.forEach(fix);
+  }
+  var q=[],sch=false;
+  function flush(){sch=false;var l=q;q=[];obs.disconnect();try{l.forEach(function(n){if(n.isConnected)walk(n);});}catch(e){}start();}
+  var obs=new MutationObserver(function(ms){
+    ms.forEach(function(m){
+      if(m.type==='characterData')q.push(m.target);
+      else m.addedNodes.forEach(function(n){q.push(n);});
+    });
+    if(!sch&&q.length){sch=true;(window.requestAnimationFrame||setTimeout)(flush);}
+  });
+  function start(){obs.observe(document.body,{childList:true,subtree:true,characterData:true});}
+  function init(){try{walk(document.body);}catch(e){}start();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+<script>
+/* Menu kiri dashboard: lipat/buka per kategori (tampilan saja; status tersimpan per perangkat) */
+(function(){
+  var KEY='insp_sb_collapsed',DEF={'Laporan Inspeksi (16 Area)':1};
+  function load(){try{var v=localStorage.getItem(KEY);if(v)return JSON.parse(v);}catch(e){}return null;}
+  function save(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+  var state=load()||DEF;
+  function members(h){var a=[],n=h.nextElementSibling;while(n&&!n.classList.contains('sb-sec')){a.push(n);n=n.nextElementSibling;}return a;}
+  function name(h){return (h.getAttribute('data-sbname')||h.textContent||'').trim();}
+  function apply(h,c){
+    h.classList.toggle('collapsed',c);h.setAttribute('aria-expanded',c?'false':'true');
+    members(h).forEach(function(m){m.classList.toggle('sb-hide',c);});
+  }
+  function init(){
+    var secs=document.querySelectorAll('.sidebar .sb-sec');if(!secs.length)return;
+    [].forEach.call(secs,function(h){
+      h.setAttribute('data-sbname',h.textContent.trim());
+      h.setAttribute('role','button');h.setAttribute('tabindex','0');
+      var cnt=members(h).filter(function(m){return m.classList.contains('sbi');}).length;
+      var n=document.createElement('span');n.className='sb-sec-n';n.textContent=cnt+' menu';h.appendChild(n);
+      apply(h,!!state[h.getAttribute('data-sbname')]);
+      function tg(){var c=!h.classList.contains('collapsed');apply(h,c);state[h.getAttribute('data-sbname')]=c?1:0;save(state);}
+      h.addEventListener('click',tg);
+      h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tg();}});
+    });
+    reveal();
+  }
+  /* menu aktif selalu terlihat: kategorinya dibuka otomatis */
+  function reveal(){
+    var on=document.querySelector('.sidebar .sbi.on');if(!on)return;
+    var h=on.previousElementSibling;while(h&&!h.classList.contains('sb-sec'))h=h.previousElementSibling;
+    if(h&&h.classList.contains('collapsed')){apply(h,false);state[h.getAttribute('data-sbname')]=0;save(state);}
+  }
+  var orig=window.showP;
+  if(typeof orig==='function'){window.showP=function(){var r=orig.apply(this,arguments);try{reveal();}catch(e){}return r;};}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
 </script>
 </body>
 </html>
