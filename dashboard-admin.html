@@ -5121,7 +5121,7 @@ function renderAIRec(){
       var rate=Math.round(a.nc/a.total*100);
       if(rate>=30){
         recs.push({pri:rate>=50?'tinggi':'sedang',ic:'⚠️',
-          title:'Area '+(ICONS[type]||'')+' '+(typeLabel(type))+' — NC Rate Tinggi',
+          title:'Area '+typeLabel(type)+' — NC Rate Tinggi',
           desc:'Dari '+a.total+' laporan 30 hari terakhir, '+a.nc+' ('+rate+'%) berstatus NC. Disarankan menambah frekuensi inspeksi dan briefing ulang SOP untuk area ini.'});
       }
     }
