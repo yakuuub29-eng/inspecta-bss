@@ -47,7 +47,7 @@
 // ada Service Worker baru dan proses install/activate (yang membersihkan cache lama
 // & mengambil versi terbaru) benar-benar berjalan.
 
-const CACHE_NAME = 'inspecta-v1.8';
+const CACHE_NAME = 'inspecta-v1.9';
 const NETWORK_TIMEOUT_MS = 3000; // dipersingkat dari 4000ms — fallback ke cache lebih cepat terasa instan di sinyal lemah, tanpa terlalu agresif memotong request yang sebenarnya hampir selesai
 const STATIC_FILES = [
   './app-user.html',

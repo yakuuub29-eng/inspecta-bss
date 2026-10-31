@@ -1545,17 +1545,38 @@ function splitMedia(rep){
   if(has)light.mediaSplit=true;
   return {light:light,media:media,hasMedia:has};
 }
-// Tulis laporan ke Firebase (mengembalikan Promise). Media ditulis DULU; laporan ringan baru
-// ditulis setelah media sukses. Kalau node media ditolak (aturan database/ukuran), jatuh balik
-// ke format lama (foto di dalam laporan) supaya laporan TIDAK PERNAH hilang.
+// Batas waktu tulis ke Firebase. set() Firebase TIDAK PERNAH gagal/selesai sendiri kalau sinyal
+// putus-putus: promise-nya menggantung selamanya. Akibatnya SYNC_IN_PROGRESS tetap true dan
+// SEMUA percobaan kirim ulang berikutnya langsung dilewati → laporan "Menunggu" terus di HP itu.
+// Dengan batas waktu, tulisan yang menggantung dianggap gagal lalu dicoba lagi otomatis.
+var FB_WRITE_TO={light:45000,media:120000};
+function withTimeout(pr,ms){
+  return new Promise(function(res,rej){
+    var t=setTimeout(function(){rej(new Error('timeout (sinyal lemah)'));},ms);
+    pr.then(function(v){clearTimeout(t);res(v);},function(e){clearTimeout(t);rej(e);});
+  });
+}
+// Catat alasan gagal terakhir supaya penyebab "Menunggu" bisa dibaca (tap strip pending / toast).
+function recordSyncErr(e){
+  try{localStorage.setItem('k3_last_sync_err',JSON.stringify({t:Date.now(),m:String((e&&(e.code||e.message))||e).slice(0,160)}));}catch(x){}
+}
+function lastSyncErr(){try{var o=JSON.parse(localStorage.getItem('k3_last_sync_err')||'null');return o?o.m:'';}catch(e){return '';}}
+function isPermErr(e){return !!e&&(e.code==='PERMISSION_DENIED'||/permission/i.test(String(e.message||e)));}
+// Tulis laporan ke Firebase (mengembalikan Promise). Data teks yang RINGAN ditulis DULU (hanya
+// beberapa KB, tembus walau sinyal lemah di area tambang), foto menyusul ke reportMedia. Kalau foto
+// gagal, laporan tetap di antrean pending dan dicoba lagi (set() idempoten). Kalau node media
+// ditolak aturan database, jatuh balik ke format lama (foto di dalam laporan) supaya TIDAK hilang.
 function writeReportToFB(rep){
   var sp=splitMedia(rep);
-  if(!sp.hasMedia)return fbdb.ref('reports/'+rep.id).set(sp.light);
-  return fbdb.ref('reportMedia/'+rep.id).set(sp.media).then(function(){
-    return fbdb.ref('reports/'+rep.id).set(sp.light);
-  },function(err){
-    console.warn('[INSPECTA] reportMedia gagal ditulis, kirim format lama (foto di dalam laporan):',err);
-    return fbdb.ref('reports/'+rep.id).set(fbSafe(rep));
+  if(!sp.hasMedia)return withTimeout(fbdb.ref('reports/'+rep.id).set(sp.light),FB_WRITE_TO.light);
+  return withTimeout(fbdb.ref('reports/'+rep.id).set(sp.light),FB_WRITE_TO.light).then(function(){
+    return withTimeout(fbdb.ref('reportMedia/'+rep.id).set(sp.media),FB_WRITE_TO.media).catch(function(err){
+      if(isPermErr(err)){
+        console.warn('[INSPECTA] reportMedia ditolak aturan, kirim format lama (foto di dalam laporan):',err);
+        return withTimeout(fbdb.ref('reports/'+rep.id).set(fbSafe(rep)),FB_WRITE_TO.media);
+      }
+      throw err;
+    });
   });
 }
 // Salinan CAPA untuk Firebase tanpa foto bukti (foto sudah ada di reportMedia & di HP pemilik).
@@ -1594,6 +1615,7 @@ function pushToFB(rep){
       // fallback. Sekarang: masukkan ke antrean pending supaya polling
       // auto-retry (tiap 20 detik, lihat setInterval syncPending di bawah)
       // otomatis mencoba lagi begitu koneksi membaik — laporan tidak hilang.
+      recordSyncErr(e);
       var p=getPending();if(p.indexOf(rep.id)<0)p.push(rep.id);savePend(p);updPendUI();
     });
 }
@@ -1636,7 +1658,7 @@ function syncPending(){
         var pp=getPending().filter(function(pid){return pid!==id;});savePend(pp);
         logToSheet(rep);
         done++;chkDone();
-      }).catch(function(e){console.warn('[INSPECTA] Gagal sync laporan '+id+':',e);failed++;done++;chkDone();});
+      }).catch(function(e){console.warn('[INSPECTA] Gagal sync laporan '+id+':',e);recordSyncErr(e);failed++;done++;chkDone();});
   });
   function chkDone(){
     if(done>=total){
@@ -1645,7 +1667,7 @@ function syncPending(){
       updPendUI();
       var remaining=getPending().length;
       if(!remaining){showToast('✅ '+total+' laporan offline terkirim!','success');renderHist();}
-      else if(failed>0){showToast('⚠️ '+remaining+' laporan gagal terkirim — akan dicoba lagi otomatis','warning');}
+      else if(failed>0){showToast('⚠️ '+remaining+' laporan gagal terkirim ('+(lastSyncErr()||'tidak diketahui')+') — dicoba lagi otomatis','warning');}
     }
   }
 }
