@@ -742,6 +742,10 @@ tr:last-child td{border-bottom:none}
 .sb-sec .sb-sec-n{margin-left:auto;margin-right:8px;font-size:9px;font-weight:600;color:var(--G4);letter-spacing:0;display:none}
 .sb-sec.collapsed .sb-sec-n{display:inline}
 .sb-hide{display:none !important}
+.kpi-link{cursor:pointer}
+.kpi-link:hover{transform:none;border-color:#D6D3CD;box-shadow:var(--shm)}
+.kpi-link:active{background:var(--G1)}
+.hm-cell{cursor:pointer}
 @media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 </style>
 <!-- SheetJS untuk export Excel -->
@@ -1428,7 +1432,7 @@ var FB_CFG = {
 // ════ CONSTANTS ════
 var FB_OK=false, fbdb=null;
 var SK='k3_reports_local', CK='k3_checklists', ADM_KEY='k3_admin_v3', PW_KEY='k3_admin_pw3', CAP_KEY='k3_capa', NOTIF_KEY='k3_notifs', AUDIT_KEY='k3_audit_log', MPIC_KEY='k3_master_pic', KPI_KEY='k3_indicators', SCHED_KEY='k3_schedule', DUSR_KEY='k3_dash_users';
-var curP='exec', curPage=1, PAGE=15, srch='', filtSt='all', filtSev='all', filtDate='';
+var curP='exec', curPage=1, PAGE=15, srch='', filtSt='all', filtSev='all', filtDate='', filtSync=false;
 var curEF=null, editData={}, curCAPAId=null;
 
 var TYPES={
@@ -1905,7 +1909,7 @@ function showP(name,btn){
   el('p-'+name).classList.add('on');
   document.querySelectorAll('.sbi').forEach(function(b){b.classList.remove('on');});
   if(btn)btn.classList.add('on');
-  curP=name;curPage=1;srch='';filtSt='all';filtSev='all';
+  curP=name;curPage=1;srch='';filtSt='all';filtSev='all';filtDate='';filtSync=false;
   closeSidebar();
   if(!['exec','overview','edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict','audit','kpi','periodic','compliance-jadwal','users-mgmt','weekly'].includes(name))renderRP(name);
   if(name==='users')renderUsers();
@@ -1962,6 +1966,22 @@ function updSB(all){
   var sbC=el('sb-capa');if(sbC){sbC.textContent=openC;sbC.className='sbi-cnt'+(openC>0?' red':'');}
 }
 
+// Bulan lokal (yyyy-mm) dari timestamp ISO — dipakai filter bulan & KPI "Laporan Bulan Ini"
+function localYM(ts){var d=new Date(ts);if(isNaN(d))return '';return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+// Klik kartu/heatmap → buka halaman terkait dengan filter sudah terpasang
+function drillTo(name,o){
+  o=o||{};
+  var btn=document.querySelector('.sbi[onclick^="showP(\''+name+'\'"]');
+  showP(name,btn||null);
+  var isRP=!['exec','overview','edit','users','settings','capa','compliance','risk','leading','trend','pic','score','topfindings','airec','rca','predict','audit','kpi','periodic','compliance-jadwal','users-mgmt','weekly'].includes(name);
+  if(isRP){
+    filtSt=o.st||'all';filtSync=!!o.sync;filtDate=o.month||'';
+    renderRP(name);
+  }
+  var m=document.querySelector('.main');if(m&&m.scrollTo)m.scrollTo(0,0);
+  try{window.scrollTo(0,0);}catch(e){}
+}
+
 // ════ EXECUTIVE DASHBOARD ════
 function renderExec(){
   var all=getReports();
@@ -1977,13 +1997,13 @@ function renderExec(){
 
   // KPI
   el('exec-kpi').innerHTML=[
-    {n:monthly.length,l:'Laporan Bulan Ini',s:'Total semua inspeksi',cls:'y',i:'📋'},
-    {n:nc.length,l:'Total NC',s:Math.round(nc.length/Math.max(all.length,1)*100)+'% dari laporan',cls:'r',i:'⚠️'},
-    {n:openCAPA,l:'CAPA Open',s:'Belum diselesaikan',cls:'o',i:'🔧'},
-    {n:critCAPA,l:'Critical Open',s:'Perlu tindakan segera',cls:critCAPA>0?'r':'g',i:'🚨'},
-    {n:comp+'%',l:'Compliance',s:'Rata-rata keseluruhan',cls:comp>=80?'g':comp>=60?'y':'r',i:'📈'},
-    {n:pendingSync,l:'Pending Sync',s:pendingSync>0?'Belum terkirim ke server':'Semua tersinkron ☁️',cls:pendingSync>0?'o':'g',i:'⏳'}
-  ].map(function(k){return '<div class="kpi '+k.cls+'"><div class="kpi-ico">'+k.i+'</div><div class="kpi-n">'+k.n+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
+    {n:monthly.length,l:'Laporan Bulan Ini',s:'Total semua inspeksi',cls:'y',i:'📋',go:"drillTo('all',{month:localYM(new Date())})"},
+    {n:nc.length,l:'Total NC',s:Math.round(nc.length/Math.max(all.length,1)*100)+'% dari laporan',cls:'r',i:'⚠️',go:"drillTo('all',{st:'NC'})"},
+    {n:openCAPA,l:'CAPA Open',s:'Belum diselesaikan',cls:'o',i:'🔧',go:"drillTo('capa')"},
+    {n:critCAPA,l:'Critical Open',s:'Perlu tindakan segera',cls:critCAPA>0?'r':'g',i:'🚨',go:"drillTo('capa')"},
+    {n:comp+'%',l:'Compliance',s:'Rata-rata keseluruhan',cls:comp>=80?'g':comp>=60?'y':'r',i:'📈',go:"drillTo('overview')"},
+    {n:pendingSync,l:'Pending Sync',s:pendingSync>0?'Belum terkirim ke server':'Semua tersinkron ☁️',cls:pendingSync>0?'o':'g',i:'⏳',go:"drillTo('all',{sync:1})"}
+  ].map(function(k){return '<div class="kpi kpi-link '+k.cls+'" role="button" tabindex="0" onclick="'+k.go+'" onkeydown="if(event.key===\'Enter\')'+k.go+'"><div class="kpi-ico">'+k.i+'</div><div class="kpi-n">'+k.n+'</div><div class="kpi-l">'+k.l+'</div><div class="kpi-s">'+k.s+'</div></div>';}).join('');
 
   // Heatmap
   var ncByArea={};
@@ -1992,7 +2012,7 @@ function renderExec(){
   el('heatmap').innerHTML=Object.entries(ncByArea).map(function(e){
     var k=e[0],v=e[1];
     var lvl=v===0?0:v<3?1:v<8?2:v<15?3:4;
-    return '<div class="hm-cell h'+lvl+'" onclick="showP(\''+k+'\',null)" title="Klik untuk detail">'
+    return '<div class="hm-cell h'+lvl+'" onclick="drillTo(\''+k+'\','+(v>0?"{st:\'NC\'}":"{}")+')" title="Klik: tampilkan '+(v>0?'temuan NC ':'laporan ')+'area ini saja">'
       +'<div class="hm-area">'+ICONS[k]+' '+AREA_LABELS[k]+'</div>'
       +'<div class="hm-cnt">'+v+'</div>'
       +'<div class="hm-lbl">NC</div>'
@@ -2075,48 +2095,56 @@ function computeInsightData(){
     });
     return n;
   }
+  function ncByType(list){var o={};list.forEach(function(r){if(r.status==='NC')o[r.type]=(o[r.type]||0)+1;});return o;}
 
   var thisWeekReports=all.filter(function(r){var t=new Date(r.timestamp);return t>=d7&&t<=now;});
   var lastWeekReports=all.filter(function(r){var t=new Date(r.timestamp);return t>=d14&&t<d7;});
   var criticalThisWeek=thisWeekReports.filter(function(r){return r.severity==='Critical';}).length;
+  var ncT=ncByType(thisWeekReports),ncL=ncByType(lastWeekReports);
+  var ncThis=0,ncLast=0,topType='',topN=0;
+  Object.keys(ncT).forEach(function(k){ncThis+=ncT[k];if(ncT[k]>topN){topN=ncT[k];topType=k;}});
+  Object.keys(ncL).forEach(function(k){ncLast+=ncL[k];});
+  var today=new Date().toISOString().slice(0,10);
+  var overdue=Object.values(getCAPAs()).filter(function(c){return c.status!=='Closed'&&c.dueDate&&c.dueDate<today;}).length;
 
   return{
     housekeeping:countHousekeepingNG(thisWeekReports),
     lastWeek:countHousekeepingNG(lastWeekReports),
-    critical:criticalThisWeek
+    critical:criticalThisWeek,
+    ncThis:ncThis,ncLast:ncLast,topType:topType,topN:topN,overdue:overdue,total:thisWeekReports.length
   };
 }
 
+// Insight dibuat dari pola data 7 hari terakhir (rule-based). Mengembalikan daftar kalimat,
+// diurutkan dari yang paling mendesak, maksimal 4 baris.
 function getInsight(data){
-  var txt='';
-
-  if(data.housekeeping>data.lastWeek){
-    txt='📈 Temuan housekeeping minggu ini ('+data.housekeeping+') meningkat dibanding minggu lalu ('+data.lastWeek+').';
-  }else if(data.housekeeping<data.lastWeek){
-    txt='📉 Temuan housekeeping minggu ini ('+data.housekeeping+') menurun dibanding minggu lalu ('+data.lastWeek+').';
-  }else{
-    txt='➖ Temuan housekeeping minggu ini stabil, sama seperti minggu lalu ('+data.housekeeping+').';
+  var L=[];
+  if(data.critical>0)L.push('🚨 Terdapat '+data.critical+' temuan critical minggu ini yang memerlukan tindakan segera.');
+  if(data.overdue>0)L.push('⏰ '+data.overdue+' CAPA melewati batas waktu dan belum ditutup.');
+  if(data.ncThis>data.ncLast)L.push('📈 Temuan NC minggu ini ('+data.ncThis+') meningkat dibanding minggu lalu ('+data.ncLast+').');
+  else if(data.ncThis<data.ncLast)L.push('📉 Temuan NC minggu ini ('+data.ncThis+') menurun dibanding minggu lalu ('+data.ncLast+').');
+  else if(data.ncThis===0)L.push('✅ Tidak ada temuan NC dalam 7 hari terakhir'+(data.total?' ('+data.total+' laporan masuk).':'.'));
+  else L.push('➖ Temuan NC minggu ini stabil, sama seperti minggu lalu ('+data.ncThis+').');
+  if(data.topN>0)L.push('🔥 Area dengan NC terbanyak minggu ini: '+(AREA_LABELS[data.topType]||TYPES[data.topType]||data.topType)+' ('+data.topN+' laporan NC).');
+  if(data.housekeeping>0||data.lastWeek>0){
+    if(data.housekeeping>data.lastWeek)L.push('📈 Temuan housekeeping meningkat ('+data.housekeeping+' vs '+data.lastWeek+' minggu lalu).');
+    else if(data.housekeeping<data.lastWeek)L.push('📉 Temuan housekeeping menurun ('+data.housekeeping+' vs '+data.lastWeek+' minggu lalu).');
   }
-
-  if(data.critical>0){
-    txt+=' Terdapat '+data.critical+' temuan critical minggu ini yang memerlukan tindakan segera.';
-  }
-
-  return txt;
+  return L.slice(0,4);
 }
 
 function renderAIInsight(){
   var box=el('ai-insight-card');
   if(!box)return;
   var data=computeInsightData();
-  var txt=getInsight(data);
+  var lines=getInsight(data);
   var hasCritical=data.critical>0;
   box.innerHTML='<div class="trend-card" style="border-left:4px solid '+(hasCritical?'var(--R)':'var(--YD)')+'">'
     +'<div style="display:flex;align-items:flex-start;gap:12px">'
     +'<div style="font-size:22px;line-height:1">🤖</div>'
     +'<div style="flex:1">'
-    +'<div style="font-weight:700;font-size:13px;margin-bottom:4px">AI Insight</div>'
-    +'<div style="font-size:12px;color:var(--G6);line-height:1.6">'+esc(txt)+'</div>'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:4px">AI Insight <span style="font-weight:400;font-size:10px;color:var(--G4)">· 7 hari terakhir</span></div>'
+    +lines.map(function(t){return '<div style="font-size:12px;color:var(--G6);line-height:1.7">'+esc(t)+'</div>';}).join('')
     +'</div></div></div>';
 }
 
@@ -2198,8 +2226,9 @@ function renderRP(name){
     var mq=!q||[r.reporter,r.userName,r.location,r.userDept,r.typeName,r.status,r.notes].some(function(v){return v&&v.toLowerCase().indexOf(q)>=0;});
     var ms=filtSt==='all'||r.status===filtSt;
     var msev=filtSev==='all'||r.severity===filtSev;
-    var mdate=!filtDate||r.timestamp.startsWith(filtDate);
-    return mq&&ms&&msev&&mdate;
+    var mdate=!filtDate||localYM(r.timestamp)===filtDate;
+    var msync=!filtSync||!r.synced;
+    return mq&&ms&&msev&&mdate&&msync;
   });
   var total=filtered.length,pages=Math.ceil(total/PAGE)||1;
   if(curPage>pages)curPage=pages;
@@ -2207,7 +2236,7 @@ function renderRP(name){
   var lbl=name==='all'?'Semua Laporan':(TYPES[name]||QUICK_TYPES[name]||name);
 
   el('p-'+name).innerHTML=
-    '<div class="panel-hdr"><div class="panel-title">'+(ICONS[name]||ICONS.default)+' '+lbl+' <span style="color:var(--G4);font-weight:400;font-size:15px">('+total+')</span></div></div>'
+    '<div class="panel-hdr"><div class="panel-title">'+(ICONS[name]||ICONS.default)+' '+lbl+' <span style="color:var(--G4);font-weight:400;font-size:15px">('+total+')</span>'+(filtSync?' <span style="font-size:11px;font-weight:700;color:var(--OR);background:var(--OL);padding:3px 10px;border-radius:99px;margin-left:6px;vertical-align:middle">Belum tersinkron</span>':'')+'</div></div>'
     +'<div class="tw">'
     +'<div class="ttbar">'
     +'<input class="sinp" placeholder="🔍 Cari nama, lokasi, temuan..." value="'+esc(srch)+'" oninput="srch=this.value;curPage=1;renderRP(\''+name+'\')" />'
@@ -2222,7 +2251,7 @@ function renderRP(name){
     +'<option value="Critical">🔴 Critical</option><option value="High">🟠 High</option>'
     +'<option value="Medium">🟡 Medium</option><option value="Low">🟢 Low</option>'
     +'</select>'
-    +'<input type="month" class="fsel" title="Filter bulan" onchange="filtDate=this.value;curPage=1;renderRP(\''+name+'\')" />'
+    +'<input type="month" class="fsel" title="Filter bulan" value="'+filtDate+'" onchange="filtDate=this.value;curPage=1;renderRP(\''+name+'\')" />'
     +'<button class="exp-btn" onclick="exportCSV(\''+name+'\')">⬇ CSV</button>'
     +((name==='fatigue'||name==='speedgun')?admResumeControlsHTML(name,reps):'')
     +'</div>'
