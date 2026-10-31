@@ -746,6 +746,11 @@ tr:last-child td{border-bottom:none}
 .kpi-link:hover{transform:none;border-color:#D6D3CD;box-shadow:var(--shm)}
 .kpi-link:active{background:var(--G1)}
 .hm-cell{cursor:pointer}
+/* Menu kiri versi simpel */
+.sb-sec.sb-pin{cursor:default}.sb-sec.sb-pin::after{display:none}.sb-sec.sb-pin:hover{color:var(--G4)}
+.sidebar .sbi-cnt:not(.red){display:none}
+.sidebar .sbi{padding:8px 12px;font-size:13.5px}
+.sidebar .sb-sec{padding:16px 18px 6px}
 @media(prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 </style>
 <!-- SheetJS untuk export Excel -->
@@ -817,18 +822,20 @@ tr:last-child td{border-bottom:none}
   <div class="dash-body">
     <!-- SIDEBAR -->
     <nav class="sidebar">
-      <div class="sb-sec">Dashboard</div>
+      <div class="sb-sec">Utama</div>
       <button class="sbi on" onclick="showP('exec',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 21V9M15 21V9M9 3v3M15 3v3"/></svg></span>Executive View</button>
       <button class="sbi" onclick="showP('overview',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>Overview<span class="sbi-cnt" id="sb-tot">0</span></button>
+      <button class="sbi" onclick="showP('capa',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg></span>CAPA Tracking<span class="sbi-cnt red" id="sb-capa">0</span></button>
+      <button class="sbi" onclick="showP('weekly',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/><path d="M7 14h2M11 14h2M15 14h2M7 18h2M11 18h2"/></svg></span>Monitoring Pengawas</button>
 
-      <div class="sb-sec">Quick Report</div>
+      <div class="sb-sec">Laporan</div>
+      <button class="sbi" onclick="showP('all',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg></span>Semua<span class="sbi-cnt" id="sb-all">0</span></button>
       <button class="sbi" onclick="showP('hazard',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg></span>Hazard<span class="sbi-cnt" id="sb-hazard">0</span></button>
       <button class="sbi" onclick="showP('nearmiss',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 9-9 9-9-9z"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor" stroke="none"/></svg></span>Near Miss<span class="sbi-cnt" id="sb-nearmiss">0</span></button>
       <button class="sbi" onclick="showP('stopwork',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8l5 5v8l-5 5H8l-5-5V8z"/><path d="M9 9l6 6M15 9l-6 6"/></svg></span>Stop Kerja (SWA)<span class="sbi-cnt" id="sb-stopwork">0</span></button>
       <button class="sbi" onclick="showP('positive',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11v9H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1h3z"/><path d="M7 11l3.5-7a2 2 0 0 1 2 2v4h5.5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 17 20H7"/></svg></span>Observasi Positif<span class="sbi-cnt" id="sb-positive">0</span></button>
 
-      <div class="sb-sec">Laporan Inspeksi (16 Area)</div>
-      <button class="sbi" onclick="showP('all',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg></span>Semua<span class="sbi-cnt" id="sb-all">0</span></button>
+      <div class="sb-sec">Inspeksi Area</div>
       <button class="sbi" onclick="showP('ma_workshop',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg></span>Workshop<span class="sbi-cnt" id="sb-ma_workshop">0</span></button>
       <button class="sbi" onclick="showP('ma_tpslb3',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M6 8h12M6 14h12"/></svg></span>TPS Limbah B3<span class="sbi-cnt" id="sb-ma_tpslb3">0</span></button>
       <button class="sbi" onclick="showP('ma_hauling',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="13" height="9" rx="1"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="6" cy="18" r="1.6"/><circle cx="17" cy="18" r="1.6"/></svg></span>Hauling Road<span class="sbi-cnt" id="sb-ma_hauling">0</span></button>
@@ -848,8 +855,7 @@ tr:last-child td{border-bottom:none}
       <button class="sbi" onclick="showP('speedgun',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/></svg></span>Speedgun<span class="sbi-cnt" id="sb-speedgun">0</span></button>
       <button class="sbi" onclick="showP('fatigue',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></span>Fatigue<span class="sbi-cnt" id="sb-fatigue">0</span></button>
 
-      <div class="sb-sec">Pengendalian</div>
-      <button class="sbi" onclick="showP('capa',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 1 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg></span>CAPA Tracking<span class="sbi-cnt red" id="sb-capa">0</span></button>
+      <div class="sb-sec">Analisis</div>
       <button class="sbi" onclick="showP('compliance',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>Compliance %</button>
       <button class="sbi" onclick="showP('risk',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg></span>Risk Matrix</button>
       <button class="sbi" onclick="showP('leading',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 13l4-4 4 4"/><path d="M12 9v7"/></svg></span>Leading Indicator</button>
@@ -863,14 +869,14 @@ tr:last-child td{border-bottom:none}
       <button class="sbi" onclick="showP('kpi',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/></svg></span>Indikator K3 (FR/SR)</button>
       <button class="sbi" onclick="showP('periodic',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M4 9h16M8 2v4M16 2v4"/><path d="M8 14h3M8 17h3"/></svg></span>Laporan Periodik</button>
       <button class="sbi" onclick="showP('compliance-jadwal',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4M16 2v4"/><path d="M8 15l2 2 4-4"/></svg></span>Compliance Jadwal</button>
-      <button class="sbi" onclick="showP('weekly',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/><path d="M7 14h2M11 14h2M15 14h2M7 18h2M11 18h2"/></svg></span>Monitoring Pengawas</button>
 
-      <div class="sb-sec">Manajemen</div>
+      <div class="sb-sec">Pengaturan</div>
       <button class="sbi" id="nav-edit-checklist" data-perm="checklistEdit" onclick="showP('edit',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></span>Edit Checklist</button>
       <button class="sbi" onclick="showP('users',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6"/><circle cx="17" cy="8" r="2.5"/><path d="M15.3 14.2c2.7.5 4.7 2.6 4.7 5.8"/></svg></span>Statistik Inspektur</button>
       <button class="sbi" onclick="showP('audit',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></span>Audit Trail</button>
       <button class="sbi" id="nav-users-mgmt" data-perm="userMgmt" onclick="showP('users-mgmt',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M6 16c0-1.7 1.3-3 3-3s3 1.3 3 3"/><path d="M14 9h4M14 13h4"/></svg></span>Kelola Akun &amp; Role</button>
       <button class="sbi" id="nav-settings" onclick="showP('settings',this)"><span class="sbi-i"><svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.125em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg></span>Pengaturan</button>
+
     </nav>
 
     <!-- MAIN -->
@@ -6830,7 +6836,7 @@ function rxRun(){
 <script>
 /* Menu kiri dashboard: lipat/buka per kategori (tampilan saja; status tersimpan per perangkat) */
 (function(){
-  var KEY='insp_sb_collapsed',DEF={'Laporan Inspeksi (16 Area)':1};
+  var KEY='insp_sb_v2',DEF={'Inspeksi Area':1,'Analisis':1,'Pengaturan':1};
   function load(){try{var v=localStorage.getItem(KEY);if(v)return JSON.parse(v);}catch(e){}return null;}
   function save(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
   var state=load()||DEF;
@@ -6848,17 +6854,28 @@ function rxRun(){
       var cnt=members(h).filter(function(m){return m.classList.contains('sbi');}).length;
       var n=document.createElement('span');n.className='sb-sec-n';n.textContent=cnt+' menu';h.appendChild(n);
       apply(h,!!state[h.getAttribute('data-sbname')]);
-      function tg(){var c=!h.classList.contains('collapsed');apply(h,c);state[h.getAttribute('data-sbname')]=c?1:0;save(state);}
+      if(h===secs[0]){h.classList.add('sb-pin');h.removeAttribute('role');h.removeAttribute('tabindex');apply(h,false);return;}
+      function tg(){var c=!h.classList.contains('collapsed');if(!c)openOnly(h);else{apply(h,true);state[h.getAttribute('data-sbname')]=1;save(state);}}
       h.addEventListener('click',tg);
       h.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tg();}});
     });
+    var open=[].filter.call(secs,function(x){return !x.classList.contains('sb-pin')&&!x.classList.contains('collapsed');});
+    if(open.length>1)openOnly(open[0]);
     reveal();
+  }
+  /* akordeon: membuka satu kategori menutup kategori lain (kecuali "Utama" yang selalu terbuka) */
+  function openOnly(h){
+    [].forEach.call(document.querySelectorAll('.sidebar .sb-sec'),function(o){
+      if(o.classList.contains('sb-pin'))return;
+      var c=(o!==h);apply(o,c);state[o.getAttribute('data-sbname')]=c?1:0;
+    });
+    save(state);
   }
   /* menu aktif selalu terlihat: kategorinya dibuka otomatis */
   function reveal(){
     var on=document.querySelector('.sidebar .sbi.on');if(!on)return;
     var h=on.previousElementSibling;while(h&&!h.classList.contains('sb-sec'))h=h.previousElementSibling;
-    if(h&&h.classList.contains('collapsed')){apply(h,false);state[h.getAttribute('data-sbname')]=0;save(state);}
+    if(h&&h.classList.contains('collapsed'))openOnly(h);
   }
   var orig=window.showP;
   if(typeof orig==='function'){window.showP=function(){var r=orig.apply(this,arguments);try{reveal();}catch(e){}return r;};}
