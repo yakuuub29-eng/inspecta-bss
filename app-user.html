@@ -962,9 +962,9 @@ function openCloseTL(id){
   el('m-s').textContent=(r.typeName||'Temuan')+' · '+(r.location||'—');
   el('m-b').innerHTML=
     '<div style="font-size:12px;color:var(--G6);line-height:1.5;margin-bottom:10px">'+esc((r.notes||'').substring(0,140))+'</div>'
-    +'<label class="dk" style="display:block;margin-bottom:4px">Perbaikan yang dilakukan (opsional)</label>'
+    +'<label class="dk" style="display:block;margin-bottom:4px">Perbaikan yang dilakukan (wajib)</label>'
     +'<textarea id="ctl-note" rows="3" style="width:100%;box-sizing:border-box;border:1px solid var(--G2);border-radius:8px;padding:8px;font:inherit;font-size:13px" placeholder="Contoh: kabel sudah diganti dan dirapikan"></textarea>'
-    +'<label class="dk" style="display:block;margin:10px 0 4px">Foto sesudah perbaikan (opsional)</label>'
+    +'<label class="dk" style="display:block;margin:10px 0 4px">Foto sesudah perbaikan (wajib)</label>'
     +'<input type="file" id="ctl-file" accept="image/*" capture="environment" onchange="ctlPick(this)" style="font-size:12px"/>'
     +'<img id="ctl-prev" style="display:none;width:100%;border-radius:8px;margin-top:8px;border:1px solid var(--G2)"/>';
   el('m-pdf-btn').innerHTML='<button class="tl-close-btn" style="margin:0;background:var(--G2);color:var(--G6)" onclick="closeMod()">Batal</button>'
@@ -983,7 +983,10 @@ function doCloseTL(id){
   var caps=getCAPAsLocal(),cid='CAPA-'+id,c=caps[cid];
   if(!c){saveCAPAFromReport(r);caps=getCAPAsLocal();c=caps[cid];}
   if(!c){showToast('Data temuan tidak ditemukan','error');return;}
-  var old=c.status,now=new Date().toISOString(),note=(el('ctl-note').value||'').trim();
+  var note=(el('ctl-note').value||'').trim();
+  if(!note){el('ctl-note').style.borderColor='#C53030';showToast('Catatan perbaikan wajib diisi','warning');return;}
+  if(!CLOSE_TL_PHOTO){showToast('Foto sesudah perbaikan wajib diambil','warning');var f=el('ctl-file');if(f)f.style.outline='2px solid #C53030';return;}
+  var old=c.status,now=new Date().toISOString();
   c.status='Closed';c.closedAt=now;c.closedBy=CU?CU.name:'';c.closedByUserId=CU?CU.empId:'';
   c.closingNotes=note||c.closingNotes||'';c.updatedAt=now;
   if(CLOSE_TL_PHOTO)c.evAfter=CLOSE_TL_PHOTO;
@@ -8248,6 +8251,7 @@ function openQuick(type){
     +fgg('Lokasi Kejadian','<input class="fi" id="fi2" placeholder="Contoh: Pit A, Blok 3"/>')
     +fgg('Uraian Kejadian / Temuan','<textarea class="fi" id="notes" rows="4" placeholder="Jelaskan secara detail apa yang terjadi / ditemukan..."></textarea>')
     +fgg('Tindakan Segera','<textarea class="fi" id="action" rows="2" placeholder="Tindakan yang sudah / akan dilakukan..."></textarea>')
+    +(type!=='positive'?fgg('PIC Tindak Lanjut','<div id="qpic-wrap">'+picSelectHTML('qpic','')+'</div>'):'')
     +'</div></div>'
     +(type!=='positive'?'<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><path d="M12 10v4"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg> Severity</span></div>'+buildSevMatrix('quick')+'</div>':'')
     +'<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 0 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg> GPS & Foto</span></div><div class="ffields">'
@@ -8266,7 +8270,40 @@ function openQuick(type){
   setTimeout(getGPS,500);
 }
 
+function qkErr(id,msg){
+  var e=el(id);if(!e)return false;
+  e.classList.add('fi-err');
+  var fg=e.closest?e.closest('.fg'):null;
+  if(fg&&!fg.querySelector('.fi-err-msg')){var m=document.createElement('div');m.className='fi-err-msg';m.textContent=msg||'Wajib diisi';fg.appendChild(m);}
+  var clr=function(){e.classList.remove('fi-err');var mm=fg&&fg.querySelector('.fi-err-msg');if(mm)mm.remove();};
+  e.oninput=clr;e.onchange=clr;
+  return true;
+}
+// Semua kolom Hazard/Near Miss/Stop Work wajib terisi sebelum bisa dikirim (Observasi Positif: tanpa severity & PIC).
+function validateQuick(type){
+  document.querySelectorAll('.quick-form .fi-err-msg').forEach(function(m){m.remove();});
+  document.querySelectorAll('.quick-form .fi-err').forEach(function(m){m.classList.remove('fi-err');});
+  var bad=[];
+  if(!gv('fi0'))bad.push(['fi0','Nama pelapor wajib diisi']);
+  if(!gv('fi1'))bad.push(['fi1','Tanggal & waktu wajib diisi']);
+  if(!gv('fi2'))bad.push(['fi2','Lokasi wajib diisi']);
+  if(!gv('notes'))bad.push(['notes','Uraian wajib diisi']);
+  if(!gv('action'))bad.push(['action','Tindakan segera wajib diisi']);
+  if(type!=='positive'){
+    if(!getPicValue('qpic'))bad.push([el('qpic-sel')&&el('qpic-sel').value==='__custom__'?'qpic-custom':'qpic-sel','PIC wajib dipilih']);
+    if(!getSev())bad.push(['','Severity (Likelihood & Consequence) wajib dipilih']);
+  }
+  if(!PHOTOS.length)bad.push(['','Minimal 1 foto wajib dilampirkan']);
+  if(!bad.length)return true;
+  bad.forEach(function(b){if(b[0])qkErr(b[0],b[1]);});
+  var withEl=bad.filter(function(b){return b[0];});
+  var first=withEl.length?el(withEl[0][0]):null;
+  if(first){try{first.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}}
+  showToast(bad[0][1]+(bad.length>1?' (+'+(bad.length-1)+' kolom lain)':''),'warning');
+  return false;
+}
 function submitQuick(type){
+  if(!validateQuick(type))return;
   var btn=el('subbtn');btn.disabled=true;
   showLoad(IS_ONLINE?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Mengirim (Submitting)...':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v13H5z"/><path d="M8 3v6h8V3"/><path d="M7 21v-7h10v7"/></svg> Menyimpan secara offline...');
   var cfg=QUICK_CFG[type];
@@ -8281,6 +8318,7 @@ function submitQuick(type){
       userId:CU.empId,userName:CU.name,userDept:CU.dept,userShift:CU.shift,
       extra:{},synced:false
     };
+    if(type!=='positive')rep.capa={pic:getPicValue('qpic')};
     setTimeout(function(){
       // FIX: try/finally supaya hideLoad() PASTI terpanggil walau ada error tak
       // terduga di addReport/saveCAPAFromReport/logAudit — laporan sudah lebih

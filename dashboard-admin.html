@@ -1534,32 +1534,34 @@ function initFB(){
     // saat sinkronisasi awal (ratusan laporan sekaligus) UI tidak macet re-render 1x per item.
     var reportsById=window.RBI={};
     getReports().forEach(function(r){reportsById[r.id]=normLegacyReport(r);});
-    var refreshTimer=null;
+    // PERF: sebelumnya debounce 250ms yang selalu di-reset tiap laporan masuk → saat ratusan laporan
+    // mengalir, render BARU terjadi setelah SEMUA selesai diunduh (dashboard "berhenti di tgl 3").
+    // Sekarang THROTTLE: render pertama cepat, lalu paling sering tiap 2 detik selama sinkronisasi awal,
+    // dan penulisan cache localStorage (stringify ribuan data) dipisah & ditunda supaya tidak memblokir UI.
+    var refreshTimer=null,cacheTimer=null,lastRun=0,FB_INITIAL=true,loadedN=0;
+    function writeCache(){
+      var arr=LIVE_REPORTS||[];
+      try{localStorage.setItem(SK,JSON.stringify(arr));}
+      catch(e){
+        console.warn('[INSPECTA] localStorage penuh, pakai cache foto-terpangkas:',e);
+        try{localStorage.setItem(SK,JSON.stringify(arr.map(function(r){var c=Object.assign({},r);delete c.photos;return c;})));}
+        catch(e2){console.warn('[INSPECTA] Cache cadangan juga gagal disimpan (tidak masalah, data live tetap tampil):',e2);}
+      }
+    }
     function scheduleRefresh(){
-      clearTimeout(refreshTimer);
+      if(refreshTimer)return;
+      var wait=FB_INITIAL?Math.max(250,2000-(Date.now()-lastRun)):250;
       refreshTimer=setTimeout(function(){
-        var arr=Object.values(reportsById).sort(function(a,b){return new Date(b.timestamp)-new Date(a.timestamp);});
-        // LIVE_REPORTS diisi DULUAN, tidak peduli localStorage berhasil atau tidak —
-        // ini yang membuat dashboard tetap benar walau penyimpanan browser penuh.
-        LIVE_REPORTS=arr;
-        try{
-          localStorage.setItem(SK,JSON.stringify(arr));
-        }catch(e){
-          // Kuota localStorage penuh (biasanya karena banyak foto base64 menumpuk).
-          // Coba simpan versi ringan (tanpa foto) sebagai cache cadangan saja —
-          // kalau ini pun gagal, tidak apa, LIVE_REPORTS di memori tetap jadi sumber
-          // utama selama tab dashboard ini terbuka.
-          console.warn('[INSPECTA] localStorage penuh, pakai cache foto-terpangkas:',e);
-          try{
-            var lite=arr.map(function(r){var c=Object.assign({},r);delete c.photos;return c;});
-            localStorage.setItem(SK,JSON.stringify(lite));
-          }catch(e2){console.warn('[INSPECTA] Cache cadangan juga gagal disimpan (tidak masalah, data live tetap tampil):',e2);}
-        }
+        refreshTimer=null;lastRun=Date.now();
+        LIVE_REPORTS=Object.values(reportsById).sort(function(a,b){return new Date(b.timestamp)-new Date(a.timestamp);});
         refreshAll();
-      },250);
+        clearTimeout(cacheTimer);cacheTimer=setTimeout(writeCache,FB_INITIAL?4000:800);
+      },wait);
     }
     fbdb.ref('reports').on('child_added',function(snap){
-      var r=snap.val();if(r&&r.id)reportsById[r.id]=normLegacyReport(r);scheduleRefresh();
+      var r=snap.val();if(r&&r.id)reportsById[r.id]=normLegacyReport(r);
+      if(FB_INITIAL){loadedN++;if(loadedN%10===0)setFBS(true,'⏳ Memuat laporan… '+loadedN+' (tampilan diperbarui bertahap)');}
+      scheduleRefresh();
     },function(err){console.warn('[INSPECTA] reports child_added error:',err);setFBS(false,'⚠️ Gagal memuat data laporan (cek koneksi)');});
     fbdb.ref('reports').on('child_changed',function(snap){
       var r=snap.val();if(r&&r.id)reportsById[r.id]=normLegacyReport(r);scheduleRefresh();
@@ -1574,7 +1576,9 @@ function initFB(){
     fbdb.ref('reports').once('value').then(function(snap){
       var live=snap.val()||{},removed=0;
       Object.keys(reportsById).forEach(function(id){if(!live[id]){delete reportsById[id];removed++;}});
-      if(removed){console.log('[INSPECTA] '+removed+' laporan cache lokal dibuang (sudah tidak ada di Firebase)');scheduleRefresh();}
+      FB_INITIAL=false;setFBS(true,'🟢 Firebase ('+FB_CFG.projectId+') — data real-time · '+Object.keys(reportsById).length+' laporan');
+      if(removed){console.log('[INSPECTA] '+removed+' laporan cache lokal dibuang (sudah tidak ada di Firebase)');}
+      scheduleRefresh();
     }).catch(function(e){console.warn('[INSPECTA] Gagal verifikasi cache laporan:',e);});
     fbdb.ref('checklists').on('value',function(snap){
       var d=snap.val();if(d){try{localStorage.setItem(CK,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache checklists (penyimpanan penuh):',e);}}
@@ -2698,8 +2702,8 @@ function quickCloseCAPA(id){
   o.innerHTML='<div style="background:#fff;border-radius:12px;padding:20px 22px;width:380px;max-width:100%;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
     +'<div style="font-weight:700;font-size:15px">Tutup Temuan</div>'
     +'<div style="font-size:12px;color:#666;margin:2px 0 10px">'+esc(c.title||id)+'</div>'
-    +'<textarea id="qc-note" rows="3" class="fi" style="width:100%;box-sizing:border-box" placeholder="Catatan perbaikan (opsional)"></textarea>'
-    +'<div style="font-size:11px;font-weight:600;color:#555;margin:10px 0 3px">Foto sesudah (opsional)</div>'
+    +'<textarea id="qc-note" rows="3" class="fi" style="width:100%;box-sizing:border-box" placeholder="Catatan perbaikan (wajib)"></textarea>'
+    +'<div style="font-size:11px;font-weight:600;color:#555;margin:10px 0 3px">Foto sesudah (wajib)</div>'
     +'<input type="file" id="qc-file" accept="image/*" onchange="qcPick(this)" style="font-size:12px"/>'
     +'<img id="qc-prev" style="display:none;width:100%;border-radius:8px;margin-top:8px"/>'
     +'<div style="font-size:11px;color:#888;margin-top:10px">Ditutup atas nama <b>'+esc(CUR_USER?CUR_USER.name:'—')+'</b>, tanggal hari ini.</div>'
@@ -2719,6 +2723,8 @@ function qcPick(inp){
 }
 function quickCloseSave(){
   var caps=getCAPAs(),c=caps[QC_ID];if(!c){qcRemove();return;}
+  if(!(document.getElementById('qc-note').value||'').trim()){showToast('⚠️ Catatan perbaikan wajib diisi','warning');return;}
+  if(!QC_PHOTO){showToast('⚠️ Foto sesudah wajib diunggah','warning');return;}
   var prev=c.status,now=new Date(),who=CUR_USER?CUR_USER.name:'Admin';
   c.status='Closed';c.verifiedBy=c.verifiedBy||who;c.verificationDate=now.toISOString().split('T')[0];
   c.closedAt=now.toISOString();c.closedBy=who;c.updatedAt=now.toISOString();
@@ -6810,6 +6816,9 @@ function rxRun(){
 // ════ EXPORT RESUME HAZARD REPORT → EXCEL (sheet RINGKASAN + DATA, foto laporan ikut tertanam) ════
 // Memakai penulis XLSX yang sama dengan Resume IBPR (rx_core.js). Terpisah dari resume inspeksi:
 // Hazard Report TIDAK ikut IBPR; ia punya resume sendiri.
+// ════ EXPORT RESUME HAZARD REPORT → EXCEL (sheet RINGKASAN + DATA, foto laporan ikut tertanam) ════
+// Memakai penulis XLSX yang sama dengan Resume IBPR (rx_core.js). Terpisah dari resume inspeksi:
+// Hazard Report TIDAK ikut IBPR; ia punya resume sendiri.
 var RXH={TYPES:{hazard:'Hazard',nearmiss:'Near Miss',stopwork:'Stop Work'}};
 
 // dataURL foto → JPEG kecil {bytes,w,h} untuk ditanam di sel Excel
@@ -6999,6 +7008,45 @@ RXH.build=function(m){
     sR.set(rr,4,{v:cl,f:'COUNTIFS('+rngD('K')+',$B'+rr+','+rngD('P')+',"Closed")',s:T(c)});
     sR.set(rr,5,{v:n-cl,f:'C'+rr+'-D'+rr,s:T(c)});
   });
+  r0=fS+SV.length+2;
+  // — generik: tabel per kunci (pengawas / PIC) + grafik —
+  function groupSection(titleTxt,head,colRng,keyOf,keys,chartTitle){
+    sR.merge(r0,2,r0,LC,titleTxt,band);sR.rowH[r0]=21;
+    var hh=[head].concat(TL).concat(['TOTAL','OPEN','CLOSED','% CLOSED']);
+    hh.forEach(function(h,i){sR.put(r0+1,2+i,h,sh);});sR.rowH[r0+1]=22;
+    var f=r0+2,nT=types.length,cT=3+nT,cO=cT+1,cC=cT+2,cP=cT+3;
+    keys.forEach(function(k,gi){
+      var rr=f+gi,z=(gi%2)?P.zebra:'FFFFFF',b={border:'all',fill:z,v:'center'},c=Object.assign({h:'center'},b);
+      sR.put(rr,2,k,Object.assign({h:'left',indent:1,b:1,wrap:1},b));
+      var tot=0;
+      types.forEach(function(t,ti){
+        var n=rows.filter(function(x){return keyOf(x)===k&&x.jenis===TL[ti];}).length;tot+=n;
+        sR.set(rr,3+ti,{v:n,f:'COUNTIFS('+rngD(colRng)+',$B'+rr+','+rngD('G')+',"'+TL[ti]+'")',s:T(c)});
+      });
+      var cl=rows.filter(function(x){return keyOf(x)===k&&x.status==='Closed';}).length;
+      sR.set(rr,cT,{v:tot,f:'SUM('+RX.addr(rr,3)+':'+RX.addr(rr,cT-1)+')',s:T(Object.assign({b:1},c))});
+      sR.set(rr,cO,{v:tot-cl,f:RX.addr(rr,cT)+'-'+RX.addr(rr,cC),s:T(c)});
+      sR.set(rr,cC,{v:cl,f:'COUNTIFS('+rngD(colRng)+',$B'+rr+','+rngD('P')+',"Closed")',s:T(c)});
+      sR.set(rr,cP,{v:tot?cl/tot:'',f:'IF('+RX.addr(rr,cT)+'=0,"",'+RX.addr(rr,cC)+'/'+RX.addr(rr,cT)+')',s:T(Object.assign({fmt:'0%',b:1},c))});
+    });
+    var l=f+keys.length-1,t=l+1;
+    sR.put(t,2,'TOTAL',Object.assign({},tb,{h:'left',indent:1}));
+    for(var ci=0;ci<nT+3;ci++){var cc=3+ci,sv=0;for(var q=f;q<=l;q++){var ce=sR.cells[q][cc];if(ce&&typeof ce.v==='number')sv+=ce.v;}
+      sR.set(t,cc,{v:sv,f:'SUM('+RX.addr(f,cc)+':'+RX.addr(l,cc)+')',s:T(tb)});}
+    sR.set(t,cP,{v:total?closed/total:'',f:'IF('+RX.addr(t,cT)+'=0,"",'+RX.addr(t,cC)+'/'+RX.addr(t,cT)+')',s:T(Object.assign({fmt:'0%'},tb))});
+    sR.rowH[t]=20;
+    sR.cf.push({sqref:RX.addr(f,cP)+':'+RX.addr(t,cP),p0:prio(3),rules:[
+      {f:'AND(ISNUMBER('+RX.addr(f,cP)+'),'+RX.addr(f,cP)+'>=1)',dxf:dxG,stop:1},{f:'AND(ISNUMBER('+RX.addr(f,cP)+'),'+RX.addr(f,cP)+'>=0.5)',dxf:dxA,stop:1},{f:'AND(ISNUMBER('+RX.addr(f,cP)+'),'+RX.addr(f,cP)+'<0.5)',dxf:dxR}]});
+    var cat='RINGKASAN!'+RX.addr(f,2,1)+':'+RX.addr(l,2,1);
+    addChart(chartTitle,keys.slice(),cat,[
+      {name:'TOTAL',color:'9CA3AF',ref:'RINGKASAN!'+RX.addr(f,cT,1)+':'+RX.addr(l,cT,1),vals:keys.map(function(k){return rows.filter(function(x){return keyOf(x)===k;}).length;})},
+      {name:'CLOSED',color:P.amber,ref:'RINGKASAN!'+RX.addr(f,cC,1)+':'+RX.addr(l,cC,1),vals:keys.map(function(k){return rows.filter(function(x){return keyOf(x)===k&&x.status==='Closed';}).length;})}],t+1,1,LC);
+    r0=t+1+hRows+2;
+  }
+  function byCount(keyOf){var m={};rows.forEach(function(x){var k=keyOf(x);m[k]=(m[k]||0)+1;});return Object.keys(m).sort(function(a,b){return m[b]-m[a]||a.localeCompare(b);});}
+  var kP=function(x){return x.pelapor||'-';},kC=function(x){return x.pic||'(belum ada PIC)';};
+  groupSection('PER PENGAWAS / PELAPOR — jumlah laporan yang sudah dibuat sampai data diunduh','PENGAWAS','H',kP,byCount(kP),'JUMLAH LAPORAN PER PENGAWAS');
+  groupSection('PER PIC TINDAK LANJUT','PIC','N',kC,byCount(kC),'LAPORAN PER PIC');
   var files=RX.pack([sR,sD],chartList,media,st,0);
   return files;
 };
@@ -7052,7 +7100,7 @@ function rxhRun(){
     var due=c&&c.dueDate?new Date(c.dueDate+'T00:00:00'):null;if(due&&isNaN(due))due=null;
     return {_r:r,date:new Date(d.getFullYear(),d.getMonth(),d.getDate()),time:pad(d.getHours())+':'+pad(d.getMinutes()),week:weekOf(d),
       no:r.noTemuan||r.id,jenis:RXH.TYPES[r.type],pelapor:r.userName||'-',dept:rxDeptLabel(rxDeptKey(r)),lokasi:r.location||'-',
-      sev:r.severity||'-',desc:r.notes||'',action:(c&&c.action)||r.action||'',pic:(c&&c.pic)||(r.capa&&r.capa.pic)||'',due:due,
+      sev:r.severity||'-',desc:r.notes||'',action:(c&&c.action)||r.action||'',pic:(c&&c.pic)||(r.capa&&r.capa.pic)||'(belum ada PIC)',due:due,
       status:c?(c.status==='Waiting Verification'?'Waiting Verification':c.status):'Open',nFoto:(r.photos&&r.photos.length)||r.photoCount||0,img:null};
   });
   var depts=[];rows.forEach(function(x){if(depts.indexOf(x.dept)<0)depts.push(x.dept);});depts.sort(function(a,b){return a.localeCompare(b);});
