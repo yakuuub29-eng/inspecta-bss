@@ -1734,7 +1734,7 @@ function changePW(){
 var LIVE_REPORTS=null;
 function getReports(){
   if(LIVE_REPORTS)return LIVE_REPORTS;
-  try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch(e){return[];}
+  try{return JSON.parse(localStorage.getItem(SK)||'[]').map(normLegacyReport);}catch(e){return[];}
 }
 
 // ════ MEDIA TERPISAH (foto laporan) — supaya dashboard cepat terbuka ════
@@ -1786,7 +1786,7 @@ function hydrated(r){
 // di Firebase tetap bernama lama, jadi dinormalisasi di sisi tampilan agar filter & rekap konsisten.
 var LEGACY_DUMP='Dumping Point', NEW_DUMP='Dumping Crusher / Stock ROM';
 function capaAreaNorm(a){return a===LEGACY_DUMP?NEW_DUMP:a;}
-function normLegacyReport(r){if(r&&r.typeName===LEGACY_DUMP)r.typeName=NEW_DUMP;return r;}
+function normLegacyReport(r){if(r){if(r.typeName===LEGACY_DUMP)r.typeName=NEW_DUMP;if(r.userDept||r.userName)r.userDept=normDept(r.userName||r.reporter,r.userDept);}return r;}
 function getCAPAs(){try{var o=JSON.parse(localStorage.getItem(CAP_KEY)||'{}');for(var k in o){if(o[k]&&o[k].area===LEGACY_DUMP)o[k].area=NEW_DUMP;}return o;}catch(e){return{};}}
 function saveCAPAsLocal(d){try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal simpan CAPA lokal (penyimpanan penuh):',e);}}
 function getCLs(){try{var o=JSON.parse(localStorage.getItem(CK)||'{}');
@@ -1799,7 +1799,16 @@ function saveCLs(d){try{localStorage.setItem(CK,JSON.stringify(d));}catch(e){con
 // Dikelola dari Pengaturan → Master PIC. Disinkronkan via Firebase supaya App User (inspektur
 // di lapangan) memilih PIC dari dropdown yang sama, bukan mengetik manual — menghindari salah
 // tulis nama/peran & memudahkan rekap kinerja PIC per dashboard.
-var DEFAULT_MASTER_PIC=['HSE','PLANT','PRODUKSI','ICGS','SM','COMEX','ROADMAINT'];
+// Normalisasi departemen: SHE digabung ke HSE, penugasan nama tertentu (manajer) ke OPERATIONS.
+function normDept(name,dept){
+  var n=String(name||'').toLowerCase(),d=String(dept||'').trim().toUpperCase();
+  if(/eko\s*andi|andi\s*eko/.test(n)||/ga+f+ar/.test(n))return 'OPERATIONS';
+  if(/kadek\s*marhenn?y|marhenn?y\s*kadek/.test(n))return 'CPMD';
+  if(/jacob|yakub/.test(n))return 'HSE';
+  if(d==='SHE'||d==='S.H.E'||d==='SHE/HSE'||d==='HSSE')return 'HSE';
+  return d||String(dept||'');
+}
+var DEFAULT_MASTER_PIC=['HSE','PLANT','PRODUKSI','OPERATIONS','ICGS','SM','COMEX','ROADMAINT','IT','CPMD','CC'];
 function getMasterPIC(){
   try{
     var d=JSON.parse(localStorage.getItem(MPIC_KEY)||'[]');

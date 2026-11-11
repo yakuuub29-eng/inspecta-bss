@@ -424,8 +424,9 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
     <div><label class="ll">ID Karyawan / NIK</label><input class="li" id="lid" placeholder="Contoh: EMP-001"/></div>
     <div><label class="ll">Departemen</label>
       <select class="li" id="ldept"><option value="">— Pilih Departemen —</option>
-        <option>HSE</option><option>PRODUKSI</option><option>PLANT</option>
+        <option>HSE</option><option>PRODUKSI</option><option>OPERATIONS</option><option>PLANT</option>
         <option>LOGISTIK</option><option>COMEX</option><option>ICGS</option>
+        <option>IT</option><option>EKSTERNAL</option><option>CPMD</option><option>CC</option>
       </select></div>
 
     <div><label class="ll">Buat PIN (4 digit)</label>
@@ -1334,7 +1335,16 @@ function initFB(){
 // Daftar peran/PIC dikelola admin dari Dashboard (Pengaturan → Master PIC) dan disinkronkan
 // via Firebase supaya inspektur di lapangan memilih dari dropdown, bukan mengetik manual
 // (menghindari salah tulis nama/peran & memudahkan rekap kinerja PIC).
-var DEFAULT_MASTER_PIC=['HSE','PLANT','PRODUKSI','ICGS','SM','COMEX','ROADMAINT'];
+// Normalisasi departemen: SHE digabung ke HSE, penugasan nama tertentu (manajer) ke OPERATIONS.
+function normDept(name,dept){
+  var n=String(name||'').toLowerCase(),d=String(dept||'').trim().toUpperCase();
+  if(/eko\s*andi|andi\s*eko/.test(n)||/ga+f+ar/.test(n))return 'OPERATIONS';
+  if(/kadek\s*marhenn?y|marhenn?y\s*kadek/.test(n))return 'CPMD';
+  if(/jacob|yakub/.test(n))return 'HSE';
+  if(d==='SHE'||d==='S.H.E'||d==='SHE/HSE'||d==='HSSE')return 'HSE';
+  return d||String(dept||'');
+}
+var DEFAULT_MASTER_PIC=['HSE','PLANT','PRODUKSI','OPERATIONS','ICGS','SM','COMEX','ROADMAINT','IT','CPMD','CC'];
 function getMasterPIC(){
   try{
     var d=JSON.parse(localStorage.getItem(MPIC_KEY)||'[]');
@@ -1648,6 +1658,7 @@ function capaForFB(c){
 }
 
 function addReport(rep){
+  if(rep)rep.userDept=normDept(rep.userName,rep.userDept);
   var loc=getLocal();
   var idx=loc.findIndex(function(r){return r.id===rep.id;});
   if(idx>=0)loc[idx]=rep; else loc.unshift(rep);
@@ -7381,6 +7392,7 @@ function doSetup(){
   if(!n||!id||!d){err.textContent='⚠️ Lengkapi semua data!';err.classList.add('show');return;}
   if(pin.length!==4||isNaN(pin)){err.textContent='⚠️ PIN harus 4 angka!';err.classList.add('show');return;}
   err.classList.remove('show');
+  d=normDept(n,d);
   CU={name:n,empId:id,dept:d,shift:'',pin:pin,setupAt:new Date().toISOString()};
   try{
     localStorage.setItem(UK,JSON.stringify(CU));
@@ -9645,6 +9657,7 @@ window.onload=function(){
   if(s){
     try{
       CU=JSON.parse(s);
+      var _nd=normDept(CU.name,CU.dept);if(_nd!==CU.dept){CU.dept=_nd;try{localStorage.setItem(UK,JSON.stringify(CU));}catch(e){}}
       showPinScreen();
     }catch(e){localStorage.removeItem(UK);}
   }
