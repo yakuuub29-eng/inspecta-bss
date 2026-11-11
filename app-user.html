@@ -379,6 +379,7 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
 .tl-st-inprog{background:#FEEBC8;color:var(--OR)}
 .tl-st-pending{background:#EDE9FE;color:#5B21B6}
 .tl-st-closed{background:var(--GL);color:var(--GR)}
+.tl-close-btn{margin-top:8px;border:0;border-radius:8px;background:var(--B);color:#fff;font:inherit;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer}
 .tl-progress-track{height:6px;background:var(--G2);border-radius:3px;overflow:hidden;margin-top:8px}
 .tl-progress-fill{height:100%;border-radius:3px;transition:width .5s ease}
 
@@ -911,6 +912,7 @@ function renderTLList(){
       +(capa.verifiedBy?'<div style="font-size:11px;color:var(--BL);margin-top:2px">✔️ Diverifikasi: '+esc(capa.verifiedBy)+(capa.verificationDate?' · '+fd(capa.verificationDate):'')+'</div>':'')
       +(r.notes?'<div style="font-size:11px;color:var(--G5);margin-top:4px;line-height:1.4">'+esc(r.notes.substring(0,80))+(r.notes.length>80?'...':'')+'</div>':'')
       +'<div class="tl-progress-track"><div class="tl-progress-fill" style="width:'+pct+'%;background:'+pctColor+'"></div></div>'
+      +(capa.status!=='Closed'?'<button class="tl-close-btn" onclick="event.stopPropagation();openCloseTL(\''+r.id+'\')">Tutup Temuan</button>':'')
       +(hasBefore||hasAfter?'<div style="display:flex;gap:6px;margin-top:8px">'
         +(hasBefore?'<div style="font-size:10px;background:#FED7D7;color:var(--R);padding:2px 8px;border-radius:8px;font-weight:700"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-3h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg> Before</div>':'')
         +(hasAfter?'<div style="font-size:10px;background:var(--GL);color:var(--GR);padding:2px 8px;border-radius:8px;font-weight:700"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> After</div>':'')
@@ -946,8 +948,59 @@ function showDetTL(id){
   el('m-b').innerHTML=h;
   // Tombol PDF di modal
   var pdfBtn=el('m-pdf-btn');
-  if(pdfBtn)pdfBtn.innerHTML=pdfBtnHtmlFor(r);
+  if(pdfBtn)pdfBtn.innerHTML=(capa.status!=='Closed'?'<button class="tl-close-btn" style="margin:0" onclick="openCloseTL(\''+r.id+'\')">Tutup Temuan</button>':'')+pdfBtnHtmlFor(r);
   el('mov').classList.add('on');
+}
+
+// ════ TUTUP TEMUAN OLEH PENGAWAS SENDIRI ════
+// Ringkas: catatan + (opsional) foto sesudah → status Closed, tersinkron ke dashboard (capa/{id}, foto ke capaMedia/{id}).
+var CLOSE_TL_PHOTO='';
+function openCloseTL(id){
+  var r=getLocal().find(function(x){return x.id===id;});if(!r)return;
+  CLOSE_TL_PHOTO='';
+  el('m-t').textContent='Tutup Temuan';
+  el('m-s').textContent=(r.typeName||'Temuan')+' · '+(r.location||'—');
+  el('m-b').innerHTML=
+    '<div style="font-size:12px;color:var(--G6);line-height:1.5;margin-bottom:10px">'+esc((r.notes||'').substring(0,140))+'</div>'
+    +'<label class="dk" style="display:block;margin-bottom:4px">Perbaikan yang dilakukan (opsional)</label>'
+    +'<textarea id="ctl-note" rows="3" style="width:100%;box-sizing:border-box;border:1px solid var(--G2);border-radius:8px;padding:8px;font:inherit;font-size:13px" placeholder="Contoh: kabel sudah diganti dan dirapikan"></textarea>'
+    +'<label class="dk" style="display:block;margin:10px 0 4px">Foto sesudah perbaikan (opsional)</label>'
+    +'<input type="file" id="ctl-file" accept="image/*" capture="environment" onchange="ctlPick(this)" style="font-size:12px"/>'
+    +'<img id="ctl-prev" style="display:none;width:100%;border-radius:8px;margin-top:8px;border:1px solid var(--G2)"/>';
+  el('m-pdf-btn').innerHTML='<button class="tl-close-btn" style="margin:0;background:var(--G2);color:var(--G6)" onclick="closeMod()">Batal</button>'
+    +'<button class="tl-close-btn" style="margin:0" id="ctl-ok" onclick="doCloseTL(\''+id+'\')">Tutup Temuan</button>';
+  el('mov').classList.add('on');
+}
+function ctlPick(inp){
+  var f=inp.files&&inp.files[0];if(!f)return;
+  resizeImage(f,function(d){
+    CLOSE_TL_PHOTO=d||'';var p=el('ctl-prev');
+    if(p&&d){p.src=d;p.style.display='block';}
+  });
+}
+function doCloseTL(id){
+  var r=getLocal().find(function(x){return x.id===id;});if(!r)return;
+  var caps=getCAPAsLocal(),cid='CAPA-'+id,c=caps[cid];
+  if(!c){saveCAPAFromReport(r);caps=getCAPAsLocal();c=caps[cid];}
+  if(!c){showToast('Data temuan tidak ditemukan','error');return;}
+  var old=c.status,now=new Date().toISOString(),note=(el('ctl-note').value||'').trim();
+  c.status='Closed';c.closedAt=now;c.closedBy=CU?CU.name:'';c.closedByUserId=CU?CU.empId:'';
+  c.closingNotes=note||c.closingNotes||'';c.updatedAt=now;
+  if(CLOSE_TL_PHOTO)c.evAfter=CLOSE_TL_PHOTO;
+  caps[cid]=c;
+  try{localStorage.setItem(CAP_KEY,JSON.stringify(caps));}catch(e){console.warn('[INSPECTA] Gagal simpan CAPA lokal:',e);}
+  logAudit({action:'Tutup temuan (pengawas)',module:'CAPA',oldValue:old,newValue:'Closed',refId:cid});
+  if(FB_OK&&fbdb&&IS_ONLINE){
+    try{
+      fbdb.ref('capa/'+cid).update(capaForFB(c)).catch(function(){});
+      if(CLOSE_TL_PHOTO)fbdb.ref('capaMedia/'+cid).update({evAfter:CLOSE_TL_PHOTO}).catch(function(){});
+    }catch(e){}
+  }else{
+    try{var pq=JSON.parse(localStorage.getItem('k3_capa_close_q')||'[]');if(pq.indexOf(cid)<0)pq.push(cid);localStorage.setItem('k3_capa_close_q',JSON.stringify(pq));}catch(e){}
+    showToast('Offline — penutupan tersimpan & dikirim saat online','warning');
+  }
+  CLOSE_TL_PHOTO='';closeMod();renderTL();
+  showToast('Temuan ditutup','success');
 }
 
 
@@ -1262,6 +1315,10 @@ function initFB(){
       if(d){
         // Pertahankan foto bukti lokal bila salinan Firebase tidak membawanya (format ringan).
         try{var _loc=getCAPAsLocal();Object.keys(d).forEach(function(k){var l=_loc[k];if(l&&d[k]){if(!d[k].evBefore&&l.evBefore)d[k].evBefore=l.evBefore;if(!d[k].evAfter&&l.evAfter)d[k].evAfter=l.evAfter;}});}catch(e){}
+        // Penutupan temuan yang dibuat saat offline: pertahankan & kirim ulang, jangan ditimpa data server.
+        try{var _q=JSON.parse(localStorage.getItem('k3_capa_close_q')||'[]'),_l2=getCAPAsLocal(),_keep=[];
+          _q.forEach(function(k){var l=_l2[k];if(l&&l.status==='Closed'){d[k]=Object.assign({},d[k]||{},l);try{fbdb.ref('capa/'+k).update(capaForFB(l));if(l.evAfter&&isDataUrl(l.evAfter))fbdb.ref('capaMedia/'+k).update({evAfter:l.evAfter});}catch(e){_keep.push(k);}}});
+          localStorage.setItem('k3_capa_close_q',JSON.stringify(_keep));}catch(e){}
         try{localStorage.setItem(CAP_KEY,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache capa (penyimpanan penuh):',e);}
       }
       var tlScr=el('s-tl');
@@ -2989,7 +3046,7 @@ var MASTER_AREAS = {
           "evidence": "Foto + hasil ukur",
           "action": "Lakukan pelebaran jalan segera, batasi unit sementara",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan lebar jalan tambang/produksi paling kurang 3,5 (tiga setengah) kali lebar alat angkut terbesar untuk jalan 2 arah, atau 2 kali lebar alat angkut terbesar untuk jalan 1 arah."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan lebar jalan tambang/produksi paling kurang 3,5 (tiga setengah) kali lebar alat angkut terbesar untuk jalan 2 arah, atau 2 kali lebar alat angkut terbesar untuk jalan 1 arah."
         },
         {
           "text": "Lebar jalan pada tikungan lebih besar dari jalan lurus sesuai radius tikungan",
@@ -2999,7 +3056,7 @@ var MASTER_AREAS = {
           "evidence": "Foto + hasil ukur",
           "action": "Perlebar tikungan sesuai kajian teknis",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan lebar, radius tikungan, dan superelevasi pada jalan menikung mampu menahan gaya sentrifugal kendaraan yang melintas sesuai batas kecepatan yang ditentukan."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan lebar, radius tikungan, dan superelevasi pada jalan menikung mampu menahan gaya sentrifugal kendaraan yang melintas sesuai batas kecepatan yang ditentukan."
         },
         {
           "text": "Kemiringan jalan (grade) tidak melebihi 12%",
@@ -3009,7 +3066,7 @@ var MASTER_AREAS = {
           "evidence": "Foto + hasil ukur grade",
           "action": "Lakukan kajian teknis & perbaikan grade",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan kemiringan (grade) jalan tambang/produksi tidak boleh lebih dari 12% (dua belas persen), dengan memperhitungkan kemampuan rimpull unit terbesar yang melintas."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan kemiringan (grade) jalan tambang/produksi tidak boleh lebih dari 12% (dua belas persen), dengan memperhitungkan kemampuan rimpull unit terbesar yang melintas."
         },
         {
           "text": "Kemiringan melintang jalan (cross fall) minimal 2%",
@@ -3019,7 +3076,7 @@ var MASTER_AREAS = {
           "evidence": "Foto + hasil ukur",
           "action": "Perbaiki cross fall jalan",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan permukaan badan jalan dibentuk kemiringan melintang (cross fall) paling kurang 2% (dua persen) agar air hujan mengalir ke saluran drainase, tidak menggenang di badan jalan."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan permukaan badan jalan dibentuk kemiringan melintang (cross fall) paling kurang 2% (dua persen) agar air hujan mengalir ke saluran drainase, tidak menggenang di badan jalan."
         },
         {
           "text": "Superelevasi pada tikungan sesuai kajian teknis & kecepatan operasi",
@@ -3029,7 +3086,7 @@ var MASTER_AREAS = {
           "evidence": "Foto + hasil ukur",
           "action": "Perbaiki superelevasi sesuai kajian",
           "freq": "Triwulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan superelevasi (kemiringan tikungan) dirancang berdasarkan kajian teknis mempertimbangkan radius tikungan & kecepatan operasi unit untuk mencegah tergelincir/terguling."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan superelevasi (kemiringan tikungan) dirancang berdasarkan kajian teknis mempertimbangkan radius tikungan & kecepatan operasi unit untuk mencegah tergelincir/terguling."
         },
         {
           "text": "Daya dukung badan jalan memadai untuk beban statis unit terbesar",
@@ -3039,7 +3096,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Perkuat struktur jalan (base course/compaction ulang)",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan daya dukung jalan pertambangan lebih kuat dari kapasitas beban statis terbesar kendaraan & muatan yang melintas, berdasarkan kajian teknis geoteknik."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan daya dukung jalan pertambangan lebih kuat dari kapasitas beban statis terbesar kendaraan & muatan yang melintas, berdasarkan kajian teknis geoteknik."
         },
         {
           "text": "Jarak pandang henti (stopping sight distance) memadai di sepanjang jalan",
@@ -3049,7 +3106,32 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Singkirkan obstruksi/lakukan cut slope",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan jarak pandang henti dirancang berdasarkan kecepatan rencana & kemampuan pengereman unit terbesar, memastikan operator dapat menghentikan kendaraan sebelum mencapai rintangan yang terlihat."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan jarak pandang henti dirancang berdasarkan kecepatan rencana & kemampuan pengereman unit terbesar, memastikan operator dapat menghentikan kendaraan sebelum mencapai rintangan yang terlihat."
+        }
+      ]
+    },
+    {
+      "t": "Turunan & Tanjakan Panjang",
+      "items": [
+        {
+          "text": "Jalur penyelamat (escape lane / runaway ramp) tersedia pada turunan panjang atau curam sesuai kajian risiko",
+          "criteria": "Jalur penyelamat tersedia, bebas hambatan & rambu penunjuk terlihat jelas dari jalur utama",
+          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+          "risk": "Extreme",
+          "evidence": "Foto + dokumen kajian risiko",
+          "action": "Laporkan ke tim teknik, batasi unit bermuatan sementara pada segmen terkait",
+          "freq": "Bulanan",
+          "regDetail": null
+        },
+        {
+          "text": "Rambu peringatan turunan/tanjakan panjang dan instruksi penggunaan gigi rendah/engine brake terpasang",
+          "criteria": "Rambu terpasang sebelum awal segmen turunan/tanjakan dan mudah terbaca operator",
+          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+          "risk": "High",
+          "evidence": "Foto rambu",
+          "action": "Pasang/ganti rambu segera",
+          "freq": "Bulanan",
+          "regDetail": null
         }
       ]
     },
@@ -3064,7 +3146,7 @@ var MASTER_AREAS = {
           "evidence": "Foto + hasil ukur tinggi berm",
           "action": "Bangun/perbaiki safety berm segera",
           "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan tanggul pengaman (safety berm) di sisi luar badan jalan dengan tinggi sekurang-kurangnya 3/4 (tiga per empat) diameter roda kendaraan terbesar yang melintas."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan tanggul pengaman (safety berm) di sisi luar badan jalan dengan tinggi sekurang-kurangnya 3/4 (tiga per empat) diameter roda kendaraan terbesar yang melintas."
         },
         {
           "text": "Safety berm dalam kondisi utuh, tidak longsor/tergerus",
@@ -3074,7 +3156,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Perbaiki bagian berm yang rusak",
           "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan tanggul pengaman dipelihara agar tetap memenuhi tinggi minimal 3/4 diameter roda kendaraan terbesar — berm yang tergerus/longsor kehilangan fungsi penahan unit keluar jalur."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan tanggul pengaman dipelihara agar tetap memenuhi tinggi minimal 3/4 diameter roda kendaraan terbesar — berm yang tergerus/longsor kehilangan fungsi penahan unit keluar jalur."
         },
         {
           "text": "Separator jalur terpasang di tikungan & persimpangan sesuai standar",
@@ -3084,17 +3166,17 @@ var MASTER_AREAS = {
           "evidence": "Foto + hasil ukur",
           "action": "Pasang/perbaiki separator",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pemisah jalur (median/separator) pada titik rawan konflik (tikungan tajam, persimpangan) untuk mencegah unit dari arah berlawanan bertabrakan."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pemisah jalur (median/separator) pada titik rawan konflik (tikungan tajam, persimpangan) untuk mencegah unit dari arah berlawanan bertabrakan."
         },
         {
-          "text": "Tidak ada material lepas (loose material) berpotensi masuk ke badan jalan dari tebing",
-          "criteria": "Area tebing di sisi jalan bebas dari batuan/material yang berpotensi longsor ke jalan",
+          "text": "Tidak ada material lepas atau potensi longsoran dari lereng/tebing sisi jalan yang dapat masuk ke badan jalan",
+          "criteria": "Lereng/tebing di sisi jalan hauling bebas dari batuan atau material yang berpotensi jatuh ke badan jalan",
           "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
           "risk": "Extreme",
           "evidence": "Foto",
           "action": "Scaling/pembersihan tebing, pasang barrier tambahan",
           "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pengelolaan lereng di sisi jalan (scaling/pembersihan material lepas) untuk mencegah batuan/material longsor menimpa jalan & unit yang melintas."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pengelolaan lereng di sisi jalan (scaling/pembersihan material lepas) untuk mencegah batuan/material longsor menimpa jalan & unit yang melintas."
         }
       ]
     },
@@ -3102,14 +3184,14 @@ var MASTER_AREAS = {
       "t": "Drainase & Pengendalian Debu",
       "items": [
         {
-          "text": "Saluran drainase (drainage ditch) di sisi jalan berfungsi baik",
-          "criteria": "Saluran tidak tersumbat, air mengalir lancar ke settling pond",
+          "text": "Saluran drainase (drainage ditch) dan gorong-gorong (culvert) di sisi jalan berfungsi baik",
+          "criteria": "Saluran & gorong-gorong tidak tersumbat/tergerus, air mengalir lancar dan tidak menggenangi badan jalan",
           "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
           "risk": "High",
           "evidence": "Foto",
           "action": "Bersihkan/perbaiki saluran drainase",
           "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan sistem penyaliran (drainase) di sepanjang jalan tambang mampu mengalirkan debit air larian tertinggi & dipelihara dengan baik agar tidak menggenangi badan jalan."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan sistem penyaliran (drainase) di sepanjang jalan tambang mampu mengalirkan debit air larian tertinggi & dipelihara dengan baik agar tidak menggenangi badan jalan."
         },
         {
           "text": "Tidak ada genangan air signifikan di badan jalan",
@@ -3119,7 +3201,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Perbaiki drainase, tambal genangan",
           "freq": "Harian saat musim hujan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan cross fall minimal 2% & sistem drainase berfungsi baik — genangan menandakan kegagalan salah satu/kedua syarat tersebut, berisiko aquaplaning/tergelincir."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan cross fall minimal 2% & sistem drainase berfungsi baik — genangan menandakan kegagalan salah satu/kedua syarat tersebut, berisiko aquaplaning/tergelincir."
         },
         {
           "text": "Penyiraman jalan (water spraying) dilakukan secara berkala untuk kendalikan debu",
@@ -3129,7 +3211,7 @@ var MASTER_AREAS = {
           "evidence": "Foto unit water truck & jadwal",
           "action": "Tambah frekuensi penyiraman",
           "freq": "Harian",
-            "regDetail": "Permenaker No. 5/2018 mewajibkan pengendalian faktor kimia (debu) di tempat kerja agar kadarnya tidak melampaui Nilai Ambang Batas (NAB) — penyiraman jalan tambang berkala adalah pengendalian teknis (engineering control) umum untuk menekan kadar debu di jalur hauling."
+          "regDetail": "Permenaker No. 5/2018 mewajibkan pengendalian faktor kimia (debu) di tempat kerja agar kadarnya tidak melampaui Nilai Ambang Batas (NAB) — penyiraman jalan tambang berkala adalah pengendalian teknis (engineering control) umum untuk menekan kadar debu di jalur hauling."
         },
         {
           "text": "Tingkat visibilitas jalan tidak terganggu debu berlebih",
@@ -3139,7 +3221,32 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Intensifkan penyiraman/kurangi kecepatan unit",
           "freq": "Harian",
-            "regDetail": "Permenaker No. 5/2018 mensyaratkan pengendalian kualitas udara tempat kerja termasuk debu — praktik umum pertambangan menerapkan penyiraman jalan (water spray/water truck) berkala untuk menjaga visibilitas & mengurangi paparan debu ke pekerja."
+          "regDetail": "Permenaker No. 5/2018 mensyaratkan pengendalian kualitas udara tempat kerja termasuk debu — praktik umum pertambangan menerapkan penyiraman jalan (water spray/water truck) berkala untuk menjaga visibilitas & mengurangi paparan debu ke pekerja."
+        }
+      ]
+    },
+    {
+      "t": "Jembatan & Gorong-gorong",
+      "items": [
+        {
+          "text": "Jembatan pada jalur hauling dalam kondisi baik dan kapasitas beban sesuai unit terbesar yang melintas",
+          "criteria": "Tidak ada retak/amblas/korosi pada struktur & rambu batas beban terpasang jelas",
+          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+          "risk": "Extreme",
+          "evidence": "Foto kondisi jembatan + rambu batas beban",
+          "action": "Batasi/hentikan unit melintas, laporkan ke tim sipil/maintenance",
+          "freq": "Bulanan",
+          "regDetail": null
+        },
+        {
+          "text": "Badan jalan di atas gorong-gorong tidak amblas dan sisi gorong-gorong tidak tergerus",
+          "criteria": "Permukaan jalan di atas gorong-gorong rata, tidak ada retak/amblas, kepala gorong-gorong utuh",
+          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+          "risk": "High",
+          "evidence": "Foto gorong-gorong",
+          "action": "Perbaiki segera, pasang pembatas pada titik amblas",
+          "freq": "Bulanan",
+          "regDetail": null
         }
       ]
     },
@@ -3154,7 +3261,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Pasang/perbaiki rambu kecepatan",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan rambu batas kecepatan terpasang sesuai kondisi geometrik tiap segmen jalan (lurus, tikungan, turunan) agar operator menyesuaikan kecepatan dengan risiko segmen tersebut."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan rambu batas kecepatan terpasang sesuai kondisi geometrik tiap segmen jalan (lurus, tikungan, turunan) agar operator menyesuaikan kecepatan dengan risiko segmen tersebut."
         },
         {
           "text": "Rambu peringatan bahaya (tikungan tajam, turunan curam, persimpangan) terpasang",
@@ -3164,7 +3271,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Pasang rambu peringatan tambahan",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan rambu peringatan dipasang pada titik berisiko (tikungan tajam, turunan curam, persimpangan) untuk memberi peringatan dini kepada operator sebelum memasuki area tersebut."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan rambu peringatan dipasang pada titik berisiko (tikungan tajam, turunan curam, persimpangan) untuk memberi peringatan dini kepada operator sebelum memasuki area tersebut."
         },
         {
           "text": "Marka jalan (garis tengah, tepi jalan) masih jelas terlihat",
@@ -3174,7 +3281,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Re-marking jalan",
           "freq": "Triwulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan marka jalan (garis tengah & tepi) sebagai bagian perlengkapan jalan tambang untuk membantu operator menjaga jalur & jarak aman antar unit, khususnya pada kondisi visibilitas terbatas."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan marka jalan (garis tengah & tepi) sebagai bagian perlengkapan jalan tambang untuk membantu operator menjaga jalur & jarak aman antar unit, khususnya pada kondisi visibilitas terbatas."
         },
         {
           "text": "Delineator/patok reflektif terpasang di sepanjang tepi jalan pada malam hari",
@@ -3184,7 +3291,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Pasang/ganti delineator reflektif",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan delineator/patok reflektif di tepi jalan agar batas badan jalan tetap terlihat jelas oleh operator saat kondisi gelap/malam hari, mencegah unit keluar jalur."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan delineator/patok reflektif di tepi jalan agar batas badan jalan tetap terlihat jelas oleh operator saat kondisi gelap/malam hari, mencegah unit keluar jalur."
         },
         {
           "text": "Rambu informasi jarak/lokasi (KM/nama area) terpasang di sepanjang jalan",
@@ -3194,7 +3301,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Pasang rambu informasi",
           "freq": "Triwulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan rambu informasi jarak/lokasi terpasang di sepanjang jalan tambang untuk memudahkan orientasi operator & mempercepat identifikasi lokasi saat terjadi insiden/keadaan darurat."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan rambu informasi jarak/lokasi terpasang di sepanjang jalan tambang untuk memudahkan orientasi operator & mempercepat identifikasi lokasi saat terjadi insiden/keadaan darurat."
         }
       ]
     },
@@ -3209,7 +3316,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Tambah/perbaiki lampu penerangan jalan",
           "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan intensitas penerangan jalan tambang memadai untuk operasi 24 jam, khususnya pada segmen dengan aktivitas malam hari untuk menjaga jarak pandang operator."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan intensitas penerangan jalan tambang memadai untuk operasi 24 jam, khususnya pada segmen dengan aktivitas malam hari untuk menjaga jarak pandang operator."
         },
         {
           "text": "Area persimpangan & tikungan tajam memiliki penerangan tambahan",
@@ -3219,7 +3326,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Tambah lampu di titik rawan",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan penerangan tambahan di titik konflik lalu lintas tinggi (persimpangan, tikungan tajam) mengingat risiko tabrakan lebih tinggi dibanding jalan lurus."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan penerangan tambahan di titik konflik lalu lintas tinggi (persimpangan, tikungan tajam) mengingat risiko tabrakan lebih tinggi dibanding jalan lurus."
         }
       ]
     },
@@ -3234,7 +3341,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Pasang rambu prioritas/tugaskan flagman",
           "freq": "Setiap ada aktivitas persimpangan aktif",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pengaturan prioritas lalu lintas di persimpangan (rambu prioritas, lampu lalu lintas, atau petugas flagman) untuk mencegah tabrakan akibat konflik jalur."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pengaturan prioritas lalu lintas di persimpangan (rambu prioritas, lampu lalu lintas, atau petugas flagman) untuk mencegah tabrakan akibat konflik jalur."
         },
         {
           "text": "Blind spot di persimpangan/tikungan ditangani dengan cermin/rambu tambahan",
@@ -3244,7 +3351,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Pasang cermin cembung/rambu tambahan",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan titik buta (blind spot) pada geometri jalan ditangani dengan cermin cembung (convex mirror) atau rambu tambahan agar operator dapat mengantisipasi unit dari arah berlawanan."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan titik buta (blind spot) pada geometri jalan ditangani dengan cermin cembung (convex mirror) atau rambu tambahan agar operator dapat mengantisipasi unit dari arah berlawanan."
         },
         {
           "text": "Komunikasi radio antar operator/unit berfungsi baik di sepanjang jalur",
@@ -3254,17 +3361,17 @@ var MASTER_AREAS = {
           "evidence": "Foto/uji fungsi radio",
           "action": "Tambah repeater, perbaiki blank spot komunikasi",
           "freq": "Mingguan",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan sistem komunikasi (radio 2 arah) tersedia & berfungsi di seluruh jalur hauling sebagai kontrol koordinasi antar operator, terutama di area blind spot & persimpangan."
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan sistem komunikasi (radio 2 arah) tersedia & berfungsi di seluruh jalur hauling sebagai kontrol koordinasi antar operator, terutama di area blind spot & persimpangan."
         },
         {
-          "text": "SOP pengaturan lalu lintas jalan tambang (jarak iring-iringan, aturan menyalip) diterapkan",
+          "text": "SOP pengaturan lalu lintas jalan hauling (jarak iring-iringan, aturan menyalip) diterapkan",
           "criteria": "Operator mematuhi jarak aman & aturan menyalip sesuai SOP",
           "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
           "risk": "High",
           "evidence": "Foto/observasi",
           "action": "Briefing ulang SOP lalu lintas ke operator",
           "freq": "Harian",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan SOP lalu lintas tambang mengatur jarak aman iring-iringan unit & aturan menyalip (overtaking) untuk mencegah tabrakan beruntun/senggolan antar unit hauling."
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan SOP lalu lintas tambang mengatur jarak aman iring-iringan unit & aturan menyalip (overtaking) untuk mencegah tabrakan beruntun/senggolan antar unit hauling."
         },
         {
           "text": "Kecepatan unit aktual sesuai batas kecepatan yang ditetapkan per segmen",
@@ -3274,33 +3381,13 @@ var MASTER_AREAS = {
           "evidence": "Foto/data GPS speed",
           "action": "Tegur operator, evaluasi governor kecepatan unit",
           "freq": "Harian",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 & Kepdirjen 185.K/2019 mensyaratkan kepatuhan operator terhadap batas kecepatan tiap segmen jalan — kecepatan aktual dapat dipantau melalui speedgun/GPS tracking sebagai kontrol kepatuhan."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 & Kepdirjen 185.K/2019 mensyaratkan kepatuhan operator terhadap batas kecepatan tiap segmen jalan — kecepatan aktual dapat dipantau melalui speedgun/GPS tracking sebagai kontrol kepatuhan."
         }
       ]
     },
     {
-      "t": "Manajemen Kelelahan Operator",
+      "t": "Fasilitas Pendukung Jalur",
       "items": [
-        {
-          "text": "Tes alkohol/fit-to-work dilakukan terhadap operator sebelum memulai shift",
-          "criteria": "Hasil tes alkohol (breathalyzer) & pemeriksaan kelayakan fisik terdokumentasi sebelum operator diizinkan bertugas",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Extreme",
-          "evidence": "Dokumen/Log Tes",
-          "action": "Tunda penugasan operator yang tidak lolos tes, laporkan ke supervisor",
-          "freq": "Setiap Awal Shift",
-          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mewajibkan penerapan program manajemen kelelahan (fatigue management) yang mencakup pemeriksaan kelayakan bekerja (fit-to-work) termasuk tes alkohol sebelum operator unit hauling memulai shift, mengingat tingginya risiko fatal akibat operator yang tidak fit mengoperasikan unit berat."
-        },
-        {
-          "text": "Jam kerja operator hauling sesuai batas maksimal shift yang ditetapkan",
-          "criteria": "Log jam kerja tidak melebihi durasi maksimal per shift sesuai SOP fatigue management",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Extreme",
-          "evidence": "Foto log jam kerja",
-          "action": "Atur ulang jadwal shift, tegakkan kepatuhan jam kerja",
-          "freq": "Harian",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan penerapan program manajemen kelelahan (fatigue management) termasuk pengaturan jam kerja/shift operator sesuai kebijakan internal perusahaan yang mengacu prinsip pencegahan kelelahan kerja — durasi maksimal shift ditetapkan dalam prosedur internal perusahaan sesuai kajian risiko masing-masing."
-        },
         {
           "text": "Tersedia area istirahat (rest area) yang layak di sepanjang jalur hauling",
           "criteria": "Rest area tersedia dengan fasilitas dasar (tempat duduk, atap, air minum)",
@@ -3309,17 +3396,17 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Sediakan/perbaiki rest area",
           "freq": "Bulanan",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan penyediaan fasilitas pendukung keselamatan pada jalur hauling termasuk rest area, sebagai bagian dari pengendalian kelelahan (fatigue management) operator alat angkut."
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan penyediaan fasilitas pendukung keselamatan pada jalur hauling termasuk rest area, sebagai bagian dari pengendalian kelelahan (fatigue management) operator alat angkut."
         },
         {
-          "text": "Pemeriksaan indikasi kelelahan (fatigue test) dilakukan sebelum operator bertugas",
-          "criteria": "Bukti fatigue test/fit to work check tersedia sebelum shift dimulai",
-          "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
-          "risk": "Extreme",
-          "evidence": "Foto bukti fatigue test",
-          "action": "Laksanakan fatigue test sebelum shift, tegakkan kepatuhan",
-          "freq": "Setiap pergantian shift",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mewajibkan penerapan program manajemen kelelahan (fatigue management program) sebagai bagian elemen SMKP, termasuk pemeriksaan kondisi kesiapan kerja (fit to work) operator sebelum memulai tugas."
+          "text": "Area antrean/parkir unit di sisi jalan (menuju Port / Crusher) tertata dan tidak menghalangi badan jalan",
+          "criteria": "Unit antre/parkir di bahu atau area yang ditetapkan, jalur lalu lintas tetap bebas dan jarak aman terjaga",
+          "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
+          "risk": "Medium",
+          "evidence": "Foto lokasi antrean",
+          "action": "Tertibkan unit & tetapkan area antrean/parkir resmi",
+          "freq": "Mingguan",
+          "regDetail": null
         }
       ]
     },
@@ -3334,7 +3421,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Tambal/grading ulang permukaan jalan",
           "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pemeliharaan rutin permukaan jalan (grading/maintenance) agar tetap rata & bebas lubang yang dapat menyebabkan kerusakan unit/kehilangan kendali kendaraan."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pemeliharaan rutin permukaan jalan (grading/maintenance) agar tetap rata & bebas lubang yang dapat menyebabkan kerusakan unit/kehilangan kendali kendaraan."
         },
         {
           "text": "Jadwal grading & maintenance jalan berjalan sesuai rencana",
@@ -3344,17 +3431,17 @@ var MASTER_AREAS = {
           "evidence": "Foto log maintenance",
           "action": "Jadwalkan ulang grading yang tertunda",
           "freq": "Mingguan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pemeliharaan jalan tambang (grading, compaction) dilakukan terjadwal agar geometri & daya dukung jalan tetap memenuhi standar sepanjang masa operasi."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan pemeliharaan jalan tambang (grading, compaction) dilakukan terjadwal agar geometri & daya dukung jalan tetap memenuhi standar sepanjang masa operasi."
         },
         {
-          "text": "Material lepas (batu, kerikil besar) di badan jalan dibersihkan berkala",
-          "criteria": "Permukaan jalan bebas dari material lepas yang berisiko terlempar/membuat unit slip",
+          "text": "Material lepas (batu, kerikil besar) dan ceceran/tumpahan batubara di badan jalan dibersihkan berkala",
+          "criteria": "Permukaan jalan bebas dari material lepas dan ceceran batubara yang berisiko terlempar atau membuat unit slip",
           "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
           "risk": "Medium",
           "evidence": "Foto",
           "action": "Bersihkan material lepas dari badan jalan",
           "freq": "Harian",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan badan jalan tambang bebas dari material lepas (batu/kerikil besar) yang berpotensi mengganggu traksi ban & menyebabkan kerusakan unit atau kehilangan kendali."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan badan jalan tambang bebas dari material lepas (batu/kerikil besar) yang berpotensi mengganggu traksi ban & menyebabkan kerusakan unit atau kehilangan kendali."
         },
         {
           "text": "Kondisi jalan pada musim hujan tetap dapat dilalui dengan aman (tidak becek berlebih)",
@@ -3364,7 +3451,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Tambah lapisan perkerasan/batasi operasi saat ekstrem",
           "freq": "Harian saat musim hujan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan lapisan permukaan jalan (surfacing) & sistem drainase memadai agar jalan tetap dapat dilalui aman pada kondisi hujan, mencegah unit selip/terjebak lumpur."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan lapisan permukaan jalan (surfacing) & sistem drainase memadai agar jalan tetap dapat dilalui aman pada kondisi hujan, mencegah unit selip/terjebak lumpur."
         }
       ]
     },
@@ -3379,27 +3466,27 @@ var MASTER_AREAS = {
           "evidence": "Foto dokumen kajian",
           "action": "Susun kajian teknis untuk segmen yang belum ada",
           "freq": "Tahunan (cek update bulanan)",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan segmen jalan dengan grade melebihi standar (>12%) hanya diizinkan berdasarkan kajian teknis khusus yang mempertimbangkan kemampuan rem & rimpull unit yang akan melintas."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan segmen jalan dengan grade melebihi standar (>12%) hanya diizinkan berdasarkan kajian teknis khusus yang mempertimbangkan kemampuan rem & rimpull unit yang akan melintas."
         },
         {
-          "text": "Inspeksi jalan tambang terjadwal terdokumentasi & tindak lanjut temuan tercatat",
+          "text": "Inspeksi jalan hauling terjadwal terdokumentasi & tindak lanjut temuan tercatat",
           "criteria": "Laporan inspeksi jalan periode sebelumnya sudah ditindaklanjuti (CAPA closing)",
           "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
           "risk": "Medium",
           "evidence": "Foto bukti closing CAPA",
           "action": "Tindak lanjuti temuan yang masih terbuka",
           "freq": "Setiap siklus inspeksi",
-            "regDetail": "UU No. 1/1970 Pasal 9 & Kepmen ESDM No. 1827/2018 (elemen SMKP) mewajibkan inspeksi keselamatan terjadwal terdokumentasi, termasuk pencatatan tindak lanjut temuan, sebagai bagian dari sistem manajemen keselamatan pertambangan."
+          "regDetail": "UU No. 1/1970 Pasal 9 & Kepmen ESDM No. 1827/2018 (elemen SMKP) mewajibkan inspeksi keselamatan terjadwal terdokumentasi, termasuk pencatatan tindak lanjut temuan, sebagai bagian dari sistem manajemen keselamatan pertambangan."
         },
         {
-          "text": "Penanggung jawab pemeliharaan jalan tambang (Pengawas Operasional) teridentifikasi",
+          "text": "Penanggung jawab pemeliharaan jalan hauling (Pengawas Operasional) teridentifikasi",
           "criteria": "Nama & kompetensi penanggung jawab jalan tercatat sesuai struktur organisasi",
           "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
           "risk": "Low",
           "evidence": "Foto struktur organisasi",
           "action": "Update penunjukan penanggung jawab",
           "freq": "Tahunan (cek update bulanan)",
-            "regDetail": "UU No. 1/1970 & Kepmen ESDM No. 1827/2018 mensyaratkan penunjukan Pengawas Operasional yang bertanggung jawab atas pemeliharaan jalan tambang, sebagai bentuk kejelasan struktur tanggung jawab (accountability) dalam SMKP."
+          "regDetail": "UU No. 1/1970 & Kepmen ESDM No. 1827/2018 mensyaratkan penunjukan Pengawas Operasional yang bertanggung jawab atas pemeliharaan jalan tambang, sebagai bentuk kejelasan struktur tanggung jawab (accountability) dalam SMKP."
         }
       ]
     },
@@ -3407,14 +3494,14 @@ var MASTER_AREAS = {
       "t": "Persimpangan & Area Transisi",
       "items": [
         {
-          "text": "Titik pertemuan jalan tambang dengan jalan umum memiliki gerbang/portal & rambu peringatan",
+          "text": "Titik pertemuan jalan hauling dengan jalan umum memiliki gerbang/portal & rambu peringatan",
           "criteria": "Portal/gate terpasang, rambu peringatan unit tambang keluar-masuk terlihat jelas dari jalan umum",
           "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
           "risk": "Extreme",
           "evidence": "Foto",
           "action": "Pasang portal & rambu tambahan di titik pertemuan",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan titik pertemuan jalan tambang dengan jalan umum dilengkapi portal/gerbang & rambu peringatan untuk mengendalikan akses & mencegah unit tambang berinteraksi tanpa kontrol dengan lalu lintas umum."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan titik pertemuan jalan tambang dengan jalan umum dilengkapi portal/gerbang & rambu peringatan untuk mengendalikan akses & mencegah unit tambang berinteraksi tanpa kontrol dengan lalu lintas umum."
         },
         {
           "text": "Petugas flagman/traffic man tersedia di persimpangan dengan volume lalu lintas tinggi",
@@ -3424,27 +3511,27 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Tugaskan flagman tambahan di jam sibuk",
           "freq": "Harian",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan penempatan petugas pengatur lalu lintas (flagman) di titik dengan volume lalu lintas tinggi sebagai kontrol tambahan selain rambu statis."
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan penempatan petugas pengatur lalu lintas (flagman) di titik dengan volume lalu lintas tinggi sebagai kontrol tambahan selain rambu statis."
         },
         {
-          "text": "Area transisi jalan tambang menuju dumping point/loading point memiliki rambu perlambatan",
+          "text": "Area transisi jalan hauling menuju area kerja (Loading Area, Dumping Crusher / Stock ROM, Port) memiliki rambu perlambatan",
           "criteria": "Rambu & marka perlambatan terpasang menjelang area kerja aktif",
           "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
           "risk": "Medium",
           "evidence": "Foto",
           "action": "Pasang rambu perlambatan tambahan",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan rambu perlambatan pada area transisi menuju dumping/loading point mengingat perubahan pola lalu lintas & meningkatnya risiko konflik antar unit di titik tersebut."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan rambu perlambatan pada area transisi menuju dumping/loading point mengingat perubahan pola lalu lintas & meningkatnya risiko konflik antar unit di titik tersebut."
         },
         {
           "text": "Jalur khusus pejalan kaki/petugas terpisah dari jalur unit hauling",
-          "criteria": "Ada jalur/area aman khusus untuk petugas yang berjalan kaki di sekitar jalan tambang",
+          "criteria": "Ada jalur/area aman khusus untuk petugas yang berjalan kaki di sekitar jalan hauling",
           "reg": "UU 1/1970 & SMKP Kepmen ESDM 1827/2018",
           "risk": "High",
           "evidence": "Foto",
           "action": "Buat jalur pejalan kaki terpisah",
           "freq": "Bulanan",
-            "regDetail": "UU No. 1/1970 & prinsip SMKP mensyaratkan segregasi jalur pejalan kaki dari jalur unit besar (heavy vehicle) untuk mencegah interaksi langsung antara pekerja pejalan kaki dengan unit hauling bertonase besar yang memiliki blind spot signifikan."
+          "regDetail": "UU No. 1/1970 & prinsip SMKP mensyaratkan segregasi jalur pejalan kaki dari jalur unit besar (heavy vehicle) untuk mencegah interaksi langsung antara pekerja pejalan kaki dengan unit hauling bertonase besar yang memiliki blind spot signifikan."
         }
       ]
     },
@@ -3452,14 +3539,14 @@ var MASTER_AREAS = {
       "t": "Interaksi Kendaraan Ringan",
       "items": [
         {
-          "text": "Kendaraan ringan (light vehicle) dilengkapi bendera/tiang penanda tinggi saat masuk jalan tambang",
+          "text": "Kendaraan ringan (light vehicle) dilengkapi bendera/tiang penanda tinggi saat masuk jalan hauling",
           "criteria": "Bendera/whip antenna terpasang agar terlihat oleh operator unit besar",
           "reg": "Kepdirjen Minerba 185.K/37.04/DJB/2019 (Juknis Keselamatan Pertambangan)",
           "risk": "High",
           "evidence": "Foto",
           "action": "Pasang/lengkapi bendera penanda pada LV",
           "freq": "Setiap LV masuk area tambang",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan kendaraan ringan dilengkapi bendera/tiang penanda (safety flag) agar mudah terlihat oleh operator unit besar yang memiliki blind spot signifikan di sekitar kendaraan kecil."
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan kendaraan ringan dilengkapi bendera/tiang penanda (safety flag) agar mudah terlihat oleh operator unit besar yang memiliki blind spot signifikan di sekitar kendaraan kecil."
         },
         {
           "text": "Aturan prioritas & jarak aman kendaraan ringan terhadap unit hauling besar diterapkan",
@@ -3469,7 +3556,7 @@ var MASTER_AREAS = {
           "evidence": "Foto/observasi",
           "action": "Briefing ulang SOP interaksi LV-unit besar",
           "freq": "Harian",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan kendaraan ringan memberi prioritas & menjaga jarak aman terhadap unit hauling besar, mengingat keterbatasan jarak pandang & titik buta operator unit besar terhadap kendaraan kecil di sekitarnya."
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan kendaraan ringan memberi prioritas & menjaga jarak aman terhadap unit hauling besar, mengingat keterbatasan jarak pandang & titik buta operator unit besar terhadap kendaraan kecil di sekitarnya."
         }
       ]
     },
@@ -3484,7 +3571,7 @@ var MASTER_AREAS = {
           "evidence": "Foto dashboard monitoring",
           "action": "Perbaiki/aktifkan kembali sistem yang tidak berfungsi",
           "freq": "Mingguan",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan penerapan teknologi pemantauan (GPS tracking/fatigue detection) pada unit hauling sebagai pengendalian tambahan (engineering control) terhadap risiko kelelahan & pelanggaran batas kecepatan operator."
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan penerapan teknologi pemantauan (GPS tracking/fatigue detection) pada unit hauling sebagai pengendalian tambahan (engineering control) terhadap risiko kelelahan & pelanggaran batas kecepatan operator."
         },
         {
           "text": "CCTV/kamera pemantau tersedia di titik rawan kecelakaan (jika terpasang)",
@@ -3494,7 +3581,7 @@ var MASTER_AREAS = {
           "evidence": "Foto",
           "action": "Perbaiki kamera yang tidak berfungsi",
           "freq": "Bulanan",
-            "regDetail": "UU No. 1/1970 & Kepmen ESDM No. 1827/2018 (elemen SMKP) mendukung penerapan sistem pemantauan (CCTV) pada titik rawan kecelakaan sebagai pengendalian administratif/teknis tambahan untuk mendeteksi dini potensi bahaya di jalur hauling."
+          "regDetail": "UU No. 1/1970 & Kepmen ESDM No. 1827/2018 (elemen SMKP) mendukung penerapan sistem pemantauan (CCTV) pada titik rawan kecelakaan sebagai pengendalian administratif/teknis tambahan untuk mendeteksi dini potensi bahaya di jalur hauling."
         }
       ]
     },
@@ -3509,17 +3596,17 @@ var MASTER_AREAS = {
           "evidence": "Foto dokumen SOP/bukti penerapan",
           "action": "Tegakkan SOP stop operasi cuaca ekstrem",
           "freq": "Setiap kondisi cuaca ekstrem",
-            "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan SOP penghentian operasi (stop work) saat kondisi cuaca ekstrem yang mengurangi jarak pandang & keselamatan operasi secara signifikan, sebagai kontrol administratif tanggap darurat cuaca."
+          "regDetail": "Kepdirjen Minerba No. 185.K/37.04/DJB/2019 mensyaratkan SOP penghentian operasi (stop work) saat kondisi cuaca ekstrem yang mengurangi jarak pandang & keselamatan operasi secara signifikan, sebagai kontrol administratif tanggap darurat cuaca."
         },
         {
-          "text": "Jalan tambang pada area rawan longsor memiliki monitoring pergerakan tanah (jika relevan)",
+          "text": "Jalan hauling pada area rawan longsor memiliki monitoring pergerakan tanah (jika relevan)",
           "criteria": "Ada tanda-tanda pemantauan (patok survey/inklinometer) di segmen jalan rawan longsor",
           "reg": "Kepmen ESDM 1827 K/30/MEM/2018 Lampiran (Standar Jalan Tambang)",
           "risk": "High",
           "evidence": "Foto",
           "action": "Pasang sistem monitoring pergerakan tanah",
           "freq": "Bulanan",
-            "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan geoteknik memantau area jalan yang berdekatan dengan lereng berisiko longsor, menggunakan instrumen monitoring pergerakan tanah untuk deteksi dini sebelum kegagalan lereng terjadi."
+          "regDetail": "Kepmen ESDM No. 1827 K/30/MEM/2018 Lampiran II mensyaratkan geoteknik memantau area jalan yang berdekatan dengan lereng berisiko longsor, menggunakan instrumen monitoring pergerakan tanah untuk deteksi dini sebelum kegagalan lereng terjadi."
         }
       ]
     }
