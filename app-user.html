@@ -8594,12 +8594,26 @@ function renderHist(){
 
 // ════ FATIGUE CALL → TEKS (untuk grup WA; ringan, tanpa PDF) ════
 function fatTextFor(id){
-  var r=getLocal().find(function(x){return x.id===id;});
-  if(!r||!r.extra||!r.extra.units||!r.extra.units.length)return '';
-  var L=['*FATIGUE CALL* - '+(r.location||'-')+' - '+fd(r.timestamp)];
-  r.extra.units.forEach(function(u,i){
-    L.push((i+1)+'. '+(u.plate||'-').toUpperCase()+' | '+(u.load==='Muatan'?'Muatan':(u.load==='Kosong'?'Kosongan':(u.load||'-')))+' | '+(u.time||'-'));
+  var all=getMine().filter(function(x){return x.type==='fatigue'&&x.extra&&x.extra.units&&x.extra.units.length;});
+  var r=all.find(function(x){return x.id===id;});
+  if(!r)return '';
+  // Rekap SATU SHIFT sampai laporan terakhir yang diinput (semua laporan fatigue di shift yang sama).
+  var sk=shiftKeyOf(r.timestamp),rep=all.filter(function(x){return shiftKeyOf(x.timestamp).key===sk.key;});
+  var mu=[],ko=[],pos={};
+  rep.forEach(function(x){
+    if(x.location)pos[x.location]=1;
+    x.extra.units.forEach(function(u){
+      var row={dt:(u.plate||'-').toUpperCase(),tm:u.time||'-'};
+      if(u.load==='Muatan')mu.push(row);else if(u.load==='Kosong')ko.push(row);
+    });
   });
+  var byT=function(p,q){return String(p.tm).localeCompare(String(q.tm));};
+  mu.sort(byT);ko.sort(byT);
+  var ps=Object.keys(pos);
+  var L=['*REKAP FATIGUE CALL*',sk.dateStr+' - '+sk.shift+(ps.length?' - '+ps.join(', '):''),'','*MUATAN* ('+mu.length+' unit)'];
+  if(mu.length)mu.forEach(function(u,i){L.push((i+1)+'. '+u.dt+' | '+u.tm);});else L.push('-');
+  L.push('','*KOSONGAN* ('+ko.length+' unit)');
+  if(ko.length)ko.forEach(function(u,i){L.push((i+1)+'. '+u.dt+' | '+u.tm);});else L.push('-');
   return L.join('\n');
 }
 function fatSendText(id){
