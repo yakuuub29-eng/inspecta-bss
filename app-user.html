@@ -497,7 +497,6 @@ textarea.fi{resize:vertical;min-height:68px;line-height:1.5}
       </div>
     </div>
 
-    <div style="padding:0 14px 10px"><button class="qbtn" style="width:100%;flex-direction:row;gap:10px;justify-content:center;padding:12px;border:1.5px solid var(--Y);background:var(--YP);color:var(--B);font-weight:700;border-radius:12px" onclick="openFatWA()"><svg viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.7 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg> Fatigue Call → Kirim Teks ke WA</button></div>
 
     <div class="srow">
       <div class="sc hl"><div class="sn" id="s-tot">0</div><div class="sl">Total</div></div>
@@ -7678,6 +7677,8 @@ function buildForm(type){
   // Lokasi (fi0) = PILIHAN AREA baku (sama dengan Area Temuan Hazard Report) supaya filter di dashboard seragam.
   // Keterangan spesifik (mis. sub-area/nomor kotak) diisi di "Detail Lokasi" opsional.
   var infoHtml=autoInfoHtml+cfg.info.map(function(f,i){
+    // Fatigue Call & Speedgun: lokasi tetap diisi manual (tidak memakai pilihan area baku).
+    if(cfg.fatMode||cfg.spdMode)return fgg(i===0?(f+' <span style="color:#C53030">*</span>'):f,'<input type="text" class="fi" id="fi'+i+'" placeholder="'+f+'"'+(i===0?' required':'')+'/>');
     if(i===0)return fgg('Area / Lokasi <span style="color:#C53030">*</span>','<select class="fi" id="fi0" required>'+hzOpts(HZ_AREA,'— Pilih Area —')+'</select>')
       +fgg(esc(f)+' <span style="font-weight:400;color:var(--G5)">(detail, opsional)</span>','<input type="text" class="fi" id="fi-det" placeholder="'+esc(f)+'"/>');
     return fgg(f,'<input type="text" class="fi" id="fi'+i+'" placeholder="'+f+'"/>');
@@ -8249,94 +8250,6 @@ function remFU(id){saveFUFromDOM();FU=FU.filter(function(u){return u.id!==id;});
 function setRsp(uid,r){el('u'+uid+'-rg').classList.toggle('on',r==='g');el('u'+uid+'-rb').classList.toggle('on',r==='b');}
 
 
-// ════ FATIGUE CALL → TEKS WHATSAPP (ringan, tanpa PDF, aman di sinyal buruk) ════
-var FATWA_KEY='k3_fatwa_draft',FATWA=[];
-function fwSave(){fwRead();try{localStorage.setItem(FATWA_KEY,JSON.stringify({pos:(el('fw-pos')||{}).value||'',rows:FATWA}));}catch(e){}}
-function fwRead(){
-  FATWA.forEach(function(u){
-    var n=el('fw'+u.id+'-n'),t=el('fw'+u.id+'-t'),m=el('fw'+u.id+'-m');
-    if(n)u.n=n.value;if(t)u.t=t.value;if(m)u.m=m.value;
-  });
-}
-function fwNow(){return new Date().toTimeString().slice(0,5);}
-function openFatWA(){
-  var d={pos:'',rows:[]};try{d=JSON.parse(localStorage.getItem(FATWA_KEY)||'')||d;}catch(e){}
-  FATWA=(d.rows||[]).filter(function(r){return r&&r.id;});
-  el('fcontent').innerHTML=
-    '<div class="fhdr"><button class="bk" onclick="goHome(null)" aria-label="Kembali"><svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>'
-    +'<div><div class="ft">Fatigue Call → WA</div><div class="fs">Laporan teks per 2 jam ke grup (ringan, tanpa PDF)</div></div></div>'
-    +'<div class="quick-form"><div class="fsec"><div class="fsh"><span class="fsh-t">Pos Pemantauan</span></div><div class="fsb">'
-    +'<select class="fi" id="fw-pos" onchange="fwSave()">'+hzOpts(HZ_AREA,'— Pilih Pos / Area —')+'</select>'
-    +'</div></div>'
-    +'<div class="fsec"><div class="fsh"><span class="fsh-t">Unit Melintas</span></div><div class="fsb"><div id="fw-rows"></div>'
-    +'<button class="addu" onclick="fwAdd()">＋ Tambah Unit</button></div></div>'
-    +'<div class="fsec"><div class="fsh"><span class="fsh-t">Pratinjau Pesan</span></div><div class="fsb"><pre id="fw-prev" style="white-space:pre-wrap;font:12px/1.5 monospace;background:var(--G1);border-radius:8px;padding:10px;margin:0"></pre></div></div>'
-    +'<button class="subbtn" onclick="fwSend()">Kirim ke WhatsApp</button>'
-    +'<button class="subbtn" style="background:var(--G2);color:var(--B);margin-top:8px" onclick="fwCopy()">Salin Teks</button>'
-    +'<button class="subbtn" style="background:transparent;color:#C53030;margin-top:8px;border:1px solid #C53030" onclick="fwClear()">Kosongkan Daftar (setelah terkirim)</button>'
-    +'</div>';
-  setScr('s-form');
-  document.querySelectorAll('.nv').forEach(function(b){b.classList.remove('on');});
-  el('fw-pos').value=d.pos||'';
-  if(!FATWA.length)FATWA.push({id:1,n:'',t:fwNow(),m:'Muatan'});
-  fwRender();
-}
-function fwRender(){
-  el('fw-rows').innerHTML=FATWA.map(function(u,i){
-    var mt=u.m==='Muatan';
-    return '<div class="urow" style="margin:8px 0" id="fw'+u.id+'"><div class="urhdr"><span class="urn">#'+(i+1)+'</span>'
-      +(FATWA.length>1?'<button class="urm" onclick="fwRem('+u.id+')">✕</button>':'')+'</div>'
-      +'<div class="ugrid"><div class="fg h"><label class="fl">No. DT</label><input class="fi" id="fw'+u.id+'-n" value="'+esc(u.n||'')+'" placeholder="DT-123" oninput="fwUpd()"/></div>'
-      +'<div class="fg h"><label class="fl">Jam Melintas</label><input type="time" class="fi" id="fw'+u.id+'-t" value="'+esc(u.t||'')+'" onchange="fwUpd()"/></div>'
-      +'<div class="fg"><label class="fl">Muatan / Kosongan</label><div style="display:flex;gap:6px">'
-      +'<button class="rb'+(mt?' on':'')+'" onclick="fwSet('+u.id+',\'Muatan\')">Muatan</button>'
-      +'<button class="rb'+(!mt?' on':'')+'" onclick="fwSet('+u.id+',\'Kosong\')">Kosongan</button></div></div></div></div>';
-  }).join('');
-  fwUpd();
-}
-function fwSet(id,v){fwRead();FATWA.forEach(function(u){if(u.id===id)u.m=v;});fwRender();fwSave();}
-function fwAdd(){fwRead();var mx=Math.max.apply(null,FATWA.map(function(u){return u.id;}).concat([0]));var last=FATWA[FATWA.length-1];FATWA.push({id:mx+1,n:'',t:fwNow(),m:last?last.m:'Muatan'});fwRender();fwSave();}
-function fwRem(id){fwRead();FATWA=FATWA.filter(function(u){return u.id!==id;});fwRender();fwSave();}
-function fwUpd(){fwSave();el('fw-prev').textContent=fwText();}
-function fwText(){
-  fwRead();
-  var now=new Date(),hh=now.getHours(),shift=(hh>=6&&hh<18)?'DS (Siang)':'NS (Malam)';
-  var tgl=now.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-  var rows=FATWA.filter(function(u){return (u.n||'').trim();});
-  rows.sort(function(x,y){return (x.t||'').localeCompare(y.t||'');});
-  var pos=(el('fw-pos')&&el('fw-pos').value)||'-';
-  var per=rows.length?(rows[0].t+' – '+rows[rows.length-1].t):'-';
-  var mu=rows.filter(function(u){return u.m==='Muatan';}).length;
-  var L=['*LAPORAN FATIGUE CALL*',tgl+' · Shift '+shift,'Pos: '+pos,'Periode: '+per+' WITA','Pelapor: '+(CU?CU.name:'-'),'',];
-  rows.forEach(function(u,i){L.push((i+1)+'. '+u.n.trim().toUpperCase()+' | '+(u.m==='Muatan'?'Muatan':'Kosongan')+' | '+u.t);});
-  if(!rows.length)L.push('(belum ada unit)');
-  L.push('','Total: '+rows.length+' unit ('+mu+' muatan, '+(rows.length-mu)+' kosongan)');
-  return L.join('\n');
-}
-function fwValid(){
-  if(!el('fw-pos').value){showToast('Pilih pos / area dulu','warning');return false;}
-  fwRead();
-  var rows=FATWA.filter(function(u){return (u.n||'').trim();});
-  if(!rows.length){showToast('Isi minimal 1 nomor DT','warning');return false;}
-  return true;
-}
-function fwSend(){
-  if(!fwValid())return;
-  var t=fwText();
-  // Share sheet bawaan HP (tanpa internet) → pilih WhatsApp → pilih grup. Cadangan: tautan WhatsApp.
-  if(navigator.share){navigator.share({text:t}).catch(function(){});return;}
-  window.location.href='https://wa.me/?text='+encodeURIComponent(t);
-}
-function fwCopy(){
-  if(!fwValid())return;
-  var t=fwText();
-  function ok(){showToast('Teks disalin — tempel di grup WA','success');}
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok).catch(function(){fwCopyOld(t,ok);});
-  else fwCopyOld(t,ok);
-}
-function fwCopyOld(t,ok){var x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();try{document.execCommand('copy');ok();}catch(e){showToast('Gagal menyalin','error');}x.remove();}
-function fwClear(){FATWA=[{id:1,n:'',t:fwNow(),m:'Muatan'}];fwRender();fwSave();showToast('Daftar dikosongkan');}
-
 // ════ QUICK REPORT ════
 var QUICK_CFG={
   hazard: {title:'Laporan Bahaya (Hazard Report)',sub:'Laporkan kondisi / tindakan berbahaya (Hazard)',cls:'hazard',icon:ICONS.hazard},
@@ -8474,11 +8387,11 @@ function submitForm(){
     var _lbl=(FCFG[CFT]&&FCFG[CFT].info&&FCFG[CFT].info[0])||'Lokasi';
     _locEl.classList.add('fi-err');
     var _fg=_locEl.closest?_locEl.closest('.fg'):null;
-    if(_fg&&!_fg.querySelector('.fi-err-msg')){var _m=document.createElement('div');_m.className='fi-err-msg';_m.textContent='Wajib dipilih sebelum laporan dikirim';_fg.appendChild(_m);}
+    if(_fg&&!_fg.querySelector('.fi-err-msg')){var _m=document.createElement('div');_m.className='fi-err-msg';_m.textContent='Wajib diisi sebelum laporan dikirim';_fg.appendChild(_m);}
     _locEl.onchange=_locEl.oninput=function(){_locEl.classList.remove('fi-err');var m=_fg&&_fg.querySelector('.fi-err-msg');if(m)m.remove();};
     try{_locEl.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
     setTimeout(function(){try{_locEl.focus();}catch(e){}},350);
-    showToast('Pilih Area / Lokasi dulu sebelum mengirim laporan','warning');
+    showToast((FCFG[CFT]&&(FCFG[CFT].fatMode||FCFG[CFT].spdMode)?'Isi "'+_lbl+'"':'Pilih Area / Lokasi')+' dulu sebelum mengirim laporan','warning');
     return;
   }
   var btn=el('subbtn');btn.disabled=true;
@@ -8678,12 +8591,39 @@ function renderHist(){
 }
 
 // ════ DETAIL MODAL ════
+
+// ════ FATIGUE CALL → TEKS (untuk grup WA; ringan, tanpa PDF) ════
+function fatTextFor(id){
+  var r=getLocal().find(function(x){return x.id===id;});
+  if(!r||!r.extra||!r.extra.units||!r.extra.units.length)return '';
+  var L=['*FATIGUE CALL* - '+(r.location||'-')+' - '+fd(r.timestamp)];
+  r.extra.units.forEach(function(u,i){
+    L.push((i+1)+'. '+(u.plate||'-').toUpperCase()+' | '+(u.load==='Muatan'?'Muatan':(u.load==='Kosong'?'Kosongan':(u.load||'-')))+' | '+(u.time||'-'));
+  });
+  return L.join('\n');
+}
+function fatSendText(id){
+  var t=fatTextFor(id);if(!t){showToast('Tidak ada data unit di laporan ini','warning');return;}
+  // Menu bagikan bawaan HP (tidak butuh internet) → pilih WhatsApp → pilih grup.
+  if(navigator.share){navigator.share({text:t}).catch(function(){});return;}
+  window.location.href='https://wa.me/?text='+encodeURIComponent(t);
+}
+function fatCopyText(id){
+  var t=fatTextFor(id);if(!t){showToast('Tidak ada data unit di laporan ini','warning');return;}
+  function ok(){showToast('Teks disalin — tempel di grup WA','success');}
+  function old(){var x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();try{document.execCommand('copy');ok();}catch(e){showToast('Gagal menyalin','error');}x.remove();}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok).catch(old);else old();
+}
 function pdfBtnHtmlFor(r){
   var fn=r.type==='fatigue'?'downloadFatiguePDF':r.type==='speedgun'?'downloadSpeedgunPDF':'downloadInspeksiPDF';
   var lbl=(r.type==='fatigue'||r.type==='speedgun')?'Download PDF (Shift Ini)':(r.type==='gabungan'?'Download PICA':'Download PDF Laporan');
   var html='<button class="pdf-btn blue" onclick="'+fn+'(\''+r.id+'\')"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 13h5M9.5 16.5h5"/></svg> '+lbl+'</button>';
   if(canShareFiles()){
     html+='<button class="pdf-btn green" onclick="'+fn+'(\''+r.id+'\',true)"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg> Bagikan (WA, dll)</button>';
+  }
+  if(r.type==='fatigue'){
+    html+='<button class="pdf-btn green" onclick="fatSendText(\''+r.id+'\')">Kirim Teks (WA)</button>'
+      +'<button class="pdf-btn blue" onclick="fatCopyText(\''+r.id+'\')">Salin Teks</button>';
   }
   return html;
 }
