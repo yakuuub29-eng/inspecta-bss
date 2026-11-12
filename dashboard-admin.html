@@ -2817,7 +2817,7 @@ function showDet(id){
   r=hydrated(r);
   el('m-t').textContent=r.typeName;el('m-s').textContent=fd(r.timestamp)+' pukul '+ft(r.timestamp);
   var h='<div class="m-sec-t">Informasi Laporan</div><div class="dg">';
-  [['Inspektor',r.userName||r.reporter||'—'],['ID',r.userId||'—'],['Departemen',r.userDept||'—'],['Shift',r.userShift||'—'],
+  [['Inspektor',r.userName||r.reporter||'—'],['ID',r.userId||'—'],['Departemen',r.userDept||'—'],].concat(r.hzJenis?[['Jenis Temuan',r.hzJenis+' — '+(r.hzKategori||'—')],['Area Temuan',r.hzArea||'—']]:[]).concat([['Shift',r.userShift||'—'],
    ['Lokasi',r.location||'—'],['Tanggal & Jam',fd(r.timestamp)+' '+ft(r.timestamp)],
    ['Severity',sevBadge(r.severity||'')],
    ['Status','<span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+statusLabel(r.status)+'</span>'],
@@ -2828,7 +2828,7 @@ function showDet(id){
    // "apakah data ada di server" — sebelumnya ini bikin laporan lama tetap
    // kelihatan "Pending" selamanya walau datanya sudah 100% sampai.
    ['Firebase','<span style="color:var(--GR);font-weight:700">☁️ Terkirim</span>']
-  ].forEach(function(row){h+='<div class="di"><div class="dk">'+row[0]+'</div><div class="dv">'+row[1]+'</div></div>';});
+  ]).forEach(function(row){h+='<div class="di"><div class="dk">'+row[0]+'</div><div class="dv">'+row[1]+'</div></div>';});
   h+='<div class="di full"><div class="dk">Temuan & Catatan</div><div class="dv">'+(r.notes||'—')+'</div></div>';
   h+='<div class="di full"><div class="dk">Tindakan Perbaikan</div><div class="dv">'+(r.action||'—')+'</div></div>';
   h+='</div>';
@@ -6867,10 +6867,10 @@ RXH.build=function(m){
 
   // ═══ DATA ═══
   // kolom: B NO · C TANGGAL · D JAM · E WEEK · F NO.LAPORAN · G JENIS · H PELAPOR · I DEPT · J LOKASI · K SEVERITY · L DESKRIPSI · M TINDAKAN · N PIC · O DUE · P STATUS · Q JML FOTO · R FOTO
-  var W=[2,5,12.5,7,9,25,11,18,11,22,10,46,34,14,12.5,15,8,34];
+  var W=[2,5,12.5,7,9,25,11,18,11,22,10,46,34,14,12.5,15,8,34,10,36,30];
   W.forEach(function(w,i){sD.width(i+1,i+1,w);});
-  sD.merge(2,2,3,18,m.title,title);sD.rowH[2]=20;sD.rowH[3]=20;
-  ['NO','TANGGAL','JAM','WEEK','NO. LAPORAN','JENIS','PELAPOR','DEPT','LOKASI','SEVERITY','DESKRIPSI TEMUAN','TINDAKAN / PERBAIKAN','PIC','DUE DATE','STATUS','JML FOTO','FOTO'].forEach(function(h,i){sD.put(4,2+i,h,hdr);});
+  sD.merge(2,2,3,21,m.title,title);sD.rowH[2]=20;sD.rowH[3]=20;
+  ['NO','TANGGAL','JAM','WEEK','NO. LAPORAN','JENIS','PELAPOR','DEPT','LOKASI','SEVERITY','DESKRIPSI TEMUAN','TINDAKAN / PERBAIKAN','PIC','DUE DATE','STATUS','JML FOTO','FOTO','KTA / TTA','KATEGORI','AREA TEMUAN'].forEach(function(h,i){sD.put(4,2+i,h,hdr);});
   sD.rowH[4]=24;sD.freezeRow=4;
   var media=[],BW=212,BH=150,COLPX=243;
   rows.forEach(function(row,i){
@@ -6886,6 +6886,7 @@ RXH.build=function(m){
     sD.put(r,16,row.status,Object.assign({b:1},c));
     sD.put(r,17,row.nFoto||0,c);
     sD.blank(r,18,c);
+    sD.put(r,19,row.hzJenis||'-',Object.assign({b:1},c));sD.put(r,20,row.hzKat||'-',l);sD.put(r,21,row.hzArea||'-',l);
     var textH=Math.max(Math.ceil(String(row.desc||'').length/52),Math.ceil(String(row.action||'').length/38),1)*14+8;
     var im=row.img,imgH=0;
     if(im){
@@ -7055,6 +7056,10 @@ RXH.build=function(m){
   function byCount(keyOf){var m={};rows.forEach(function(x){var k=keyOf(x);m[k]=(m[k]||0)+1;});return Object.keys(m).sort(function(a,b){return m[b]-m[a]||a.localeCompare(b);});}
   var kP=function(x){return x.pelapor||'-';},kC=function(x){return x.pic||'(belum ada PIC)';};
   groupSection('PER PENGAWAS / PELAPOR — jumlah laporan yang sudah dibuat sampai data diunduh','PENGAWAS','H',kP,byCount(kP),'JUMLAH LAPORAN PER PENGAWAS');
+  var kJ=function(x){return x.hzJenis||'(tanpa klasifikasi)';},kK=function(x){return x.hzKat||'(tanpa klasifikasi)';},kA=function(x){return x.hzArea||'(tanpa area)';};
+  groupSection('PER JENIS TEMUAN (KTA / TTA)','JENIS','S',kJ,byCount(kJ),'KTA vs TTA');
+  groupSection('PER KATEGORI TEMUAN','KATEGORI','T',kK,byCount(kK),'LAPORAN PER KATEGORI');
+  groupSection('PER AREA TEMUAN','AREA','U',kA,byCount(kA),'LAPORAN PER AREA TEMUAN');
   groupSection('PER PIC TINDAK LANJUT','PIC','N',kC,byCount(kC),'LAPORAN PER PIC');
   var files=RX.pack([sR,sD],chartList,media,st,0);
   return files;
@@ -7110,7 +7115,7 @@ function rxhRun(){
     return {_r:r,date:new Date(d.getFullYear(),d.getMonth(),d.getDate()),time:pad(d.getHours())+':'+pad(d.getMinutes()),week:weekOf(d),
       no:r.noTemuan||r.id,jenis:RXH.TYPES[r.type],pelapor:r.userName||'-',dept:rxDeptLabel(rxDeptKey(r)),lokasi:r.location||'-',
       sev:r.severity||'-',desc:r.notes||'',action:(c&&c.action)||r.action||'',pic:(c&&c.pic)||(r.capa&&r.capa.pic)||'(belum ada PIC)',due:due,
-      status:c?(c.status==='Waiting Verification'?'Waiting Verification':c.status):'Open',nFoto:(r.photos&&r.photos.length)||r.photoCount||0,img:null};
+      hzJenis:r.hzJenis||'',hzKat:r.hzKategori||'',hzArea:r.hzArea||'',status:c?(c.status==='Waiting Verification'?'Waiting Verification':c.status):'Open',nFoto:(r.photos&&r.photos.length)||r.photoCount||0,img:null};
   });
   var depts=[];rows.forEach(function(x){if(depts.indexOf(x.dept)<0)depts.push(x.dept);});depts.sort(function(a,b){return a.localeCompare(b);});
   var MN=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
