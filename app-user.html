@@ -1114,9 +1114,9 @@ function peekNoTemuan(type){
 
 // ════ IMAGE RESIZER ════
 // Target: max 1280px, JPEG quality 0.82 → ~150-300KB per foto
-var IMG_MAX_W = 1280;
-var IMG_MAX_H = 1280;
-var IMG_QUALITY = 0.82;
+var IMG_MAX_W = 1024;
+var IMG_MAX_H = 1024;
+var IMG_QUALITY = 0.72; // lebih hemat: ±100-150 KB/foto → penyimpanan HP tidak cepat penuh
 
 function resizeImage(file, callback){
   var reader = new FileReader();
@@ -1255,7 +1255,7 @@ function saveCAPAFromReport(rep){
     dueDate:(rep.capa&&rep.capa.dueDate)||existing.dueDate||'',
     immediateAction:(rep.capa&&rep.capa.immediateAction)||existing.immediateAction||'',
     status:existing.status||mapCapaStatusForAdmin(rep.capa&&rep.capa.status),
-    evBefore:(rep.capa&&rep.capa.evBefore)||existing.evBefore||'',
+    evBefore:(function(v){return (typeof v==='string'&&v.indexOf('data:')===0)?'':v;})((rep.capa&&rep.capa.evBefore)||existing.evBefore||''), // foto 'before' sudah ada di laporan; jangan disimpan dobel di HP
     evAfter:(rep.capa&&rep.capa.evAfter)||existing.evAfter||'',
     reportId:rep.id,
     noTemuan:rep.noTemuan||'',
@@ -1472,7 +1472,13 @@ function saveLocal(a){
     // (data lengkapnya sudah aman di server, salinan lokal cuma perlu untuk
     // riwayat ringkas), lalu coba simpan ulang.
     console.warn('[INSPECTA] localStorage penuh, mencoba bersihkan laporan lama yang sudah tersync...', e);
+    freeLocalSpace();
     var pruned=pruneOldSyncedReports(a);
+    try{localStorage.setItem(SK,JSON.stringify(pruned));}
+    catch(_e){
+      // Masih penuh: bersihkan foto SEMUA laporan yang sudah tersync (salinan lengkap ada di server), berapapun umurnya.
+      pruned=pruneOldSyncedReports(a,0);
+    }
     try{
       localStorage.setItem(SK,JSON.stringify(pruned));
       showToast('⚠️ Penyimpanan HP hampir penuh — foto laporan lama (yang sudah terkirim) dibersihkan otomatis untuk hemat ruang','warning');
@@ -1545,8 +1551,17 @@ function saveLocal(a){
 // salinan lokal cuma untuk tampilan riwayat ringkas jadi tidak perlu foto lagi.
 // Field non-foto (status, tanggal, temuan, dll) TETAP disimpan agar riwayat
 // masih bisa ditampilkan.
-function pruneOldSyncedReports(reports){
-  var cutoff=Date.now()-(14*24*60*60*1000); // 14 hari
+// Kosongkan cache lain yang boleh dibuang supaya laporan baru muat: foto duplikat di data CAPA lokal & log audit lama.
+function freeLocalSpace(){
+  try{
+    var caps=getCAPAsLocal(),ch=false;
+    Object.keys(caps).forEach(function(k){var c=caps[k];if(c&&typeof c.evBefore==='string'&&c.evBefore.indexOf('data:')===0){c.evBefore='';ch=true;}});
+    if(ch)localStorage.setItem(CAP_KEY,JSON.stringify(caps));
+  }catch(e){}
+  try{var al=getAuditLog();if(al.length>200)localStorage.setItem(AUDIT_KEY,JSON.stringify(al.slice(0,200)));}catch(e){}
+}
+function pruneOldSyncedReports(reports,ageDays){
+  var cutoff=Date.now()-((ageDays==null?14:ageDays)*24*60*60*1000); // default 14 hari
   var prunedCount=0;
   var result=reports.map(function(r){
     if(!r.synced)return r; // belum tersync -> JANGAN disentuh, data satu-satunya masih di sini
