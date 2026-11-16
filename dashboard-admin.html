@@ -801,6 +801,7 @@ tr:last-child td{border-bottom:none}
       <div><div class="tb-title">INSPECTA</div><div class="tb-sub"><span class="ldot"></span><span id="fb-status">⏳ Menghubungkan...</span></div></div>
     </div>
     <div class="tb-r">
+      <select class="fsel" id="jobsite-filter" onchange="setJobsiteFilter(this.value)" title="Filter jobsite untuk seluruh dashboard" style="font-size:11px;padding:4px 6px"><option value="all">Semua Jobsite</option><option value="MSJ">MSJ</option><option value="TD">TD</option><option value="none">Belum diisi</option></select>
       <span class="tb-user" id="cur-user-name">Administrator</span>
       <span class="role-badge-tb" id="role-badge-topbar">Administrator</span>
       <div class="notif-btn" onclick="toggleNotif()" id="notif-btn" title="Notifikasi">🔔<div class="notif-dot" id="notif-dot"></div></div>
@@ -1732,9 +1733,22 @@ function changePW(){
 // cache cadangan (supaya reload sebelum Firebase connect masih ada tampilan), tapi
 // kalau gagal, itu tidak lagi menghalangi dashboard menampilkan data yang sebenarnya.
 var LIVE_REPORTS=null;
-function getReports(){
+// Filter Jobsite global (MSJ / TD / belum diisi): berlaku ke semua tabel, grafik, CAPA, dan export Excel/PDF.
+var JOBSITE_F='all',_gsBase=null,_gsF=null,_gsOut=null;
+try{JOBSITE_F=localStorage.getItem('k3_jobsite_f')||'all';}catch(e){}
+function siteOf(r){return (r&&r.jobsite)||'';}
+function siteMatch(s){return JOBSITE_F==='all'||(JOBSITE_F==='none'?!s:s===JOBSITE_F);}
+function setJobsiteFilter(v){JOBSITE_F=v||'all';try{localStorage.setItem('k3_jobsite_f',JOBSITE_F);}catch(e){}_gsBase=null;try{refreshAll();}catch(e){console.error(e);}}
+function getAllReports(){
   if(LIVE_REPORTS)return LIVE_REPORTS;
   try{return JSON.parse(localStorage.getItem(SK)||'[]').map(normLegacyReport);}catch(e){return[];}
+}
+function getReports(){
+  var base=getAllReports();
+  if(JOBSITE_F==='all')return base;
+  if(base===_gsBase&&_gsF===JOBSITE_F&&_gsOut)return _gsOut;
+  _gsBase=base;_gsF=JOBSITE_F;_gsOut=base.filter(function(r){return siteMatch(siteOf(r));});
+  return _gsOut;
 }
 
 // ════ MEDIA TERPISAH (foto laporan) — supaya dashboard cepat terbuka ════
@@ -1957,6 +1971,7 @@ function showP(name,btn){
 
 // ════ REFRESH ════
 function refreshAll(){
+  var _jf=document.getElementById('jobsite-filter');if(_jf&&_jf.value!==JOBSITE_F)_jf.value=JOBSITE_F;
   var all=getReports();
   updSB(all);
   checkNotifs();
@@ -2364,7 +2379,10 @@ function renderCAPA(){
   var fSev=el('capa-filt-sev').value||'all';
   var fArea=el('capa-filt-area').value||'all';
 
+  var _siteIds=null;
+  if(JOBSITE_F!=='all'){_siteIds={};getReports().forEach(function(r){_siteIds['CAPA-'+r.id]=1;});}
   var filtered=all.filter(function(c){
+    if(_siteIds&&!_siteIds[c.id])return false;
     var ms=fSt==='all'||c.status===fSt;
     var msev=fSev==='all'||c.severity===fSev;
     var ma=fArea==='all'||capaAreaNorm(c.area)===fArea;
@@ -2817,7 +2835,7 @@ function showDet(id){
   r=hydrated(r);
   el('m-t').textContent=r.typeName;el('m-s').textContent=fd(r.timestamp)+' pukul '+ft(r.timestamp);
   var h='<div class="m-sec-t">Informasi Laporan</div><div class="dg">';
-  [['Inspektor',r.userName||r.reporter||'—'],['ID',r.userId||'—'],['Departemen',r.userDept||'—'],].concat(r.hzJenis?[['Jenis Temuan',r.hzJenis+' — '+(r.hzKategori||'—')],['Area Temuan',r.hzArea||'—']]:[]).concat([['Shift',r.userShift||'—'],
+  [['Inspektor',r.userName||r.reporter||'—'],['Jobsite',r.jobsite||'—'],['ID',r.userId||'—'],['Departemen',r.userDept||'—'],].concat(r.hzJenis?[['Jenis Temuan',r.hzJenis+' — '+(r.hzKategori||'—')],['Area Temuan',r.hzArea||'—']]:[]).concat([['Shift',r.userShift||'—'],
    ['Lokasi',r.location||'—'],['Tanggal & Jam',fd(r.timestamp)+' '+ft(r.timestamp)],
    ['Severity',sevBadge(r.severity||'')],
    ['Status','<span class="bdg bdg-'+(r.status||'pending').toLowerCase()+'">'+statusLabel(r.status)+'</span>'],
@@ -6718,7 +6736,7 @@ function rxOpenDialog(){
   var now=new Date(),ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   var site='MSJ';try{site=localStorage.getItem('k3_rx_site')||site;}catch(e){}
   var lastDept='';try{lastDept=localStorage.getItem('k3_rx_dept')||'';}catch(e){}
-  var seen={};getReports().forEach(function(r){seen[rxDeptKey(r)]=1;});
+  var seen={};getAllReports().forEach(function(r){seen[rxDeptKey(r)]=1;});
   Object.keys(RX_DEPT_LABEL).forEach(function(k){seen[k]=1;});
   var depts=Object.keys(seen).sort(function(a,b){return a.localeCompare(b);});
   var sel=depts.indexOf(lastDept)>=0?lastDept:(depts.indexOf('SM')>=0?'SM':depts[0]);
@@ -6733,7 +6751,7 @@ function rxOpenDialog(){
     +'<option value="*">SEMUA DEPARTEMEN</option></select>'
     +'<label style="'+L+'">Nama dept di judul</label><input id="rx-label" class="fi" style="width:100%" value="'+esc(rxDeptLabel(sel))+'"/>'
     +'<div style="display:flex;gap:10px"><div style="flex:1"><label style="'+L+'">Bulan</label><input type="month" id="rx-month" value="'+ym+'" class="fi" style="width:100%"/></div>'
-    +'<div style="flex:1"><label style="'+L+'">Site</label><input id="rx-site" class="fi" style="width:100%" value="'+esc(site)+'"/></div></div>'
+    +'<div style="flex:1"><label style="'+L+'">Jobsite</label>'+rxJsSelect('rx-js')+'</div></div>'
     +'<label style="'+L+'">Baris pada GRAFIK</label><select id="rx-grp" class="fsel" style="width:100%"><option value="dept">Per departemen (1 baris)</option><option value="name">Per pengawas dalam dept</option></select>'
     +'<label style="'+L+'">Plan INSPEKSI / minggu</label><input type="number" min="1" id="rx-ti" class="fi" style="width:100%" value="'+WK_TARGET+'"/>'
     +'<div style="font-size:10px;color:#888;margin-top:3px">IBPR terisi otomatis 1 untuk setiap inspeksi yang ada temuan NC (plan mengikuti). Hazard Report tidak ikut — pakai tombol Export Hazard Report.</div>'
@@ -6746,31 +6764,49 @@ function rxDeptChanged(){
   var v=el('rx-dept').value;
   el('rx-label').value=v==='*'?'SEMUA DEPT':rxDeptLabel(v);
 }
-var RX_BUSY=false;
+// Jobsite pada export: pilih MSJ / TD / Belum diisi, atau KEDUANYA (2 file terpisah, satu per jobsite).
+function rxSiteOk(r,s){return s==='NONE'?!r.jobsite:r.jobsite===s;}
+function rxSiteLabel(s){return s==='NONE'?'TANPA JOBSITE':s;}
+function rxJsSelect(id){
+  var d={all:'BOTH',MSJ:'MSJ',TD:'TD',none:'NONE'}[typeof JOBSITE_F!=='undefined'?JOBSITE_F:'all']||'BOTH';
+  return '<select id="'+id+'" class="fsel" style="width:100%">'
+    +[['BOTH','MSJ & TD (2 file terpisah)'],['MSJ','MSJ'],['TD','TD'],['NONE','Belum diisi jobsite (laporan lama)']].map(function(o){return '<option value="'+o[0]+'"'+(o[0]===d?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>';
+}
+function rxJsList(v){return v==='BOTH'?['MSJ','TD']:[v];}
+var RX_BUSY=false,RX_Q=[],RX_SITE='MSJ';
 function rxRun(){
+  if(RX_BUSY)return;
+  RX_Q=rxJsList(el('rx-js').value);rxQRun();
+}
+function rxQRun(){
+  var dlg=document.getElementById('rx-dlg');
+  if(!RX_Q.length){if(dlg)dlg.remove();return;}
+  RX_SITE=RX_Q.shift();if(dlg)dlg.style.display='none';rxRunOne();
+}
+function rxRunOne(){
   if(RX_BUSY)return;
   if(!window.JSZip){showToast('⚠️ Library ZIP/Excel belum termuat — periksa koneksi lalu coba lagi','warning');return;}
   var mv=(el('rx-month').value||'').split('-');if(mv.length<2){showToast('Pilih bulan dulu','warning');return;}
   var y=+mv[0],m=+mv[1]-1;
   var dept=el('rx-dept').value,label=(el('rx-label').value||'').trim().toUpperCase()||(dept==='*'?'SEMUA DEPT':dept);
-  var site=(el('rx-site').value||'').trim().toUpperCase()||'MSJ';
+  var site=rxSiteLabel(RX_SITE);
   var grp=el('rx-grp').value,ti=Math.max(1,parseInt(el('rx-ti').value,10)||1),tb=0,useImg=el('rx-ph').checked;
-  try{localStorage.setItem('k3_rx_site',site);localStorage.setItem('k3_rx_dept',dept);}catch(e){}
-  document.getElementById('rx-dlg').remove();
+  try{localStorage.setItem('k3_rx_dept',dept);}catch(e){}
   var from=new Date(y,m,1),to=new Date(y,m+1,1);
-  var hidden=getRosterData().hidden,people=wkBuildPeople(getReports()).filter(function(p){return hidden.indexOf(p.key)<0;});
+  var hidden=getRosterData().hidden,people=wkBuildPeople(getAllReports()).filter(function(p){return hidden.indexOf(p.key)<0;});
   var items=[],groupSet={};
   if(dept!=='*'&&grp==='dept')groupSet[label]=1; // dept dipilih → barisnya selalu ada, walau belum ada laporan
   people.forEach(function(p){
     p.reports.forEach(function(r){
       var t=new Date(r.timestamp);if(!(t>=from&&t<to))return;
+      if(!rxSiteOk(r,RX_SITE))return;
       if(dept!=='*'&&rxDeptKey(r)!==dept)return;
       var g=grp==='name'?(p.name||p.id||'—'):(dept==='*'?rxDeptLabel(rxDeptKey(r)):label);
       groupSet[g]=1;items.push({r:r,g:g});
     });
   });
   var groups=Object.keys(groupSet).sort(function(a,b){return a.localeCompare(b);});
-  if(!groups.length){showToast('Tidak ada data pada bulan/departemen itu','warning');return;}
+  if(!groups.length){showToast('Tidak ada data '+rxSiteLabel(RX_SITE)+' pada bulan/departemen itu','warning');rxQRun();return;}
   items.sort(function(a,b){return new Date(a.r.timestamp)-new Date(b.r.timestamp);});
   var weeks=rxWeeks(y,m);
   function weekOf(d){for(var i=0;i<weeks.length;i++)for(var j=0;j<weeks[i].dates.length;j++)if(weeks[i].dates[j].getDate()===d.getDate())return weeks[i].n;return 1;}
@@ -6801,14 +6837,14 @@ function rxRun(){
     try{
       RX.zip(RX.build(model)).then(function(b){
         wkPdfOverlay(false);RX_BUSY=false;
-        wkDownloadBlob(b,'Resume_IBPR_Inspeksi_'+wkSafeName(label)+'_'+y+'-'+String(m+1).padStart(2,'0')+'.xlsx');
+        wkDownloadBlob(b,'Resume_IBPR_Inspeksi_'+wkSafeName(label)+'_'+wkSafeName(site)+'_'+y+'-'+String(m+1).padStart(2,'0')+'.xlsx');
         var nI=rows.filter(function(r){return r.ibpr;}).length;
-        showToast('✅ Excel dibuat: '+rows.length+' inspeksi, '+nI+' IBPR (temuan NC), '+temuan.length+' temuan','success');
-      }).catch(function(e){wkPdfOverlay(false);RX_BUSY=false;showToast('❌ Gagal membuat Excel: '+e.message,'error');});
-    }catch(e){wkPdfOverlay(false);RX_BUSY=false;console.error(e);showToast('❌ Gagal membuat Excel: '+e.message,'error');}
+        showToast('✅ Excel dibuat: '+rows.length+' inspeksi, '+nI+' IBPR (temuan NC), '+temuan.length+' temuan','success');rxQRun();
+      }).catch(function(e){wkPdfOverlay(false);RX_BUSY=false;RX_Q=[];showToast('❌ Gagal membuat Excel: '+e.message,'error');rxQRun();});
+    }catch(e){wkPdfOverlay(false);RX_BUSY=false;RX_Q=[];console.error(e);showToast('❌ Gagal membuat Excel: '+e.message,'error');rxQRun();}
   }
   function step(){
-    if(WK_PDF_CANCEL){wkPdfOverlay(false);RX_BUSY=false;showToast('Dibatalkan');return;}
+    if(WK_PDF_CANCEL){wkPdfOverlay(false);RX_BUSY=false;RX_Q=[];showToast('Dibatalkan');rxQRun();return;}
     if(!useImg||k>=rows.length)return finish();
     var row=rows[k++];
     wkPdfOverlay(true,{h:'📊 Menyiapkan screenshot form…',t:'Form '+k+' dari '+rows.length+'<br><b>'+esc(row.group)+'</b>',pct:Math.round((k-1)/rows.length*100)});
@@ -6822,9 +6858,6 @@ function rxRun(){
   step();
 }
 
-// ════ EXPORT RESUME HAZARD REPORT → EXCEL (sheet RINGKASAN + DATA, foto laporan ikut tertanam) ════
-// Memakai penulis XLSX yang sama dengan Resume IBPR (rx_core.js). Terpisah dari resume inspeksi:
-// Hazard Report TIDAK ikut IBPR; ia punya resume sendiri.
 // ════ EXPORT RESUME HAZARD REPORT → EXCEL (sheet RINGKASAN + DATA, foto laporan ikut tertanam) ════
 // Memakai penulis XLSX yang sama dengan Resume IBPR (rx_core.js). Terpisah dari resume inspeksi:
 // Hazard Report TIDAK ikut IBPR; ia punya resume sendiri.
@@ -7066,12 +7099,12 @@ RXH.build=function(m){
 };
 
 // ════ UI ════
-var RXH_BUSY=false;
+var RXH_BUSY=false,RXH_Q=[],RXH_SITE='MSJ';
 function rxhOpenDialog(){
   if(document.getElementById('rxh-dlg'))return;
   var now=new Date(),ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   var site='MSJ';try{site=localStorage.getItem('k3_rx_site')||site;}catch(e){}
-  var seen={};getReports().forEach(function(r){if(RXH.TYPES[r.type])seen[rxDeptKey(r)]=1;});
+  var seen={};getAllReports().forEach(function(r){if(RXH.TYPES[r.type])seen[rxDeptKey(r)]=1;});
   var depts=Object.keys(seen).sort(function(a,b){return a.localeCompare(b);});
   var o=document.createElement('div');o.id='rxh-dlg';
   o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:900;display:flex;align-items:center;justify-content:center;padding:16px';
@@ -7082,7 +7115,7 @@ function rxhOpenDialog(){
     +'<label style="'+L+'">Departemen</label><select id="rxh-dept" class="fsel" style="width:100%"><option value="*">SEMUA DEPARTEMEN</option>'
     +depts.map(function(d){return '<option value="'+esc(d)+'">'+esc(d)+(RX_DEPT_LABEL[d]?' ('+RX_DEPT_LABEL[d]+')':'')+'</option>';}).join('')+'</select>'
     +'<div style="display:flex;gap:10px"><div style="flex:1"><label style="'+L+'">Bulan</label><input type="month" id="rxh-month" value="'+ym+'" class="fi" style="width:100%"/></div>'
-    +'<div style="flex:1"><label style="'+L+'">Site</label><input id="rxh-site" class="fi" style="width:100%" value="'+esc(site)+'"/></div></div>'
+    +'<div style="flex:1"><label style="'+L+'">Jobsite</label>'+rxJsSelect('rxh-js')+'</div></div>'
     +'<label style="'+L+'">Jenis laporan yang disertakan</label>'
     +'<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px"><label><input type="checkbox" id="rxh-t-hazard" checked/> Hazard</label><label><input type="checkbox" id="rxh-t-nearmiss"/> Near Miss</label><label><input type="checkbox" id="rxh-t-stopwork"/> Stop Work</label></div>'
     +'<label style="display:flex;gap:6px;align-items:flex-start;font-size:12px;margin-top:12px"><input type="checkbox" id="rxh-ph" checked style="margin-top:2px"/><span>Sertakan foto laporan di sheet DATA (file lebih besar &amp; butuh waktu memuat foto)</span></label>'
@@ -7092,22 +7125,30 @@ function rxhOpenDialog(){
 }
 function rxhRun(){
   if(RXH_BUSY)return;
+  RXH_Q=rxJsList(el('rxh-js').value);rxhQRun();
+}
+function rxhQRun(){
+  var dlg=document.getElementById('rxh-dlg');
+  if(!RXH_Q.length){if(dlg)dlg.remove();return;}
+  RXH_SITE=RXH_Q.shift();if(dlg)dlg.style.display='none';rxhRunOne();
+}
+function rxhRunOne(){
+  if(RXH_BUSY)return;
   if(!window.JSZip){showToast('⚠️ Library ZIP/Excel belum termuat — periksa koneksi lalu coba lagi','warning');return;}
   var mv=(el('rxh-month').value||'').split('-');if(mv.length<2){showToast('Pilih bulan dulu','warning');return;}
-  var y=+mv[0],m=+mv[1]-1,dept=el('rxh-dept').value,site=(el('rxh-site').value||'').trim().toUpperCase()||'MSJ',useImg=el('rxh-ph').checked;
+  var y=+mv[0],m=+mv[1]-1,dept=el('rxh-dept').value,site=rxSiteLabel(RXH_SITE),useImg=el('rxh-ph').checked;
   var types=Object.keys(RXH.TYPES).filter(function(k){return el('rxh-t-'+k).checked;});
   if(!types.length){showToast('Pilih minimal satu jenis laporan','warning');return;}
-  try{localStorage.setItem('k3_rx_site',site);}catch(e){}
-  document.getElementById('rxh-dlg').remove();
   var from=new Date(y,m,1),to=new Date(y,m+1,1),weeks=rxWeeks(y,m),capas=getCAPAs();
   function weekOf(d){for(var i=0;i<weeks.length;i++)for(var j=0;j<weeks[i].dates.length;j++)if(weeks[i].dates[j].getDate()===d.getDate())return weeks[i].n;return 1;}
-  var list=getReports().filter(function(r){
+  var list=getAllReports().filter(function(r){
     if(types.indexOf(r.type)<0)return false;
+    if(!rxSiteOk(r,RXH_SITE))return false;
     var t=new Date(r.timestamp);if(!(t>=from&&t<to))return false;
     if(dept!=='*'&&rxDeptKey(r)!==dept)return false;
     return true;
   }).sort(function(a,b){return new Date(a.timestamp)-new Date(b.timestamp);});
-  if(!list.length){showToast('Tidak ada Hazard Report pada bulan/departemen itu','warning');return;}
+  if(!list.length){showToast('Tidak ada Hazard Report '+rxSiteLabel(RXH_SITE)+' pada bulan/departemen itu','warning');rxhQRun();return;}
   var pad=function(n){return String(n).padStart(2,'0');};
   var rows=list.map(function(r){
     var d=new Date(r.timestamp),c=capas['CAPA-'+r.id];
@@ -7128,14 +7169,14 @@ function rxhRun(){
     try{
       RX.zip(RXH.build(model)).then(function(b){
         wkPdfOverlay(false);RXH_BUSY=false;
-        wkDownloadBlob(b,'Resume_Hazard_Report_'+wkSafeName(label)+'_'+y+'-'+pad(m+1)+'.xlsx');
-        showToast('✅ Excel dibuat: '+rows.length+' laporan'+(useImg?', '+rows.filter(function(r){return r.img;}).length+' dengan foto':''),'success');
-      }).catch(function(e){wkPdfOverlay(false);RXH_BUSY=false;showToast('❌ Gagal membuat Excel: '+e.message,'error');});
-    }catch(e){wkPdfOverlay(false);RXH_BUSY=false;console.error(e);showToast('❌ Gagal membuat Excel: '+e.message,'error');}
+        wkDownloadBlob(b,'Resume_Hazard_Report_'+wkSafeName(label)+'_'+wkSafeName(site)+'_'+y+'-'+pad(m+1)+'.xlsx');
+        showToast('✅ Excel dibuat: '+rows.length+' laporan'+(useImg?', '+rows.filter(function(r){return r.img;}).length+' dengan foto':'')+' — '+site,'success');rxhQRun();
+      }).catch(function(e){wkPdfOverlay(false);RXH_BUSY=false;RXH_Q=[];showToast('❌ Gagal membuat Excel: '+e.message,'error');rxhQRun();});
+    }catch(e){wkPdfOverlay(false);RXH_BUSY=false;RXH_Q=[];console.error(e);showToast('❌ Gagal membuat Excel: '+e.message,'error');rxhQRun();}
   }
   var k=0;
   function step(){
-    if(WK_PDF_CANCEL){wkPdfOverlay(false);RXH_BUSY=false;showToast('Dibatalkan');return;}
+    if(WK_PDF_CANCEL){wkPdfOverlay(false);RXH_BUSY=false;RXH_Q=[];showToast('Dibatalkan');rxhQRun();return;}
     if(!useImg||k>=rows.length)return finish();
     var row=rows[k++],r=row._r;
     wkPdfOverlay(true,{h:'Menyiapkan foto laporan…',t:'Laporan '+k+' dari '+rows.length,pct:Math.round((k-1)/rows.length*100)});

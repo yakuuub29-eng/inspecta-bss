@@ -7676,7 +7676,7 @@ function buildForm(type){
 
   // Lokasi (fi0) = PILIHAN AREA baku (sama dengan Area Temuan Hazard Report) supaya filter di dashboard seragam.
   // Keterangan spesifik (mis. sub-area/nomor kotak) diisi di "Detail Lokasi" opsional.
-  var infoHtml=autoInfoHtml+cfg.info.map(function(f,i){
+  var infoHtml=autoInfoHtml+(cfg.fatMode?'':siteField())+cfg.info.map(function(f,i){
     // Fatigue Call & Speedgun: lokasi tetap diisi manual (tidak memakai pilihan area baku).
     if(cfg.fatMode||cfg.spdMode)return fgg(i===0?(f+' <span style="color:#C53030">*</span>'):f,'<input type="text" class="fi" id="fi'+i+'" placeholder="'+f+'"'+(i===0?' required':'')+'/>');
     if(i===0)return fgg('Area / Lokasi <span style="color:#C53030">*</span>','<select class="fi" id="fi0" required>'+hzOpts(HZ_AREA,'— Pilih Area —')+'</select>')
@@ -8266,6 +8266,7 @@ function openQuick(type){
     +'<div class="quick-form">'
     +'<div class="quick-header '+cfg.cls+'"><div class="qh-ico">'+cfg.icon+'</div><div class="qh-title">'+cfg.title+'</div><div class="qh-sub">'+cfg.sub+'</div></div>'
     +'<div class="fsec"><div class="fsh"><span class="fsh-t"><svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M8 11h8M8 15h5"/></svg> Detail Laporan</span></div><div class="ffields">'
+    +siteField()
     +fgg('Nama Pelapor','<input class="fi" id="fi0" value="'+(CU?CU.name:'')+'" placeholder="Nama Anda"/>')
     +fgg('Tanggal & Waktu','<input type="datetime-local" class="fi" id="fi1" value="'+new Date().toISOString().slice(0,16)+'"/>')
     +fgg(type==='hazard'?'Detail Lokasi <span style="font-weight:400;color:var(--G5)">(opsional)</span>':'Lokasi Kejadian','<input class="fi" id="fi2" placeholder="Contoh: Pit A, Blok 3"/>')
@@ -8303,6 +8304,19 @@ function hzJenisChanged(){
   k.innerHTML=hzOpts(j==='KTA'?HZ_KTA:(j==='TTA'?HZ_TTA:[]),j?'— Pilih Kategori '+j+' —':'— Pilih Jenis dulu —');
   k.disabled=!j;
 }
+// Jobsite wajib untuk semua laporan kecuali Fatigue Call
+var JOBSITES=['MSJ','TD'];
+function siteField(){return fgg('Jobsite <span style="color:#C53030">*</span>','<select class="fi" id="fi-site" required><option value="">— Pilih Jobsite —</option>'+JOBSITES.map(function(s){return '<option>'+s+'</option>';}).join('')+'</select>');}
+function siteErr(){
+  var e=el('fi-site');if(!e)return false;
+  if(e.value)return false;
+  e.classList.add('fi-err');
+  var fg=e.closest?e.closest('.fg'):null;
+  if(fg&&!fg.querySelector('.fi-err-msg')){var m=document.createElement('div');m.className='fi-err-msg';m.textContent='Jobsite wajib dipilih';fg.appendChild(m);}
+  e.onchange=function(){e.classList.remove('fi-err');var mm=fg&&fg.querySelector('.fi-err-msg');if(mm)mm.remove();};
+  try{e.scrollIntoView({behavior:'smooth',block:'center'});}catch(x){}
+  return true;
+}
 function qkErr(id,msg){
   var e=el(id);if(!e)return false;
   e.classList.add('fi-err');
@@ -8317,6 +8331,7 @@ function validateQuick(type){
   document.querySelectorAll('.quick-form .fi-err-msg').forEach(function(m){m.remove();});
   document.querySelectorAll('.quick-form .fi-err').forEach(function(m){m.classList.remove('fi-err');});
   var bad=[];
+  if(!gv('fi-site'))bad.push(['fi-site','Jobsite wajib dipilih']);
   if(!gv('fi0'))bad.push(['fi0','Nama pelapor wajib diisi']);
   if(!gv('fi1'))bad.push(['fi1','Tanggal & waktu wajib diisi']);
   if(type!=='hazard'&&!gv('fi2'))bad.push(['fi2','Lokasi wajib diisi']);
@@ -8348,7 +8363,7 @@ function submitQuick(type){
   genNoTemuanAsync(type,function(noTemuan){
     var rep={
       id:Date.now().toString(),noTemuan:noTemuan,type:type,typeName:cfg.title,
-      reporter:gv('fi0')||CU.name,location:(type==='hazard'?el('hz-area').value:gv('fi2'))||'-',locDetail:type==='hazard'?gv('fi2'):'',status:'Open',
+      reporter:gv('fi0')||CU.name,location:(type==='hazard'?el('hz-area').value:gv('fi2'))||'-',locDetail:type==='hazard'?gv('fi2'):'',jobsite:gv('fi-site'),status:'Open',
       notes:gv('notes'),action:gv('action'),
       severity:getSev(),
       gps:GPS_DATA,photos:PHOTOS.slice(0,5),
@@ -8382,6 +8397,7 @@ function submitQuick(type){
 function submitForm(){
   // WAJIB isi lokasi: field pertama (fi0) = Sub-Area/Lokasi di semua form inspeksi.
   // Dicek SEBELUM tombol dikunci & layar loading muncul, supaya pengawas bisa langsung melengkapi.
+  if(!(FCFG[CFT]&&FCFG[CFT].fatMode)&&siteErr()){showToast('Pilih Jobsite dulu sebelum mengirim laporan','warning');return;}
   var _locEl=el('fi0');
   if(_locEl&&!(_locEl.value||'').trim()){
     var _lbl=(FCFG[CFT]&&FCFG[CFT].info&&FCFG[CFT].info[0])||'Lokasi';
@@ -8509,7 +8525,7 @@ function submitForm(){
   genNoTemuanAsync(CFT,function(noTemuan){
     var rep={
       id:Date.now().toString(),noTemuan:noTemuan,type:CFT,typeName:cfg.title,
-      reporter:reporter,location:location,status:status,
+      reporter:reporter,location:location,jobsite:gv('fi-site'),status:status,
       severity:computeChecklistSeverity(NG_DETAILS),
       notes:gv('notes'),action:gv('action'),
       gps:GPS_DATA,
@@ -8646,7 +8662,7 @@ function showDet(id){
   el('m-t').textContent=r.typeName;
   el('m-s').textContent=fd(r.timestamp)+' pukul '+ft(r.timestamp);
   var h='<div class="m-sec-t">Informasi Laporan</div>';
-  var info=[['No. Laporan',r.noTemuan||'—'],['Inspektor',r.userName||r.reporter||'—'],['Lokasi',r.location||'—'],['Departemen',r.userDept||'—'],['Shift',r.userShift||'—'],['Tanggal',fd(r.timestamp)],['Jam',ft(r.timestamp)],
+  var info=[['No. Laporan',r.noTemuan||'—'],['Inspektor',r.userName||r.reporter||'—'],['Jobsite',r.jobsite||'—'],['Lokasi',r.location||'—'],['Departemen',r.userDept||'—'],['Shift',r.userShift||'—'],['Tanggal',fd(r.timestamp)],['Jam',ft(r.timestamp)],
     ['Severity',sevPill(r.severity)||'—'],
     ['Status','<span class="pill '+(r.status==='OK'?'pok':r.status==='NC'?'pnc':'pop')+'">'+(r.status||'Pending')+'</span>'],
     ['Sinkronisasi (Sync)',r.synced?'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 19a4.5 4.5 0 0 1-1-8.9 6 6 0 0 1 11.6-2A5 5 0 0 1 18 19z"/></svg> Terkirim (Synced)':'<svg viewBox="0 0 24 24" width="0.9em" height="0.9em" style="vertical-align:-0.15em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12"/><path d="M7 3c0 5 4 6 5 9-1 3-5 4-5 9M17 3c0 5-4 6-5 9 1 3 5 4 5 9"/></svg> Menunggu'],
