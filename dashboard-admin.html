@@ -1540,14 +1540,20 @@ function initFB(){
     // Sekarang THROTTLE: render pertama cepat, lalu paling sering tiap 2 detik selama sinkronisasi awal,
     // dan penulisan cache localStorage (stringify ribuan data) dipisah & ditunda supaya tidak memblokir UI.
     var refreshTimer=null,cacheTimer=null,lastRun=0,FB_INITIAL=true,loadedN=0;
+    // Cache lokal SELALU versi ringan (tanpa foto/tanda tangan) → muat di localStorage, sehingga buka dashboard
+    // berikutnya langsung menampilkan SELURUH data terakhir (bukan cache kecil/usang), lalu disegarkan realtime.
+    function lite(r){
+      var c=Object.assign({},r);
+      if(c.photos&&c.photos.length)c.photos=[];
+      if(c.signature&&c.signature.data)c.signature=Object.assign({},c.signature,{data:''});
+      if(c.capa)c.capa=Object.assign({},c.capa,{evBefore:'',evAfter:''});
+      if(c.extra&&c.extra.ngDetails)c.extra=Object.assign({},c.extra,{ngDetails:c.extra.ngDetails.map(function(n){return Object.assign({},n,{photos:[]});})});
+      return c;
+    }
     function writeCache(){
-      var arr=LIVE_REPORTS||[];
+      var arr=(LIVE_REPORTS||[]).map(lite);
       try{localStorage.setItem(SK,JSON.stringify(arr));}
-      catch(e){
-        console.warn('[INSPECTA] localStorage penuh, pakai cache foto-terpangkas:',e);
-        try{localStorage.setItem(SK,JSON.stringify(arr.map(function(r){var c=Object.assign({},r);delete c.photos;return c;})));}
-        catch(e2){console.warn('[INSPECTA] Cache cadangan juga gagal disimpan (tidak masalah, data live tetap tampil):',e2);}
-      }
+      catch(e){console.warn('[INSPECTA] Cache laporan gagal disimpan (tidak masalah, data live tetap tampil):',e);}
     }
     function scheduleRefresh(){
       if(refreshTimer)return;
@@ -1559,28 +1565,43 @@ function initFB(){
         clearTimeout(cacheTimer);cacheTimer=setTimeout(writeCache,FB_INITIAL?4000:800);
       },wait);
     }
-    fbdb.ref('reports').on('child_added',function(snap){
+    // ── TAHAP A (cepat): hanya laporan 35 hari terakhir, lewat query terindeks timestamp.
+    //    Dashboard tampil lengkap untuk data yang paling sering dilihat dalam hitungan detik.
+    // ── TAHAP B (latar belakang): sisa riwayat lama dimuat setelahnya, tidak menghalangi tampilan.
+    // CATATAN: butuh aturan  "reports": {".indexOn": ["timestamp"]}  di Firebase Rules supaya tahap A benar-benar
+    // hanya mengunduh data terbaru. Tanpa itu tetap jalan, hanya tidak secepat.
+    function onAdd(snap){
       var r=snap.val();if(r&&r.id)reportsById[r.id]=normLegacyReport(r);
-      if(FB_INITIAL){loadedN++;if(loadedN%10===0)setFBS(true,'⏳ Memuat laporan… '+loadedN+' (tampilan diperbarui bertahap)');}
+      if(FB_INITIAL){loadedN++;if(loadedN%10===0)setFBS(true,'⏳ Memuat laporan… '+loadedN);}
       scheduleRefresh();
-    },function(err){console.warn('[INSPECTA] reports child_added error:',err);setFBS(false,'⚠️ Gagal memuat data laporan (cek koneksi)');});
-    fbdb.ref('reports').on('child_changed',function(snap){
-      var r=snap.val();if(r&&r.id)reportsById[r.id]=normLegacyReport(r);scheduleRefresh();
-    });
-    fbdb.ref('reports').on('child_removed',function(snap){
-      var r=snap.val();if(r&&r.id)delete reportsById[r.id];scheduleRefresh();
-    });
-    // Setelah sinkronisasi awal selesai: buang laporan di cache lokal yang SUDAH TIDAK ADA di Firebase
-    // (mis. sudah dihapus lewat "Hapus Data Lama" atau dari Console). Tanpa ini, cache browser
-    // yang lama tetap menampilkan laporan yang sudah terhapus. (once() memakai data yang sudah
-    // diunduh listener di atas, tidak mengunduh ulang.)
-    fbdb.ref('reports').once('value').then(function(snap){
-      var live=snap.val()||{},removed=0;
-      Object.keys(reportsById).forEach(function(id){if(!live[id]){delete reportsById[id];removed++;}});
-      FB_INITIAL=false;setFBS(true,'🟢 Firebase ('+FB_CFG.projectId+') — data real-time · '+Object.keys(reportsById).length+' laporan');
-      if(removed){console.log('[INSPECTA] '+removed+' laporan cache lokal dibuang (sudah tidak ada di Firebase)');}
-      scheduleRefresh();
-    }).catch(function(e){console.warn('[INSPECTA] Gagal verifikasi cache laporan:',e);});
+    }
+    function onChg(snap){var r=snap.val();if(r&&r.id)reportsById[r.id]=normLegacyReport(r);scheduleRefresh();}
+    function onDel(snap){var r=snap.val();if(r&&r.id)delete reportsById[r.id];scheduleRefresh();}
+    function onErr(err){console.warn('[INSPECTA] reports listener error:',err);setFBS(false,'⚠️ Gagal memuat data laporan (cek koneksi)');}
+    var cutoffISO=new Date(Date.now()-35*86400000).toISOString();
+    var qRecent=fbdb.ref('reports').orderByChild('timestamp').startAt(cutoffISO);
+    qRecent.on('child_added',onAdd,onErr);qRecent.on('child_changed',onChg);qRecent.on('child_removed',onDel);
+    function startFull(){
+      if(window.__fullReportsStarted)return;window.__fullReportsStarted=true;
+      setFBS(true,'⏳ Data terbaru siap — memuat riwayat lama di latar belakang…');
+      fbdb.ref('reports').on('child_added',onAdd,onErr);
+      fbdb.ref('reports').on('child_changed',onChg);
+      fbdb.ref('reports').on('child_removed',onDel);
+      // Buang laporan cache yang sudah tidak ada di Firebase (dihapus via "Hapus Data Lama"/Console).
+      fbdb.ref('reports').once('value').then(function(snap){
+        var live=snap.val()||{},removed=0;
+        Object.keys(reportsById).forEach(function(id){if(!live[id]){delete reportsById[id];removed++;}});
+        FB_INITIAL=false;setFBS(true,'🟢 Firebase ('+FB_CFG.projectId+') — data real-time · '+Object.keys(reportsById).length+' laporan');
+        if(removed)console.log('[INSPECTA] '+removed+' laporan cache lokal dibuang (sudah tidak ada di Firebase)');
+        scheduleRefresh();
+      }).catch(function(e){console.warn('[INSPECTA] Gagal memuat riwayat lama:',e);FB_INITIAL=false;});
+    }
+    qRecent.once('value').then(function(){
+      lastRun=0;FB_INITIAL=true;scheduleRefresh();   // render segera setelah data terbaru lengkap
+      setTimeout(startFull,300);
+    }).catch(function(e){console.warn('[INSPECTA] Query data terbaru gagal, muat semua:',e);startFull();});
+    // Jaring pengaman: kalau tahap A macet (sinyal buruk), tetap muat semua setelah 8 detik.
+    setTimeout(startFull,8000);
     fbdb.ref('checklists').on('value',function(snap){
       var d=snap.val();if(d){try{localStorage.setItem(CK,JSON.stringify(d));}catch(e){console.warn('[INSPECTA] Gagal cache checklists (penyimpanan penuh):',e);}}
     },function(err){console.warn('[INSPECTA] Firebase checklists error:',err);});
